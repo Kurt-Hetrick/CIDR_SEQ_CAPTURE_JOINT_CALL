@@ -49,6 +49,17 @@ CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 CMD=$CMD' -R '$REF_GENOME
 CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/GVCF/AGGREGATE/'$PREFIX'.'$BED_FILE_NAME'.g.vcf.gz'
 CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.'$BED_FILE_NAME'.temp.vcf.gz'
+CMD=$CMD' --annotation AS_BaseQualityRankSumTest'
+CMD=$CMD' --annotation AS_FisherStrand'
+CMD=$CMD' --annotation AS_MappingQualityRankSumTest'
+CMD=$CMD' --annotation AS_RMSMappingQuality'
+CMD=$CMD' --annotation AS_ReadPosRankSumTest'
+CMD=$CMD' --annotation AS_StrandOddsRatio'
+CMD=$CMD' --annotation FractionInformativeReads'
+CMD=$CMD' --annotation StrandBiasBySample'
+CMD=$CMD' --annotation StrandAlleleCountsBySample'
+CMD=$CMD' --annotation AlleleBalanceBySample'
+CMD=$CMD' --annotation AlleleBalance'
 CMD=$CMD' --annotateNDA'
 
 echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"

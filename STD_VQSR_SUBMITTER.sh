@@ -191,6 +191,8 @@ CREATE_GVCF_LIST
 ##############################################################################
 ##############################################################################
 
+# aggregate all of individual g.vcf into one cohort g.vcf per bed file chunk
+
 COMBINE_GVCF()
 {
 	echo \
@@ -213,6 +215,8 @@ COMBINE_GVCF()
 		$PREFIX \
 		$BED_FILE_NAME
 }
+
+# genotype the cohort g.vcf chunks
 
 GENOTYPE_GVCF()
 {
