@@ -180,6 +180,8 @@ GVCF_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/'$TOTAL_SAMPLES'.samples.gvcf.list'`)
 ##### CALL THE ABOVE FUNCTIONS TO SET-UP JOINT CALLING #####
 ############################################################
 
+
+# need to add something that will generate lab prep qc metrics
 CREATE_PROJECT_INFO_ARRAY
 # MAKE_PROJ_DIR_TREE # this should not be function at the ms project level
 FORMAT_AND_SCATTER_BAIT_BED
@@ -228,10 +230,10 @@ GENOTYPE_GVCF()
 		-q $QUEUE_LIST \
 		-p $PRIORITY \
 		-j y \
-	-N B02_GENOTYPE_GVCF_$PROJECT_MS'_'$BED_FILE_NAME \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/B02_GENOTYPE_GVCF_$BED_FILE_NAME.log \
+	-N B01_GENOTYPE_GVCF_$PROJECT_MS'_'$BED_FILE_NAME \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/B01_GENOTYPE_GVCF_$BED_FILE_NAME.log \
 		-hold_jid A01_COMBINE_GVCF_$PROJECT_MS'_'$BED_FILE_NAME \
-	$SCRIPT_DIR/B02_GENOTYPE_GVCF.sh \
+	$SCRIPT_DIR/B01_GENOTYPE_GVCF.sh \
 		$JAVA_1_8 \
 		$GATK_DIR \
 		$REF_GENOME \
@@ -240,6 +242,8 @@ GENOTYPE_GVCF()
 		$PREFIX \
 		$BED_FILE_NAME
 }
+
+# add dnsnp ID, genotype summaries, gc percentage, variant class, tandem repeat units and homopolymer runs to genotyped g.vcf chunks.
 
 VARIANT_ANNOTATOR()
 {
@@ -251,10 +255,10 @@ VARIANT_ANNOTATOR()
 		-q $QUEUE_LIST \
 		-p $PRIORITY \
 		-j y \
-	-N C03_VARIANT_ANNOTATOR_$PROJECT_MS'_'$BED_FILE_NAME \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/C03_VARIANT_ANNOTATOR_$BED_FILE_NAME.log \
-		-hold_jid B02_GENOTYPE_GVCF_$PROJECT_MS'_'$BED_FILE_NAME \
-	$SCRIPT_DIR/C03_VARIANT_ANNOTATOR.sh \
+	-N C01_VARIANT_ANNOTATOR_$PROJECT_MS'_'$BED_FILE_NAME \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/C01_VARIANT_ANNOTATOR_$BED_FILE_NAME.log \
+		-hold_jid B01_GENOTYPE_GVCF_$PROJECT_MS'_'$BED_FILE_NAME \
+	$SCRIPT_DIR/C01_VARIANT_ANNOTATOR.sh \
 		$JAVA_1_8 \
 		$GATK_DIR \
 		$REF_GENOME \
@@ -265,10 +269,16 @@ VARIANT_ANNOTATOR()
 		$PROJECT_DBSNP
 }
 
+# build a string of job names (comma delim) from the variant annotator scatter to store as variable to use as
+# hold_jid for the cat variants gather (it's used in the next section after the for loop below)
+
 GENERATE_CAT_VARIANTS_HOLD_ID()
 {
-	CAT_VARIANTS_HOLD_ID=$CAT_VARIANTS_HOLD_ID'C03_VARIANT_ANNOTATOR_'$PROJECT_MS'_'$BED_FILE_NAME','
+	CAT_VARIANTS_HOLD_ID=$CAT_VARIANTS_HOLD_ID'C01_VARIANT_ANNOTATOR_'$PROJECT_MS'_'$BED_FILE_NAME','
 }
+
+# for each chunk of the original bed file, do combine gvcfs, then genotype gvcfs, then variant annotator
+# then generate a string of all the variant annotator job names submitted
 
 for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/SPLITTED_BED_FILE*);
 do
@@ -287,6 +297,11 @@ done
 ##################Start of VQSR and Refinement Functions######################
 ##############################################################################
 
+# use cat variants to gather up all of the vcf files above into one big file
+# MIGHT WANT TO LOOK INTO GatherVcfs (Picard) here
+# Other possibility is MergeVcfs (Picard)...GatherVcfs is supposedly used for scatter operations so hopefully more efficient
+# The way that CatVariants is constructed, I think would cause a upper limit to the scatter operation.
+
 CAT_VARIANTS()
 {
 	echo \
@@ -297,10 +312,10 @@ CAT_VARIANTS()
 		-q $QUEUE_LIST \
 		-p $PRIORITY \
 		-j y \
-	-N D04_CAT_VARIANTS_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/D04_CAT_VARIANTS.log \
+	-N D01_CAT_VARIANTS_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/D01_CAT_VARIANTS.log \
 		-hold_jid $CAT_VARIANTS_HOLD_ID \
-	$SCRIPT_DIR/D04_CAT_VARIANTS.sh \
+	$SCRIPT_DIR/D01_CAT_VARIANTS.sh \
 		$JAVA_1_8 \
 		$GATK_DIR \
 		$REF_GENOME \
@@ -308,6 +323,10 @@ CAT_VARIANTS()
 		$PROJECT_MS \
 		$PREFIX
 }
+
+# run the snp vqsr model
+# to do: find a better to push out an R version to build the plots
+# right now, it's buried inside the shell script itself {grrrr}
 
 VARIANT_RECALIBRATOR_SNV()
 {
@@ -319,10 +338,10 @@ VARIANT_RECALIBRATOR_SNV()
 		-q $QUEUE_LIST \
 		-p $PRIORITY \
 		-j y \ 
-	-N E05A_VARIANT_RECALIBRATOR_SNV_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/E05A_VARIANT_RECALIBRATOR_SNV.log \
-		-hold_jid D04_CAT_VARIANTS_$PROJECT_MS \
-	$SCRIPT_DIR/E05A_VARIANT_RECALIBRATOR_SNV.sh \
+	-N E01_VARIANT_RECALIBRATOR_SNV_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/E01_VARIANT_RECALIBRATOR_SNV.log \
+		-hold_jid D01_CAT_VARIANTS_$PROJECT_MS \
+	$SCRIPT_DIR/E01_VARIANT_RECALIBRATOR_SNV.sh \
 		$JAVA_1_8 \
 		$GATK_DIR \
 		$REF_GENOME \
@@ -335,6 +354,10 @@ VARIANT_RECALIBRATOR_SNV()
 		$PREFIX
 }
 
+# run the indel vqsr model (concurrently done with the snp model above)
+# to do: find a better to push out an R version to build the plots
+# right now, it's buried inside the shell script itself {grrrr}
+
 VARIANT_RECALIBRATOR_INDEL()
 {
 	echo \
@@ -345,10 +368,10 @@ VARIANT_RECALIBRATOR_INDEL()
 		-q $QUEUE_LIST \
 		-p $PRIORITY \
 		-j y \ 
-	-N E05B_VARIANT_RECALIBRATOR_INDEL_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/E05B_VARIANT_RECALIBRATOR_INDEL.log \
-		-hold_jid D04_CAT_VARIANTS_$PROJECT_MS \
-	$SCRIPT_DIR/E05B_VARIANT_RECALIBRATOR_INDEL.sh \
+	-N E02_VARIANT_RECALIBRATOR_INDEL_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/E02_VARIANT_RECALIBRATOR_INDEL.log \
+		-hold_jid D01_CAT_VARIANTS_$PROJECT_MS \
+	$SCRIPT_DIR/E02_VARIANT_RECALIBRATOR_INDEL.sh \
 		$JAVA_1_8 \
 		$GATK_DIR \
 		$REF_GENOME \
@@ -357,6 +380,9 @@ VARIANT_RECALIBRATOR_INDEL()
 		$PROJECT_MS \
 		$PREFIX
 }
+
+# apply the snp vqsr model to the full vcf
+# this wait for both the snp and indel models to be done generating before running.
 
 APPLY_RECALIBRATION_SNV()
 {
@@ -368,10 +394,10 @@ APPLY_RECALIBRATION_SNV()
 		-q $QUEUE_LIST \
 		-p $PRIORITY \
 		-j y \
-	-N F06_APPLY_RECALIBRATION_SNV_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/F06_APPLY_RECALIBRATION_SNV.log \
-		-hold_jid E05A_VARIANT_RECALIBRATOR_SNV_$PROJECT_MS \
-	$SCRIPT_DIR/F06_APPLY_RECALIBRATION_SNV.sh \
+	-N F01_APPLY_RECALIBRATION_SNV_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/F01_APPLY_RECALIBRATION_SNV.log \
+		-hold_jid E01_VARIANT_RECALIBRATOR_SNV_$PROJECT_MS \
+	$SCRIPT_DIR/F01_APPLY_RECALIBRATION_SNV.sh \
 		$JAVA_1_8 \
 		$GATK_DIR \
 		$REF_GENOME \
@@ -379,6 +405,8 @@ APPLY_RECALIBRATION_SNV()
 		$PROJECT_MS \
 		$PREFIX
 }
+
+# now apply the indel vqsr model to the full vcf file
 
 APPLY_RECALIBRATION_INDEL()
 {
@@ -390,11 +418,11 @@ APPLY_RECALIBRATION_INDEL()
 		-q $QUEUE_LIST \
 		-p $PRIORITY \
 		-j y \ 
-	-N G07_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/G07_APPLY_RECALIBRATION_INDEL.log \
-		-hold_jid F06_APPLY_RECALIBRATION_SNV_$PROJECT_MS,\
- E05B_VARIANT_RECALIBRATOR_INDEL_$PROJECT_MS \
-	$SCRIPT_DIR/G07_APPLY_RECALIBRATION_INDEL.sh \
+	-N G01_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/G01_APPLY_RECALIBRATION_INDEL.log \
+		-hold_jid F01_APPLY_RECALIBRATION_SNV_$PROJECT_MS,\
+ E02_VARIANT_RECALIBRATOR_INDEL_$PROJECT_MS \
+	$SCRIPT_DIR/G01_APPLY_RECALIBRATION_INDEL.sh \
 		$JAVA_1_8 \
 		$GATK_DIR \
 		$REF_GENOME \
@@ -403,32 +431,10 @@ APPLY_RECALIBRATION_INDEL()
 		$PREFIX
 }
 
-# NO LONGER NEEDED.
+# do a scatter of genotype refinement using the same chunked bed files use to the g.vcf aggregation
+# external priors used are the final 1kg genomes dataset, exac v0.3, no family priors used (no ped file)
 
-# BGZIP_AND_TABIX_RECAL_VCF()
-# {
-# 	echo \
-# 	qsub \
-# 		-S /bin/bash \
-# 		-cwd \
-# 		-V \
-# 		-q $QUEUE_LIST \
-# 		-p $PRIORITY \
-# 		-j y \ 
-# 	-N H08A_BGZIP_AND_TABIX_RECAL_VCF_$PROJECT_MS \
-# 		-o $CORE_PATH/$PROJECT_MS/LOGS/H08A_BGZIP_AND_TABIX_RECAL_VCF.log \
-# 		-hold_jid G07_APPLY_RECALIBRATION_INDEL_$PROJECT_MS,\
-#  F06_APPLY_RECALIBRATION_SNV_$PROJECT_MS \
-# 	$SCRIPT_DIR/H08A_BGZIP_AND_TABIX_RECAL_VCF.sh \
-# 		$TABIX_DIR \
-# 		$CORE_PATH \
-# 		$PROJECT_MS \
-# 		$PREFIX
-# }
-
-
-# Change this into a scatter gather.
-CALCULATE_GENOTYPE_POSTERIORS()
+CALCULATE_GENOTYPE_POSTERIORS_SCATTER()
 {
 	echo \
 	qsub \
@@ -438,10 +444,10 @@ CALCULATE_GENOTYPE_POSTERIORS()
 		-q $QUEUE_LIST \
 		-p $PRIORITY \
 		-j y \
-	-N H08B_CALCULATE_GENOTYPE_POSTERIORS_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/H08B_CALCULATE_GENOTYPE_POSTERIORS.log \
-		-hold_jid G07_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
-	$SCRIPT_DIR/H08B_CALCULATE_GENOTYPE_POSTERIORS.sh \
+	-N H01_CALCULATE_GENOTYPE_POSTERIORS_$PROJECT_MS"_"$BED_FILE_NAME \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/H01_CALCULATE_GENOTYPE_POSTERIORS_$BED_FILE_NAME".log" \
+		-hold_jid G01_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
+	$SCRIPT_DIR/H01_CALCULATE_GENOTYPE_POSTERIORS.sh \
 		$JAVA_1_8 \
 		$GATK_DIR \
 		$REF_GENOME \
@@ -449,11 +455,13 @@ CALCULATE_GENOTYPE_POSTERIORS()
 		$ExAC \
 		$CORE_PATH \
 		$PROJECT_MS \
-		$PREFIX
+		$PREFIX \
+		$BED_FILE_NAME
 }
 
-# this would remain in the scatter
-VARIANT_ANNOTATOR_REFINED()
+# recalculate the genotype summaries for the now refined genotypes for each vcf chunk
+
+VARIANT_ANNOTATOR_REFINED_SCATTER()
 {
 	echo \
 	qsub \
@@ -463,24 +471,28 @@ VARIANT_ANNOTATOR_REFINED()
 		-q $QUEUE_LIST \
 		-p $PRIORITY \
 		-j y \
-	-N I09_VARIANT_ANNOTATOR_REFINED_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/I09_VARIANT_ANNOTATOR_REFINED.log \
-		-hold_jid H08B_CALCULATE_GENOTYPE_POSTERIORS_$PROJECT_MS \
-	$SCRIPT_DIR/I09_VARIANT_ANNOTATOR_REFINED.sh \
+	-N I01_VARIANT_ANNOTATOR_REFINED_$PROJECT_MS"_"$BED_FILE_NAME \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/I01_VARIANT_ANNOTATOR_REFINED_$BED_FILE_NAME".log" \
+		-hold_jid H01_CALCULATE_GENOTYPE_POSTERIORS_$PROJECT_MS"_"$BED_FILE_NAME \
+	$SCRIPT_DIR/I01_VARIANT_ANNOTATOR_REFINED.sh \
 		$JAVA_1_8 \
 		$GATK_DIR \
 		$REF_GENOME \
 		$PROJECT_DBSNP \
 		$CORE_PATH \
 		$PROJECT_MS \
-		$PREFIX
+		$PREFIX \
+		$BED_FILE_NAME
 }
 
-# there would be a gather in here
+GENERATE_CAT_REFINED_VARIANTS_HOLD_ID()
+{
+	CAT_REFINED_VARIANTS_HOLD_ID=$CAT_REFINED_VARIANTS_HOLD_ID'I01_VARIANT_ANNOTATOR_REFINED_'$PROJECT_MS'_'$BED_FILE_NAME','
+}
 
-# THIS STEP WILL BE REDUNDANT
+# use cat variants to gather up all of the gt refined, reannotated vcf files above into one big file
 
-BGZIP_AND_TABIX_REFINED_VCF()
+CAT_REFINED_VARIANTS()
 {
 	echo \
 	qsub \
@@ -490,11 +502,13 @@ BGZIP_AND_TABIX_REFINED_VCF()
 		-q $QUEUE_LIST \
 		-p $PRIORITY \
 		-j y \
-	-N J10_BGZIP_AND_TABIX_REFINED_VCF_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/J10_BGZIP_AND_TABIX_REFINED_VCF.log \
-		-hold_jid I09_VARIANT_ANNOTATOR_REFINED_$PROJECT_MS \
-	$SCRIPT_DIR/J10_BGZIP_AND_TABIX_REFINED_VCF.sh \
-		$TABIX_DIR \
+	-N J01_CAT_REFINED_VARIANTS_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/J01_CAT_REFINED_VARIANTS.log \
+		-hold_jid $CAT_REFINED_VARIANTS_HOLD_ID \
+	$SCRIPT_DIR/J01_CAT_REFINED_VARIANTS.sh \
+		$JAVA_1_8 \
+		$GATK_DIR \
+		$REF_GENOME \
 		$CORE_PATH \
 		$PROJECT_MS \
 		$PREFIX
@@ -505,12 +519,12 @@ VARIANT_RECALIBRATOR_SNV
 VARIANT_RECALIBRATOR_INDEL
 APPLY_RECALIBRATION_SNV
 APPLY_RECALIBRATION_INDEL
-# BGZIP_AND_TABIX_RECAL_VCF
-CALCULATE_GENOTYPE_POSTERIORS # SHOULD CONVERT TO A SCATTER GATHER
-VARIANT_ANNOTATOR_REFINED # THIS SHOULD REMAIN SCATTERED
-# THERE SHOULD BE A GATHER STEP
+CALCULATE_GENOTYPE_POSTERIORS_SCATTER
+VARIANT_ANNOTATOR_REFINED_SCATTER
+GENERATE_CAT_REFINED_VARIANTS_HOLD_ID
+CAT_REFINED_VARIANTS
+
 # PLACE TO ADD ANNOVAR
-BGZIP_AND_TABIX_REFINED_VCF # THIS SHOULD BE REDUNDANT
 
 ###########################################################################
 #################End of VQSR and Refinement Functions######################
@@ -1108,6 +1122,8 @@ SELECT_PASS_STUDY_ONLY_INDELS
 SELECT_PASS_HAPMAP_ONLY_INDELS
 SELECT_SNVS_ALL_PASS
 SELECT_INDEL_ALL_PASS
+# need to create qc reports, aneuploidy reports and per chr verifybamid reports for the release
+
 
 ##########################################################################
 ######################End of Functions####################################
