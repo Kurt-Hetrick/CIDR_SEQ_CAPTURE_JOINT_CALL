@@ -40,6 +40,7 @@ ExAC=$5
 CORE_PATH=$6
 PROJECT_MS=$7
 PREFIX=$8
+BED_FILE_NAME=$9
 
 START_REFINE_GT=`date '+%s'`
 
@@ -49,7 +50,8 @@ CMD=$CMD' -T CalculateGenotypePosteriors'
 CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 CMD=$CMD' -R '$REF_GENOME
 CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.SNP.INDEL.VQSR.vcf.gz'
-CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.temp.vcf.gz'
+CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.'$BED_FILE_NAME'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.temp.vcf.gz'
+CMD=$CMD' -L '$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_NAME'.bed'
 CMD=$CMD' --supporting '$P3_1KG
 CMD=$CMD' --supporting '$ExAC
 
