@@ -68,21 +68,33 @@ ExAC="/mnt/research/tools/PIPELINE_FILES/GRCh37_aux_files/ExAC.r0.3.sites.vep.vc
 KNOWN_SNPS="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/b37/dbsnp_138.b37.excluding_sites_after_129.vcf"
 VERACODE_CSV="/mnt/linuxtools/CIDRSEQSUITE/Veracode_hg18_hg19.csv"
 
-##########################
-##### PROJECT SET-UP #####
-##########################
+##################################################
+##################################################
+##### JOINT CALLING PROJECT SET-UP ###############
+### WHERE THE MULTI-SAMPLE VCF GETS WRITTEN TO ###
+##################################################
+##################################################
 
-## This checks to see if bed file directory has been created from a previous run.  If so, remove it to not interfere with current run
+## This checks to see if bed file directory has been created from a previous run.
+## If so, remove it to not interfere with current run
+
 if [ -d $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT ]
 then
 	rm -rf $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT
 fi
 
-# MAKE THE FOLLOWING FOLDERS IN THE PROJECT WHERE THE MULTI-SAMPLE VCF IS GOING TO
+############################################################################################
+##### MAKE THE FOLLOWING FOLDERS IN THE PROJECT WHERE THE MULTI-SAMPLE VCF IS GOING TO #####
+############################################################################################
+
 mkdir -p $CORE_PATH/$PROJECT_MS/{LOGS,COMMAND_LINES}
 mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/{BED_FILE_SPLIT,AGGREGATE}
 mkdir -p $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/
 mkdir -p $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE
+
+##################################################
+### FUNCTIONS FOR JOINT CALLING PROJECT SET-UP ###
+##################################################
 
 # grab the reference genome file, dbsnp file and bait bed file for the "project"
 ## !should do a check here to make sure that there is only one record...!
@@ -93,16 +105,56 @@ PROJECT_INFO_ARRAY=(`sed 's/\r//g' $SAMPLE_SHEET \
 	| awk 'BEGIN{FS=","} NR>1 {print $12,$18,$16}' \
 	| sed 's/,/\t/g' \
 	| sort -k 1,1 \
-	| awk '{print "'$PROJECT_MS'",$1,$2,$3}' \
+	| awk '{print $1,$2,$3}' \
 	| sort \
 	| uniq`)
 
-SEQ_PROJECT=${PROJECT_INFO_ARRAY[0]} # same as $PROJECT_MS...
-REF_GENOME=${PROJECT_INFO_ARRAY[1]} # field 12 from the sample sheet
-PROJECT_DBSNP=${PROJECT_INFO_ARRAY[2]} # field 18 from the sample sheet
-PROJECT_BAIT_BED=${PROJECT_INFO_ARRAY[3]} # field 16 from the sample sheet
+# this should be unnecessary
+# SEQ_PROJECT=${PROJECT_INFO_ARRAY[0]} # same as $PROJECT_MS...
+
+REF_GENOME=${PROJECT_INFO_ARRAY[0]} # field 12 from the sample sheet
+PROJECT_DBSNP=${PROJECT_INFO_ARRAY[1]} # field 18 from the sample sheet
+PROJECT_BAIT_BED=${PROJECT_INFO_ARRAY[2]} # field 16 from the sample sheet
 }
 
+# GET RID OF ALL THE COMMON BED FILE EFF-UPS,
+
+FORMAT_AND_SCATTER_BAIT_BED() 
+{
+BED_FILE_PREFIX=(`echo SPLITTED_BED_FILE_`)
+
+# make sure that there is EOF
+# remove CARRIAGE RETURNS
+# remove CHR PREFIXES (THIS IS FOR GRCH37)
+# CONVERT VARIABLE LENGTH WHITESPACE FIELD DELIMETERS TO SINGLE TAB.
+awk 1 $PROJECT_BAIT_BED | sed -r 's/\r//g ; s/chr//g ; s/[[:space:]]+/\t/g' \
+>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed
+
+# SORT TO GRCH37 ORDER
+(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n ; \
+ awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
+ awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
+ awk '$1=="MT"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) \
+>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed
+
+# Determining how many records will be in each mini-bed file.
+# The +1 at the end is to round up the number of records per mini-bed file to ensure all records are captured.
+# So the last mini-bed file will be smaller.
+## IIRC. this statement isn't really true, but I don't feel like figuring it out right now. KNH
+INTERVALS_DIVIDED=`wc -l $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
+	| awk '{print $1"/""'$NUMBER_OF_BED_FILES'"}' \
+	| bc \
+	| awk '{print $0+1}'`
+
+split -l $INTERVALS_DIVIDED -a 4 -d \
+$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
+$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX
+
+# ADD A .bed suffix to all of the now splitted files
+ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX* | awk '{print "mv",$0,$0".bed"}' | bash
+}
+
+# take all of the project/sample combos in the sample sheet and write a g.vcf file path to a *list file
 CREATE_GVCF_LIST()
 {
 # count how many unique sample id's (with project) are in the sample sheet.
@@ -124,48 +176,20 @@ awk 'BEGIN{FS=","} NR>1{print $1,$8}' $SAMPLE_SHEET \
 GVCF_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/'$TOTAL_SAMPLES'.samples.gvcf.list'`)
 }
 
-#################
-
-FORMAT_AND_SCATTER_BAIT_BED() 
-{
-BED_FILE_PREFIX=(`echo SPLITTED_BED_FILE_`)
-
-awk 1 $PROJECT_BAIT_BED | sed -r 's/\r//g ; s/chr//g ; s/[[:space:]]+/\t/g' \
->| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed
-
-(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n ; \
- awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
- awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
- awk '$1=="MT"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) \
->| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed
-
-# Determining how many records will be in each mini-bed file.
-# The +1 at the end is to round up the number of records per mini-bed file to ensure all records are captured.
-# So the last mini-bed file will be smaller.
-## IIRC. this statement isn't really true, but I don't feel like figuring it out right now. KNH
-INTERVALS_DIVIDED=`wc -l $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
-	| awk '{print $1"/""'$NUMBER_OF_BED_FILES'"}' \
-	| bc \
-	| awk '{print $0+1}'`
-
-split -l $INTERVALS_DIVIDED -a 4 -d  $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
-$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX
-
-ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX* | awk '{print "mv",$0,$0".bed"}' | bash
-}
+############################################################
+##### CALL THE ABOVE FUNCTIONS TO SET-UP JOINT CALLING #####
+############################################################
 
 CREATE_PROJECT_INFO_ARRAY
-MAKE_PROJ_DIR_TREE
+# MAKE_PROJ_DIR_TREE # this should not be function at the ms project level
 FORMAT_AND_SCATTER_BAIT_BED
 CREATE_GVCF_LIST
 
-###############################################################################################################
-###############################################################################################################
-###############################################################################################################
-
-############################################################################
-#################Start of Combine Gvcf Functions############################
-############################################################################
+##############################################################################
+##############################################################################
+################# Start of Combine Gvcf Functions ############################
+##############################################################################
+##############################################################################
 
 COMBINE_GVCF()
 {
