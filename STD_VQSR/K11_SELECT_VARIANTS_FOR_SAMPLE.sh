@@ -1,52 +1,68 @@
+#########################################
+##### ---qsub parameter settings--- #####
+###########################################################
+### --THESE ARE OVERWRITTEN IN THE PIPELINE DURING QSUB ###
+###########################################################
+
+# tell sge to execute in bash
 #$ -S /bin/bash
-#$ -q rnd.q,prod.q,test.q
+
+# tell sge to submit any of these queue when available
+#$ -q prod.q,rnd.q
+
+# tell sge that you are in the users current working directory
 #$ -cwd
-#$ -p -1000
+
+# tell sge to export the users environment variables
 #$ -V
 
+# tell sge to submit at this priority setting
+#$ -p -1000
 
-JAVA_1_7=$1
+# tell sge to output both stderr and stdout to the same file
+#$ -j y
+
+#######################################
+##### END QSUB PARAMETER SETTINGS #####
+#######################################
+
+# export all variables, useful to find out what compute node the program was executed on
+set
+
+# INPUT VARIABLES
+
+JAVA_1_8=$1
 GATK_DIR=$2
-KEY=$3
-REF_GENOME=$4
+REF_GENOME=$3
 
-CORE_PATH=$5
-PROJECT=$6
-SM_TAG=$7
-PREFIX=$8
+CORE_PATH=$4
+PROJECT_SAMPLE=$5
+SM_TAG=$6
+PREFIX=$7
 
 START_SELECT_ALL_SAMPLE=`date '+%s'`
 
-mkdir -p $CORE_PATH/$PROJECT/INDEL/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET}
-mkdir -p $CORE_PATH/$PROJECT/SNV/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET}
-mkdir -p $CORE_PATH/$PROJECT/VCF/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET}
-mkdir -p $CORE_PATH/$PROJECT/VCF/RELEASE/FILTERED_ON_BAIT/TABIX
-mkdir -p $CORE_PATH/$PROJECT/REPORTS/CONCORDANCE_MS
-mkdir -p $CORE_PATH/$PROJECT/REPORTS/TI_TV_MS
-
 # Extract out sample, remove non-passing, non-variant
 
-CMD=$JAVA_1_7'/java -jar'
+CMD=$JAVA_1_8'/java -jar'
 CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
 CMD=$CMD' -T SelectVariants'
 CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
-CMD=$CMD' -et NO_ET'
-CMD=$CMD' -K '$KEY
 CMD=$CMD' -R '$REF_GENOME
-CMD=$CMD' -sn '$SM_TAG
+CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_SAMPLE'/MULTI_SAMPLE/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.gz'
+CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_SAMPLE'/VCF/RELEASE/FILTERED_ON_BAIT/'$SM_TAG'_MS_OnBait.vcf.gz'
+CMD=$CMD' --keepOriginalAC'
 CMD=$CMD' -ef'
 CMD=$CMD' -env'
-CMD=$CMD' --keepOriginalAC'
-CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT'/MULTI_SAMPLE/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf'
-CMD=$CMD' -o '$CORE_PATH'/'$PROJECT'/VCF/RELEASE/FILTERED_ON_BAIT/'$SM_TAG'_MS_OnBait.vcf'
+CMD=$CMD' -sn '$SM_TAG
+
+echo $CMD >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".command_lines.txt"
+echo >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".command_lines.txt"
+echo $CMD | bash
 
 END_SELECT_ALL_SAMPLE=`date '+%s'`
 
 HOSTNAME=`hostname`
 
-echo $PROJECT",K01,SELECT_ALL_SAMPLE,"$HOSTNAME","$START_SELECT_ALL_SAMPLE","$END_SELECT_ALL_SAMPLE \
->> $CORE_PATH/$PROJECT/REPORTS/$PROJECT".WALL.CLOCK.TIMES.csv"
-
-echo $CMD >> $CORE_PATH/$PROJECT/command_lines.txt
-echo >> $CORE_PATH/$PROJECT/command_lines.txt
-echo $CMD | bash
+echo $PROJECT_SAMPLE",K01,SELECT_ALL_SAMPLE,"$HOSTNAME","$START_SELECT_ALL_SAMPLE","$END_SELECT_ALL_SAMPLE \
+>> $CORE_PATH/$PROJECT_SAMPLE/REPORTS/$PROJECT_SAMPLE".JOINT.CALL.WALL.CLOCK.TIMES.csv"

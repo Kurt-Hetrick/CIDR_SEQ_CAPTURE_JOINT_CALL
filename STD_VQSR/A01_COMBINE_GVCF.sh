@@ -1,11 +1,14 @@
-# ---qsub parameter settings---
-# --these can be overrode at qsub invocation--
+#########################################
+##### ---qsub parameter settings--- #####
+###########################################################
+### --THESE ARE OVERWRITTEN IN THE PIPELINE DURING QSUB ###
+###########################################################
 
 # tell sge to execute in bash
 #$ -S /bin/bash
 
 # tell sge to submit any of these queue when available
-#$ -q prod.q,rnd.q,test.q
+#$ -q prod.q,rnd.q
 
 # tell sge that you are in the users current working directory
 #$ -cwd
@@ -19,45 +22,48 @@
 # tell sge to output both stderr and stdout to the same file
 #$ -j y
 
-# export all variables, useful to find out what compute node the program was executed on
-# redirecting stderr/stdout to file as a log.
+#######################################
+##### END QSUB PARAMETER SETTINGS #####
+#######################################
 
-JAVA_1_7=$1
+# export all variables, useful to find out what compute node the program was executed on
+set
+
+# INPUT PARAMETERS
+
+JAVA_1_8=$1
 GATK_DIR=$2
 REF_GENOME=$3
-KEY=$4
 
-CORE_PATH=$5
-PROJECT=$6
-GVCF_LIST=$7
-PREFIX=$8
-BED_FILE_NAME=$9
-
-mkdir -p $CORE_PATH/$PROJECT/GVCF/AGGREGATE
-mkdir -p $CORE_PATH/$PROJECT/MULTI_SAMPLE
-mkdir -p $CORE_PATH/$PROJECT/TEMP     
-
+CORE_PATH=$4
+PROJECT_MS=$5
+GVCF_LIST=$6
+PREFIX=$7
+BED_FILE_NAME=$8
 
 START_COMBINE_GVCF=`date '+%s'`
 
-CMD=$JAVA_1_7'/java -jar'
+CMD=$JAVA_1_8'/java -jar'
 CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
 CMD=$CMD' -T CombineGVCFs'
+CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 CMD=$CMD' -R '$REF_GENOME
 CMD=$CMD' --variant '$GVCF_LIST
-CMD=$CMD' -L '$CORE_PATH/$PROJECT/TEMP/BED_FILE_SPLIT/$BED_FILE_NAME'.bed'
-CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
-CMD=$CMD' -et NO_ET'
-CMD=$CMD' -K '$KEY
-CMD=$CMD' -o '$CORE_PATH'/'$PROJECT'/GVCF/AGGREGATE/'$PREFIX'.'$BED_FILE_NAME'.genome.vcf'
+CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/GVCF/AGGREGATE/'$PREFIX'.'$BED_FILE_NAME'.genome.vcf.gz'
+CMD=$CMD' -L '$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_NAME'.bed'
 
-echo $CMD >> $CORE_PATH/$PROJECT/command_lines.txt
-echo >> $CORE_PATH/$PROJECT/command_lines.txt
+echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
 echo $CMD | bash
 
 END_COMBINE_GVCF=`date '+%s'`
 
 HOSTNAME=`hostname`
 
-echo $PROJECT",A01,COMBINE_GVCF,"$HOSTNAME","$START_COMBINE_GVCF","$END_COMBINE_GVCF \
->> $CORE_PATH/$PROJECT/REPORTS/$PROJECT".WALL.CLOCK.TIMES.csv"
+echo $PROJECT_MS",A01,COMBINE_GVCF,"$HOSTNAME","$START_COMBINE_GVCF","$END_COMBINE_GVCF \
+>> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"
+
+# check to see if the index is generated which should send an non-zero exit signal if not.
+# eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
+
+ls $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE/$PREFIX"."$BED_FILE_NAME".genome.vcf.gz.tbi"

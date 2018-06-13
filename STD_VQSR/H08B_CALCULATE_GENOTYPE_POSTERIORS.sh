@@ -1,41 +1,70 @@
+#########################################
+##### ---qsub parameter settings--- #####
+###########################################################
+### --THESE ARE OVERWRITTEN IN THE PIPELINE DURING QSUB ###
+###########################################################
+
+# tell sge to execute in bash
 #$ -S /bin/bash
-#$ -q rnd.q,prod.q,test.q
+
+# tell sge to submit any of these queue when available
+#$ -q prod.q,rnd.q
+
+# tell sge that you are in the users current working directory
 #$ -cwd
+
+# tell sge to export the users environment variables
 #$ -V
+
+# tell sge to submit at this priority setting
 #$ -p -1000
 
-JAVA_1_7=$1
-GATK_DIR_NIGHTLY=$2
-KEY=$3
-REF_GENOME=$4
-P3_1KG=$5
-ExAC=$6
+# tell sge to output both stderr and stdout to the same file
+#$ -j y
 
-CORE_PATH=$7
-PROJECT=$8
-PREFIX=$9
+#######################################
+##### END QSUB PARAMETER SETTINGS #####
+#######################################
+
+# export all variables, useful to find out what compute node the program was executed on
+set
+
+# INPUT PARAMETERS
+
+JAVA_1_8=$1
+GATK_DIR=$2
+REF_GENOME=$3
+P3_1KG=$4
+ExAC=$5
+
+CORE_PATH=$6
+PROJECT_MS=$7
+PREFIX=$8
 
 START_REFINE_GT=`date '+%s'`
 
-CMD=$JAVA_1_7'/java -jar'
-CMD=$CMD' '$GATK_DIR_NIGHTLY'/GenomeAnalysisTK.jar'
+CMD=$JAVA_1_8'/java -jar'
+CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
 CMD=$CMD' -T CalculateGenotypePosteriors'
+CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 CMD=$CMD' -R '$REF_GENOME
-CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT'/MULTI_SAMPLE/'$PREFIX'.HC.SNP.INDEL.VQSR.vcf'
+CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.SNP.INDEL.VQSR.vcf.gz'
+CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.temp.vcf.gz'
 CMD=$CMD' --supporting '$P3_1KG
 CMD=$CMD' --supporting '$ExAC
-CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
-CMD=$CMD' -et NO_ET'
-CMD=$CMD' -K '$KEY
-CMD=$CMD' -o '$CORE_PATH'/'$PROJECT'/TEMP/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.temp.vcf'
+
+echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+echo $CMD | bash
 
 END_REFINE_GT=`date '+%s'`
 
 HOSTNAME=`hostname`
 
-echo $PROJECT",H01,REFINE_GT,"$HOSTNAME","$START_REFINE_GT","$END_REFINE_GT \
->> $CORE_PATH/$PROJECT/REPORTS/$PROJECT".WALL.CLOCK.TIMES.csv"
+echo $PROJECT_MS",H01,REFINE_GT,"$HOSTNAME","$START_REFINE_GT","$END_REFINE_GT \
+>> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"
 
-echo $CMD >> $CORE_PATH/$PROJECT/command_lines.txt
-echo >> $CORE_PATH/$PROJECT/command_lines.txt
-echo $CMD | bash
+# check to see if the index is generated which should send an non-zero exit signal if not.
+# eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
+
+ls $CORE_PATH/$PROJECT_MS/TEMP/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.temp.vcf.gz.tbi"

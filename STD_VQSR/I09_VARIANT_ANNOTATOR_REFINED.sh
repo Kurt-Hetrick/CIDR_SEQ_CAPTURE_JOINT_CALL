@@ -1,47 +1,74 @@
+#########################################
+##### ---qsub parameter settings--- #####
+###########################################################
+### --THESE ARE OVERWRITTEN IN THE PIPELINE DURING QSUB ###
+###########################################################
+
+# tell sge to execute in bash
 #$ -S /bin/bash
-#$ -q rnd.q,prod.q,test.q
+
+# tell sge to submit any of these queue when available
+#$ -q prod.q,rnd.q
+
+# tell sge that you are in the users current working directory
 #$ -cwd
+
+# tell sge to export the users environment variables
 #$ -V
+
+# tell sge to submit at this priority setting
 #$ -p -1000
 
-JAVA_1_7=$1
-GATK_DIR=$2
-KEY=$3
-REF_GENOME=$4
-DBSNP=$5
+# tell sge to output both stderr and stdout to the same file
+#$ -j y
 
-CORE_PATH=$6
-PROJECT=$7
-PREFIX=$8
+#######################################
+##### END QSUB PARAMETER SETTINGS #####
+#######################################
+
+# export all variables, useful to find out what compute node the program was executed on
+set
+
+# INPUT PARAMETERS
+
+JAVA_1_8=$1
+GATK_DIR=$2
+REF_GENOME=$3
+DBSNP=$4
+
+CORE_PATH=$5
+PROJECT_MS=$6
+PREFIX=$7
 
 START_VARIANT_ANNOTATOR_2=`date '+%s'`
 
-CMD=$JAVA_1_7'/java -jar'
+CMD=$JAVA_1_8'/java -jar'
 CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
 CMD=$CMD' -T VariantAnnotator'
+CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 CMD=$CMD' -R '$REF_GENOME
-CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT'/TEMP/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.temp.vcf'
+CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.temp.vcf.gz'
+CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.gz'
 CMD=$CMD' --dbsnp '$DBSNP
-CMD=$CMD' -L '$CORE_PATH'/'$PROJECT'/TEMP/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.temp.vcf'
+CMD=$CMD' -L '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.temp.vcf.gz'
 CMD=$CMD' -A GenotypeSummaries'
 CMD=$CMD' -A GCContent'
 CMD=$CMD' -A VariantType'
 CMD=$CMD' -A HomopolymerRun'
 CMD=$CMD' -A TandemRepeatAnnotator'
-CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
-CMD=$CMD' -et NO_ET'
-CMD=$CMD' -K '$KEY
-CMD=$CMD' -o '$CORE_PATH'/'$PROJECT'/MULTI_SAMPLE/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf'
+
+echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+echo $CMD | bash
 
 END_VARIANT_ANNOTATOR_2=`date '+%s'`
 
 HOSTNAME=`hostname`
 
-echo $PROJECT",I01,VARIANT_ANNOTATOR_2,"$HOSTNAME","$START_VARIANT_ANNOTATOR_2","$END_VARIANT_ANNOTATOR_2 \
->> $CORE_PATH/$PROJECT/REPORTS/$PROJECT".WALL.CLOCK.TIMES.csv"
+echo $PROJECT_MS",I01,VARIANT_ANNOTATOR_2,"$HOSTNAME","$START_VARIANT_ANNOTATOR_2","$END_VARIANT_ANNOTATOR_2 \
+>> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"
 
-echo $CMD >> $CORE_PATH/$PROJECT/command_lines.txt
-echo >> $CORE_PATH/$PROJECT/command_lines.txt
-echo $CMD | bash
+# check to see if the index is generated which should send an non-zero exit signal if not.
+# eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
 
-
+ls $CORE_PATH/$PROJECT_MS_MS/MULTI_SAMPLE/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.gz.tbi"
