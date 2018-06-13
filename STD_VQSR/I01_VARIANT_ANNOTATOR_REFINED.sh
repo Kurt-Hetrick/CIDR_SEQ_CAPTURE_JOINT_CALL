@@ -39,6 +39,7 @@ DBSNP=$4
 CORE_PATH=$5
 PROJECT_MS=$6
 PREFIX=$7
+BED_FILE_NAME=$8
 
 START_VARIANT_ANNOTATOR_2=`date '+%s'`
 
@@ -47,15 +48,10 @@ CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
 CMD=$CMD' -T VariantAnnotator'
 CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 CMD=$CMD' -R '$REF_GENOME
-CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.temp.vcf.gz'
-CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.gz'
-CMD=$CMD' --dbsnp '$DBSNP
-CMD=$CMD' -L '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.temp.vcf.gz'
+CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.'$BED_FILE_NAME'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.temp.vcf.gz'
+CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.'$BED_FILE_NAME'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.gz'
+CMD=$CMD' -L '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.'$BED_FILE_NAME'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.temp.vcf.gz'
 CMD=$CMD' -A GenotypeSummaries'
-CMD=$CMD' -A GCContent'
-CMD=$CMD' -A VariantType'
-CMD=$CMD' -A HomopolymerRun'
-CMD=$CMD' -A TandemRepeatAnnotator'
 
 echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
 echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
