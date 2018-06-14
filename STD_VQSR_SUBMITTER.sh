@@ -51,8 +51,13 @@ SAMTOOLS_0118_DIR="/mnt/linuxtools/SAMTOOLS/samtools-0.1.18"
 	# Becasue I didn't want to go through compiling this yet for version 1.6...I'm hoping that Keith will eventually do a full OS install of RHEL7 instead of his
 	# typical stripped down installations so I don't have to install multiple libraries again
 TABIX_DIR="/mnt/linuxtools/TABIX/tabix-0.2.6"
-CIDR_SEQSUITE_JAVA_DIR="/mnt/linuxtools/JAVA/jre1.7.0_45/bin"
-CIDR_SEQSUITE_6_1_1_DIR="/mnt/linuxtools/CIDRSEQSUITE/6.1.1"
+CIDRSEQSUITE_JAVA_DIR="/mnt/linuxtools/JAVA/jre1.7.0_45/bin"
+CIDRSEQSUITE_6_1_1_DIR="/mnt/linuxtools/CIDRSEQSUITE/6.1.1"
+CIDRSEQSUITE_ANNOVAR_JAVA="/mnt/linuxtools/JAVA/jre1.6.0_25"
+CIDRSEQSUITE_DIR_4_0="/mnt/research/tools/LINUX/CIDRSEQSUITE/Version_4_0"
+# cp -p /u01/home/hling/cidrseqsuite.props.HGMD /mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/STD_VQSR/cidrseqsuite.props
+# 14 June 2018
+CIDRSEQSUITE_PROPS_DIR="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/STD_VQSR"
 
 ##################
 # PIPELINE FILES #
@@ -91,6 +96,8 @@ mkdir -p $CORE_PATH/$PROJECT_MS/{LOGS,COMMAND_LINES}
 mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/{BED_FILE_SPLIT,AGGREGATE}
 mkdir -p $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/
 mkdir -p $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE
+mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/ANNOVAR
+mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX
 
 ##################################################
 ### FUNCTIONS FOR JOINT CALLING PROJECT SET-UP ###
@@ -514,6 +521,31 @@ CAT_REFINED_VARIANTS()
 		$PREFIX
 }
 
+RUN_ANNOVAR()
+{
+	echo \
+	qsub \
+		-S /bin/bash \
+		-cwd \
+		-V \
+		-q $QUEUE_LIST",bigmem.q" \
+		-p $PRIORITY \
+		-j y \
+		-pe slots 5 \
+		-R y \
+		-l mem_free=300G \
+	-N K01_ANNOVAR_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/K01_ANNOVAR.log \
+		-hold_jid J01_CAT_REFINED_VARIANTS_$PROJECT_MS \
+	$SCRIPT_DIR/K01_ANNOVAR.sh \
+		$CIDRSEQSUITE_ANNOVAR_JAVA \
+		$CIDRSEQSUITE_DIR_4_0 \
+		$CIDRSEQSUITE_PROPS_DIR \
+		$CORE_PATH \
+		$PROJECT_MS \
+		$PREFIX
+}
+
 CAT_VARIANTS
 VARIANT_RECALIBRATOR_SNV
 VARIANT_RECALIBRATOR_INDEL
@@ -523,8 +555,7 @@ CALCULATE_GENOTYPE_POSTERIORS_SCATTER
 VARIANT_ANNOTATOR_REFINED_SCATTER
 GENERATE_CAT_REFINED_VARIANTS_HOLD_ID
 CAT_REFINED_VARIANTS
-
-# PLACE TO ADD ANNOVAR
+RUN_ANNOVAR
 
 ###########################################################################
 #################End of VQSR and Refinement Functions######################
@@ -593,28 +624,7 @@ SELECT_PASSING_VARIANTS_PER_SAMPLE()
 		$PREFIX
 }
 
-# THIS IS UNNECESSARY
-# REMOVE
 
-# BGZIP_AND_TABIX_SAMPLE_VCF()
-# {
-# 	echo \
-# 	qsub \
-# 		-S /bin/bash \
-# 		-cwd \
-# 		-V \
-# 		-q $QUEUE_LIST \
-# 		-p $PRIORITY \
-# 		-j y \ 
-# 	-N L12A_BGZIP_AND_TABIX_SAMPLE_VCF_$UNIQUE_ID_SM_TAG \
-# 		-hold_jid K11_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
-# 		-o $CORE_PATH/$PROJECT_SAMPLE/LOGS/L12A_BGZIP_AND_TABIX_SAMPLE_VCF_$SAMPLE.log \
-# 	$SCRIPT_DIR/L12A_BGZIP_AND_TABIX_SAMPLE_VCF.sh \
-# 		$TABIX_DIR \
-# 		$CORE_PATH \
-# 		$PROJECT_SAMPLE \
-# 		$SM_TAG
-# }
 
 PASSING_VARIANTS_ON_TARGET_BY_SAMPLE()
 {
@@ -876,8 +886,8 @@ CONCORDANCE_ON_TARGET_PER_SAMPLE()
 		-o $CORE_PATH/$PROJECT_SAMPLE/LOGS/L12D-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$SAMPLE.log \
 		-hold_jid L12D_PASSING_SNVS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
 	$SCRIPT_DIR/L12D-1_CONCORDANCE_ON_TARGET_PER_SAMPLE.sh \
-		$CIDR_SEQSUITE_JAVA_DIR \
-		$CIDR_SEQSUITE_6_1_1_DIR \
+		$CIDRSEQSUITE_JAVA_DIR \
+		$CIDRSEQSUITE_6_1_1_DIR \
 		$VERACODE_CSV \
 		$CORE_PATH \
 		$PROJECT_SAMPLE \
