@@ -194,11 +194,11 @@ CREATE_PROJECT_INFO_ARRAY
 FORMAT_AND_SCATTER_BAIT_BED
 CREATE_GVCF_LIST
 
-##############################################################################
-##############################################################################
-################# Start of Combine Gvcf Functions ############################
-##############################################################################
-##############################################################################
+#######################################################################
+#######################################################################
+################# Scatter of Joint Calling ############################
+#######################################################################
+#######################################################################
 
 # aggregate all of individual g.vcf into one cohort g.vcf per bed file chunk
 
@@ -296,13 +296,11 @@ do
 	GENERATE_CAT_VARIANTS_HOLD_ID
 done
 
-##############################################################################
-#####################End of Combine Gvcf Functions############################
-##############################################################################
-
-##############################################################################
-##################Start of VQSR and Refinement Functions######################
-##############################################################################
+#########################################################
+#########################################################
+##### VCF Gather and  Genotype Refinement Functions #####
+#########################################################
+#########################################################
 
 # use cat variants to gather up all of the vcf files above into one big file
 # MIGHT WANT TO LOOK INTO GatherVcfs (Picard) here
@@ -438,10 +436,22 @@ APPLY_RECALIBRATION_INDEL()
 		$PREFIX
 }
 
+CAT_VARIANTS
+VARIANT_RECALIBRATOR_SNV
+VARIANT_RECALIBRATOR_INDEL
+APPLY_RECALIBRATION_SNV
+APPLY_RECALIBRATION_INDEL
+
+##################################################
+##################################################
+##### SCATTER FOR GENOTYPE REFINEMENT ############
+##################################################
+##################################################
+
 # do a scatter of genotype refinement using the same chunked bed files use to the g.vcf aggregation
 # external priors used are the final 1kg genomes dataset, exac v0.3, no family priors used (no ped file)
 
-CALCULATE_GENOTYPE_POSTERIORS_SCATTER()
+CALCULATE_GENOTYPE_POSTERIORS()
 {
 	echo \
 	qsub \
@@ -468,7 +478,7 @@ CALCULATE_GENOTYPE_POSTERIORS_SCATTER()
 
 # recalculate the genotype summaries for the now refined genotypes for each vcf chunk
 
-VARIANT_ANNOTATOR_REFINED_SCATTER()
+VARIANT_ANNOTATOR_REFINED()
 {
 	echo \
 	qsub \
@@ -496,6 +506,25 @@ GENERATE_CAT_REFINED_VARIANTS_HOLD_ID()
 {
 	CAT_REFINED_VARIANTS_HOLD_ID=$CAT_REFINED_VARIANTS_HOLD_ID'I01_VARIANT_ANNOTATOR_REFINED_'$PROJECT_MS'_'$BED_FILE_NAME','
 }
+
+# for each chunk of the original bed file, do combine gvcfs, then genotype gvcfs, then variant annotator
+# then generate a string of all the variant annotator job names submitted
+
+for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/SPLITTED_BED_FILE*);
+do
+	BED_FILE_NAME=$(basename $BED_FILE .bed)
+	CALCULATE_GENOTYPE_POSTERIORS
+	VARIANT_ANNOTATOR_REFINED
+	GENERATE_CAT_VARIANTS_HOLD_ID
+done
+
+#########################################################
+#########################################################
+##### GT Refined VCF Gather #############################
+##### Multi-Sample VCF ANNOVAR ##########################
+##### VARIANT SUMMARY STATS VCF BREAKOUTS ###############
+#########################################################
+#########################################################
 
 # use cat variants to gather up all of the gt refined, reannotated vcf files above into one big file
 
@@ -546,21 +575,242 @@ RUN_ANNOVAR()
 		$PREFIX
 }
 
-CAT_VARIANTS
-VARIANT_RECALIBRATOR_SNV
-VARIANT_RECALIBRATOR_INDEL
-APPLY_RECALIBRATION_SNV
-APPLY_RECALIBRATION_INDEL
-CALCULATE_GENOTYPE_POSTERIORS_SCATTER
-VARIANT_ANNOTATOR_REFINED_SCATTER
-GENERATE_CAT_REFINED_VARIANTS_HOLD_ID
+# generate separate sample lists for hapmap samples and study samples
+# these are to do breakouts of the refined multi-sample vcf for Hua's variant summary stats.
+
+GENERATE_STUDY_HAPMAP_SAMPLE_LISTS () 
+{
+	HAP_MAP_SAMPLE_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'_hapmap_samples.list'`)
+	
+	MENDEL_SAMPLE_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'_study_samples.list'`)
+	
+	echo \
+		qsub \
+			-S /bin/bash \
+ 			-cwd \
+ 			-V \
+ 			-q $QUEUE_LIST \
+ 			-p $PRIORITY \
+ 			-j y \
+		-N J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+			-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS.log' \
+ 			-hold_jid I09_VARIANT_ANNOTATOR_REFINED_$PROJECT_MS \
+		$SCRIPT_DIR/J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS.sh \
+			$CORE_PATH \
+			$PROJECT_MS \
+			$PREFIX
+}
+
 CAT_REFINED_VARIANTS
 RUN_ANNOVAR
+GENERATE_STUDY_HAPMAP_SAMPLE_LISTS
 
 ###########################################################################
 #################End of VQSR and Refinement Functions######################
 ###########################################################################
 #
+
+##########################################################################
+##### BREAKOUTS FOR VARIANT SUMMARY STATS ################################
+##########################################################################
+
+
+
+
+SELECT_SNVS_ALL () 
+{
+	echo \
+	 qsub \
+		-S /bin/bash \
+ 		-cwd \
+ 		-V \
+ 		-q $QUEUE_LIST \
+ 		-p $PRIORITY \
+ 		-j y \
+	-N J10B_SELECT_SNPS_FOR_ALL_SAMPLES_$PROJECT_MS \
+	 	-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10B_SELECT_SNPS_FOR_ALL_SAMPLES.log' \
+	 	-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+	$SCRIPT_DIR/J10B_SELECT_ALL_SAMPLES_SNP.sh \
+	 	$JAVA_1_8 \
+	 	$GATK_DIR \
+	 	$REF_GENOME \
+	 	$CORE_PATH \
+	 	$PROJECT_MS \
+	 	$PREFIX
+}
+
+SELECT_PASS_STUDY_ONLY_SNP () 
+{
+	echo \
+	qsub \
+		-S /bin/bash \
+ 		-cwd \
+ 		-V \
+ 		-q $QUEUE_LIST \
+ 		-p $PRIORITY \
+ 		-j y \
+	-N J10C_SELECT_PASS_STUDY_ONLY_SNP_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10C_SELECT_PASS_STUDY_ONLY_SNP.log' \	
+		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+	$SCRIPT_DIR/J10C_SELECT_PASS_STUDY_ONLY_SNP.sh \
+		$JAVA_1_8 \
+		$GATK_DIR \
+		$REF_GENOME \
+	 	$CORE_PATH \
+	 	$PROJECT_MS \
+	 	$PREFIX \
+	 	$HAP_MAP_SAMPLE_LIST
+}
+
+SELECT_PASS_HAPMAP_ONLY_SNP ()
+{
+	echo \
+	qsub \
+		-S /bin/bash \
+ 		-cwd \
+ 		-V \
+ 		-q $QUEUE_LIST \
+ 		-p $PRIORITY \
+ 		-j y \
+	-N J10D_SELECT_PASS_HAPMAP_ONLY_SNP_$PROJECT_MS \
+	 	-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10D_SELECT_PASS_HAPMAP_ONLY_SNP.log' \	
+		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+	$SCRIPT_DIR/J10D_SELECT_PASS_HAPMAP_ONLY_SNP.sh \
+		$JAVA_1_8 \
+		$GATK_DIR \
+		$REF_GENOME \
+	 	$CORE_PATH \
+	 	$PROJECT_MS \
+	 	$PREFIX \
+	 	$MENDEL_SAMPLE_LIST
+}
+
+SELECT_INDELS_ALL ()
+{
+	echo \
+	qsub \
+		-S /bin/bash \
+ 		-cwd \
+ 		-V \
+ 		-q $QUEUE_LIST \
+ 		-p $PRIORITY \
+ 		-j y \
+	-N J10E_SELECT_INDELS_FOR_ALL_SAMPLES_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10E_SELECT_INDELS_FOR_ALL_SAMPLES.log' \	
+		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+	$SCRIPT_DIR/J10E_SELECT_ALL_SAMPLES_INDELS.sh \
+		$JAVA_1_8 \
+		$GATK_DIR \
+		$REF_GENOME \
+	 	$CORE_PATH \
+	 	$PROJECT_MS \
+	 	$PREFIX
+}
+
+SELECT_PASS_STUDY_ONLY_INDELS ()
+{
+	echo \
+	qsub \
+		-S /bin/bash \
+ 		-cwd \
+ 		-V \
+ 		-q $QUEUE_LIST \
+ 		-p $PRIORITY \
+ 		-j y \
+	-N J10F_SELECT_PASS_STUDY_ONLY_INDEL_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10F_SELECT_PASS_STUDY_ONLY_INDEL.log' \	
+		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+	$SCRIPT_DIR/J10F_SELECT_PASS_STUDY_ONLY_INDEL.sh \
+		$JAVA_1_8 \
+		$GATK_DIR \
+		$REF_GENOME \
+	 	$CORE_PATH \
+	 	$PROJECT_MS \
+	 	$PREFIX \
+	 	$HAP_MAP_SAMPLE_LIST
+}
+
+SELECT_PASS_HAPMAP_ONLY_INDELS ()
+{
+	echo \
+	qsub \
+		-S /bin/bash \
+ 		-cwd \
+ 		-V \
+ 		-q $QUEUE_LIST \
+ 		-p $PRIORITY \
+ 		-j y \
+	-N J10G_SELECT_PASS_HAPMAP_ONLY_INDEL_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10G_SELECT_PASS_HAPMAP_ONLY_INDEL.log' \
+		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+	$SCRIPT_DIR/J10G_SELECT_PASS_HAPMAP_ONLY_INDEL.sh \
+		$JAVA_1_8 \
+		$GATK_DIR \
+		$REF_GENOME \
+	 	$CORE_PATH \
+	 	$PROJECT_MS \
+	 	$PREFIX \
+	 	$MENDEL_SAMPLE_LIST
+}
+
+
+SELECT_SNVS_ALL_PASS () 
+{
+	echo \
+	qsub \
+		-S /bin/bash \
+ 		-cwd \
+ 		-V \
+ 		-q $QUEUE_LIST \
+ 		-p $PRIORITY \
+ 		-j y \
+	-N J10H_SELECT_SNP_FOR_ALL_SAMPLES_PASS_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10H_SELECT_SNP_FOR_ALL_SAMPLES_PASS.log' \	
+		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+	$SCRIPT_DIR/J10H_SELECT_ALL_SAMPLES_SNP_PASS.sh \
+		$JAVA_1_8 \
+		$GATK_DIR \
+		$REF_GENOME \
+		$CORE_PATH \
+		$PROJECT_MS \
+		$PREFIX
+}
+
+SELECT_INDEL_ALL_PASS () 
+{
+	echo \
+	qsub \
+		-S /bin/bash \
+ 		-cwd \
+ 		-V \
+ 		-q $QUEUE_LIST \
+ 		-p $PRIORITY \
+ 		-j y \
+	-N J10I_SELECT_INDEL_FOR_ALL_SAMPLES_PASS_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10H_SELECT_INDEL_FOR_ALL_SAMPLES_PASS.log' \		
+		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+	$SCRIPT_DIR/J10I_SELECT_ALL_SAMPLES_INDEL_PASS.sh \
+		$JAVA_1_8 \
+		$GATK_DIR \
+		$REF_GENOME \
+		$CORE_PATH \
+		$PROJECT_MS \
+		$PREFIX
+}
+
+GENERATE_STUDY_HAPMAP_SAMPLE_LISTS
+SELECT_SNVS_ALL
+SELECT_PASS_STUDY_ONLY_SNP
+SELECT_PASS_HAPMAP_ONLY_SNP
+SELECT_INDELS_ALL
+SELECT_PASS_STUDY_ONLY_INDELS
+SELECT_PASS_HAPMAP_ONLY_INDELS
+SELECT_SNVS_ALL_PASS
+SELECT_INDEL_ALL_PASS
+# need to create qc reports, aneuploidy reports and per chr verifybamid reports for the release
+
+
+
 ###########################################################################
 ###################Start of Vcf Splitter Functions#########################
 ###########################################################################
@@ -590,13 +840,13 @@ CREATE_SAMPLE_INFO_ARRAY ()
 MAKE_PROJ_DIR_TREE ()
 {
 	mkdir -p \
-	$CORE_PATH/$SEQ_PROJECT/{TEMP,LOGS,COMMAND_LINES} \
-	$CORE_PATH/$SEQ_PROJECT/INDEL/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET} \
-	$CORE_PATH/$SEQ_PROJECT/SNV/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET} \
-	$CORE_PATH/$SEQ_PROJECT/MIXED/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET} \
-	$CORE_PATH/$SEQ_PROJECT/VCF/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET} \
-	$CORE_PATH/$SEQ_PROJECT/REPORTS/{ANNOVAR,QC_REPORT_PREP_MS,QC_REPORTS,LAB_PREP_REPORTS,TI_TV_MS,CONCORDANCE_MS} \
-	$CORE_PATH/$SEQ_PROJECT/TEMP/$SM_TAG
+	$CORE_PATH/$PROJECT_SAMPLE/{TEMP,LOGS,COMMAND_LINES} \
+	$CORE_PATH/$PROJECT_SAMPLE/INDEL/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET} \
+	$CORE_PATH/$PROJECT_SAMPLE/SNV/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET} \
+	$CORE_PATH/$PROJECT_SAMPLE/MIXED/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET} \
+	$CORE_PATH/$PROJECT_SAMPLE/VCF/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET} \
+	$CORE_PATH/$PROJECT_SAMPLE/REPORTS/{ANNOVAR,QC_REPORT_PREP_MS,QC_REPORTS,LAB_PREP_REPORTS,TI_TV_MS,CONCORDANCE_MS} \
+	$CORE_PATH/$PROJECT_SAMPLE/TEMP/$SM_TAG
 }
 
 
@@ -898,8 +1148,8 @@ CONCORDANCE_ON_TARGET_PER_SAMPLE()
 for SAMPLE in $(awk 'BEGIN {FS=","} NR>1 {print $8}' $SAMPLE_SHEET | sort | uniq )
 do
 	CREATE_SAMPLE_INFO_ARRAY
+	MAKE_PROJ_DIR_TREE
 	SELECT_PASSING_VARIANTS_PER_SAMPLE
-	# BGZIP_AND_TABIX_SAMPLE_VCF
 	PASSING_VARIANTS_ON_TARGET_BY_SAMPLE
 	PASSING_SNVS_ON_BAIT_BY_SAMPLE
 	PASSING_SNVS_ON_TARGET_BY_SAMPLE
@@ -913,226 +1163,6 @@ do
 	TITV_NOVEL
 	CONCORDANCE_ON_TARGET_PER_SAMPLE
 done
-
-##########################################################################
-##### BREAKOUTS FOR VARIANT SUMMARY STATS ################################
-##########################################################################
-
-GENERATE_STUDY_HAPMAP_SAMPLE_LISTS () 
-{
-	HAP_MAP_SAMPLE_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'_hapmap_samples.list'`)
-	
-	MENDEL_SAMPLE_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'_study_samples.list'`)
-	
-	echo \
-		qsub \
-			-S /bin/bash \
- 			-cwd \
- 			-V \
- 			-q $QUEUE_LIST \
- 			-p $PRIORITY \
- 			-j y \
-		-N J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
-			-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS.log' \
- 			-hold_jid I09_VARIANT_ANNOTATOR_REFINED_$PROJECT_MS \
-		$SCRIPT_DIR/J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS.sh \
-			$CORE_PATH \
-			$PROJECT_MS \
-			$PREFIX
-}
-
-
-SELECT_SNVS_ALL () 
-{
-	echo \
-	 qsub \
-		-S /bin/bash \
- 		-cwd \
- 		-V \
- 		-q $QUEUE_LIST \
- 		-p $PRIORITY \
- 		-j y \
-	-N J10B_SELECT_SNPS_FOR_ALL_SAMPLES_$PROJECT_MS \
-	 	-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10B_SELECT_SNPS_FOR_ALL_SAMPLES.log' \
-	 	-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
-	$SCRIPT_DIR/J10B_SELECT_ALL_SAMPLES_SNP.sh \
-	 	$JAVA_1_8 \
-	 	$GATK_DIR \
-	 	$REF_GENOME \
-	 	$CORE_PATH \
-	 	$PROJECT_MS \
-	 	$PREFIX
-}
-
-SELECT_PASS_STUDY_ONLY_SNP () 
-{
-	echo \
-	qsub \
-		-S /bin/bash \
- 		-cwd \
- 		-V \
- 		-q $QUEUE_LIST \
- 		-p $PRIORITY \
- 		-j y \
-	-N J10C_SELECT_PASS_STUDY_ONLY_SNP_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10C_SELECT_PASS_STUDY_ONLY_SNP.log' \	
-		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
-	$SCRIPT_DIR/J10C_SELECT_PASS_STUDY_ONLY_SNP.sh \
-		$JAVA_1_8 \
-		$GATK_DIR \
-		$REF_GENOME \
-	 	$CORE_PATH \
-	 	$PROJECT_MS \
-	 	$PREFIX \
-	 	$HAP_MAP_SAMPLE_LIST
-}
-
-SELECT_PASS_HAPMAP_ONLY_SNP ()
-{
-	echo \
-	qsub \
-		-S /bin/bash \
- 		-cwd \
- 		-V \
- 		-q $QUEUE_LIST \
- 		-p $PRIORITY \
- 		-j y \
-	-N J10D_SELECT_PASS_HAPMAP_ONLY_SNP_$PROJECT_MS \
-	 	-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10D_SELECT_PASS_HAPMAP_ONLY_SNP.log' \	
-		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
-	$SCRIPT_DIR/J10D_SELECT_PASS_HAPMAP_ONLY_SNP.sh \
-		$JAVA_1_8 \
-		$GATK_DIR \
-		$REF_GENOME \
-	 	$CORE_PATH \
-	 	$PROJECT_MS \
-	 	$PREFIX \
-	 	$MENDEL_SAMPLE_LIST
-}
-
-SELECT_INDELS_ALL ()
-{
-	echo \
-	qsub \
-		-S /bin/bash \
- 		-cwd \
- 		-V \
- 		-q $QUEUE_LIST \
- 		-p $PRIORITY \
- 		-j y \
-	-N J10E_SELECT_INDELS_FOR_ALL_SAMPLES_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10E_SELECT_INDELS_FOR_ALL_SAMPLES.log' \	
-		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
-	$SCRIPT_DIR/J10E_SELECT_ALL_SAMPLES_INDELS.sh \
-		$JAVA_1_8 \
-		$GATK_DIR \
-		$REF_GENOME \
-	 	$CORE_PATH \
-	 	$PROJECT_MS \
-	 	$PREFIX
-}
-
-SELECT_PASS_STUDY_ONLY_INDELS ()
-{
-	echo \
-	qsub \
-		-S /bin/bash \
- 		-cwd \
- 		-V \
- 		-q $QUEUE_LIST \
- 		-p $PRIORITY \
- 		-j y \
-	-N J10F_SELECT_PASS_STUDY_ONLY_INDEL_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10F_SELECT_PASS_STUDY_ONLY_INDEL.log' \	
-		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
-	$SCRIPT_DIR/J10F_SELECT_PASS_STUDY_ONLY_INDEL.sh \
-		$JAVA_1_8 \
-		$GATK_DIR \
-		$REF_GENOME \
-	 	$CORE_PATH \
-	 	$PROJECT_MS \
-	 	$PREFIX \
-	 	$HAP_MAP_SAMPLE_LIST
-}
-
-SELECT_PASS_HAPMAP_ONLY_INDELS ()
-{
-	echo \
-	qsub \
-		-S /bin/bash \
- 		-cwd \
- 		-V \
- 		-q $QUEUE_LIST \
- 		-p $PRIORITY \
- 		-j y \
-	-N J10G_SELECT_PASS_HAPMAP_ONLY_INDEL_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10G_SELECT_PASS_HAPMAP_ONLY_INDEL.log' \
-		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
-	$SCRIPT_DIR/J10G_SELECT_PASS_HAPMAP_ONLY_INDEL.sh \
-		$JAVA_1_8 \
-		$GATK_DIR \
-		$REF_GENOME \
-	 	$CORE_PATH \
-	 	$PROJECT_MS \
-	 	$PREFIX \
-	 	$MENDEL_SAMPLE_LIST
-}
-
-
-SELECT_SNVS_ALL_PASS () 
-{
-	echo \
-	qsub \
-		-S /bin/bash \
- 		-cwd \
- 		-V \
- 		-q $QUEUE_LIST \
- 		-p $PRIORITY \
- 		-j y \
-	-N J10H_SELECT_SNP_FOR_ALL_SAMPLES_PASS_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10H_SELECT_SNP_FOR_ALL_SAMPLES_PASS.log' \	
-		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
-	$SCRIPT_DIR/J10H_SELECT_ALL_SAMPLES_SNP_PASS.sh \
-		$JAVA_1_8 \
-		$GATK_DIR \
-		$REF_GENOME \
-		$CORE_PATH \
-		$PROJECT_MS \
-		$PREFIX
-}
-
-SELECT_INDEL_ALL_PASS () 
-{
-	echo \
-	qsub \
-		-S /bin/bash \
- 		-cwd \
- 		-V \
- 		-q $QUEUE_LIST \
- 		-p $PRIORITY \
- 		-j y \
-	-N J10I_SELECT_INDEL_FOR_ALL_SAMPLES_PASS_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10H_SELECT_INDEL_FOR_ALL_SAMPLES_PASS.log' \		
-		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
-	$SCRIPT_DIR/J10I_SELECT_ALL_SAMPLES_INDEL_PASS.sh \
-		$JAVA_1_8 \
-		$GATK_DIR \
-		$REF_GENOME \
-		$CORE_PATH \
-		$PROJECT_MS \
-		$PREFIX
-}
-
-GENERATE_STUDY_HAPMAP_SAMPLE_LISTS
-SELECT_SNVS_ALL
-SELECT_PASS_STUDY_ONLY_SNP
-SELECT_PASS_HAPMAP_ONLY_SNP
-SELECT_INDELS_ALL
-SELECT_PASS_STUDY_ONLY_INDELS
-SELECT_PASS_HAPMAP_ONLY_INDELS
-SELECT_SNVS_ALL_PASS
-SELECT_INDEL_ALL_PASS
-# need to create qc reports, aneuploidy reports and per chr verifybamid reports for the release
 
 
 ##########################################################################
