@@ -550,6 +550,7 @@ CAT_REFINED_VARIANTS()
 		$PREFIX
 }
 
+# run annovar on the final gt refined vcf file
 RUN_ANNOVAR()
 {
 	echo \
@@ -575,14 +576,20 @@ RUN_ANNOVAR()
 		$PREFIX
 }
 
-# generate separate sample lists for hapmap samples and study samples
-# these are to do breakouts of the refined multi-sample vcf for Hua's variant summary stats.
+#################################################################################################
+### generate separate sample lists for hapmap samples and study samples #########################
+### these are to do breakouts of the refined multi-sample vcf for Hua's variant summary stats ###
+#################################################################################################
 
+# generate list files by parsing the header of the final ms vcf file
 GENERATE_STUDY_HAPMAP_SAMPLE_LISTS () 
 {
 	HAP_MAP_SAMPLE_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'_hapmap_samples.list'`)
 	
 	MENDEL_SAMPLE_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'_study_samples.list'`)
+	
+	# technically don't have to wait on the gather to happen to do this, but for simplicity sake...
+	# if performance becomes an issue then can revisit
 	
 	echo \
 		qsub \
@@ -592,31 +599,16 @@ GENERATE_STUDY_HAPMAP_SAMPLE_LISTS ()
  			-q $QUEUE_LIST \
  			-p $PRIORITY \
  			-j y \
-		-N J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
-			-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS.log' \
- 			-hold_jid I09_VARIANT_ANNOTATOR_REFINED_$PROJECT_MS \
-		$SCRIPT_DIR/J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS.sh \
+		-N K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+			-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS.log' \
+ 			-hold_jid J01_CAT_REFINED_VARIANTS_$PROJECT_MS \
+		$SCRIPT_DIR/K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS.sh \
 			$CORE_PATH \
 			$PROJECT_MS \
 			$PREFIX
 }
 
-CAT_REFINED_VARIANTS
-RUN_ANNOVAR
-GENERATE_STUDY_HAPMAP_SAMPLE_LISTS
-
-###########################################################################
-#################End of VQSR and Refinement Functions######################
-###########################################################################
-#
-
-##########################################################################
-##### BREAKOUTS FOR VARIANT SUMMARY STATS ################################
-##########################################################################
-
-
-
-
+# select all the snp sites
 SELECT_SNVS_ALL () 
 {
 	echo \
@@ -627,9 +619,9 @@ SELECT_SNVS_ALL ()
  		-q $QUEUE_LIST \
  		-p $PRIORITY \
  		-j y \
-	-N J10B_SELECT_SNPS_FOR_ALL_SAMPLES_$PROJECT_MS \
-	 	-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10B_SELECT_SNPS_FOR_ALL_SAMPLES.log' \
-	 	-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+	-N L01_SELECT_SNPS_FOR_ALL_SAMPLES_$PROJECT_MS \
+	 	-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_L01_SELECT_SNPS_FOR_ALL_SAMPLES.log' \
+	 	-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 	$SCRIPT_DIR/J10B_SELECT_ALL_SAMPLES_SNP.sh \
 	 	$JAVA_1_8 \
 	 	$GATK_DIR \
@@ -639,6 +631,7 @@ SELECT_SNVS_ALL ()
 	 	$PREFIX
 }
 
+# select only passing snp sites that are polymorphic for the study samples
 SELECT_PASS_STUDY_ONLY_SNP () 
 {
 	echo \
@@ -649,10 +642,10 @@ SELECT_PASS_STUDY_ONLY_SNP ()
  		-q $QUEUE_LIST \
  		-p $PRIORITY \
  		-j y \
-	-N J10C_SELECT_PASS_STUDY_ONLY_SNP_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10C_SELECT_PASS_STUDY_ONLY_SNP.log' \	
-		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
-	$SCRIPT_DIR/J10C_SELECT_PASS_STUDY_ONLY_SNP.sh \
+	-N L02_SELECT_PASS_STUDY_ONLY_SNP_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_L02_SELECT_PASS_STUDY_ONLY_SNP.log' \	
+		-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+	$SCRIPT_DIR/L02_SELECT_PASS_STUDY_ONLY_SNP.sh \
 		$JAVA_1_8 \
 		$GATK_DIR \
 		$REF_GENOME \
@@ -662,6 +655,7 @@ SELECT_PASS_STUDY_ONLY_SNP ()
 	 	$HAP_MAP_SAMPLE_LIST
 }
 
+# select only passing snp sites that are polymorphic for the hapmap samples
 SELECT_PASS_HAPMAP_ONLY_SNP ()
 {
 	echo \
@@ -672,10 +666,10 @@ SELECT_PASS_HAPMAP_ONLY_SNP ()
  		-q $QUEUE_LIST \
  		-p $PRIORITY \
  		-j y \
-	-N J10D_SELECT_PASS_HAPMAP_ONLY_SNP_$PROJECT_MS \
-	 	-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10D_SELECT_PASS_HAPMAP_ONLY_SNP.log' \	
-		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
-	$SCRIPT_DIR/J10D_SELECT_PASS_HAPMAP_ONLY_SNP.sh \
+	-N L03_SELECT_PASS_HAPMAP_ONLY_SNP_$PROJECT_MS \
+	 	-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_L03_SELECT_PASS_HAPMAP_ONLY_SNP.log' \	
+		-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+	$SCRIPT_DIR/L03_SELECT_PASS_HAPMAP_ONLY_SNP.sh \
 		$JAVA_1_8 \
 		$GATK_DIR \
 		$REF_GENOME \
@@ -685,6 +679,7 @@ SELECT_PASS_HAPMAP_ONLY_SNP ()
 	 	$MENDEL_SAMPLE_LIST
 }
 
+# select all the indel (and mixed) sites
 SELECT_INDELS_ALL ()
 {
 	echo \
@@ -695,10 +690,10 @@ SELECT_INDELS_ALL ()
  		-q $QUEUE_LIST \
  		-p $PRIORITY \
  		-j y \
-	-N J10E_SELECT_INDELS_FOR_ALL_SAMPLES_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10E_SELECT_INDELS_FOR_ALL_SAMPLES.log' \	
-		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
-	$SCRIPT_DIR/J10E_SELECT_ALL_SAMPLES_INDELS.sh \
+	-N L04_SELECT_INDELS_FOR_ALL_SAMPLES_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_L04_SELECT_INDELS_FOR_ALL_SAMPLES.log' \	
+		-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+	$SCRIPT_DIR/L04_SELECT_ALL_SAMPLES_INDELS.sh \
 		$JAVA_1_8 \
 		$GATK_DIR \
 		$REF_GENOME \
@@ -707,6 +702,7 @@ SELECT_INDELS_ALL ()
 	 	$PREFIX
 }
 
+# select only passing indel/mixed sites that are polymorphic for the study samples
 SELECT_PASS_STUDY_ONLY_INDELS ()
 {
 	echo \
@@ -717,10 +713,10 @@ SELECT_PASS_STUDY_ONLY_INDELS ()
  		-q $QUEUE_LIST \
  		-p $PRIORITY \
  		-j y \
-	-N J10F_SELECT_PASS_STUDY_ONLY_INDEL_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10F_SELECT_PASS_STUDY_ONLY_INDEL.log' \	
-		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
-	$SCRIPT_DIR/J10F_SELECT_PASS_STUDY_ONLY_INDEL.sh \
+	-N L05_SELECT_PASS_STUDY_ONLY_INDEL_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_L05_SELECT_PASS_STUDY_ONLY_INDEL.log' \	
+		-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+	$SCRIPT_DIR/L05_SELECT_PASS_STUDY_ONLY_INDEL.sh \
 		$JAVA_1_8 \
 		$GATK_DIR \
 		$REF_GENOME \
@@ -730,6 +726,7 @@ SELECT_PASS_STUDY_ONLY_INDELS ()
 	 	$HAP_MAP_SAMPLE_LIST
 }
 
+# select only passing indel/mixed sites that are polymorphic for the hapmap samples
 SELECT_PASS_HAPMAP_ONLY_INDELS ()
 {
 	echo \
@@ -740,10 +737,10 @@ SELECT_PASS_HAPMAP_ONLY_INDELS ()
  		-q $QUEUE_LIST \
  		-p $PRIORITY \
  		-j y \
-	-N J10G_SELECT_PASS_HAPMAP_ONLY_INDEL_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10G_SELECT_PASS_HAPMAP_ONLY_INDEL.log' \
-		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
-	$SCRIPT_DIR/J10G_SELECT_PASS_HAPMAP_ONLY_INDEL.sh \
+	-N L06_SELECT_PASS_HAPMAP_ONLY_INDEL_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_L06_SELECT_PASS_HAPMAP_ONLY_INDEL.log' \
+		-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+	$SCRIPT_DIR/L06_SELECT_PASS_HAPMAP_ONLY_INDEL.sh \
 		$JAVA_1_8 \
 		$GATK_DIR \
 		$REF_GENOME \
@@ -753,7 +750,7 @@ SELECT_PASS_HAPMAP_ONLY_INDELS ()
 	 	$MENDEL_SAMPLE_LIST
 }
 
-
+# select all passing snp sites
 SELECT_SNVS_ALL_PASS () 
 {
 	echo \
@@ -764,10 +761,10 @@ SELECT_SNVS_ALL_PASS ()
  		-q $QUEUE_LIST \
  		-p $PRIORITY \
  		-j y \
-	-N J10H_SELECT_SNP_FOR_ALL_SAMPLES_PASS_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10H_SELECT_SNP_FOR_ALL_SAMPLES_PASS.log' \	
-		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
-	$SCRIPT_DIR/J10H_SELECT_ALL_SAMPLES_SNP_PASS.sh \
+	-N L07_SELECT_SNP_FOR_ALL_SAMPLES_PASS_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_L07_SELECT_SNP_FOR_ALL_SAMPLES_PASS.log' \	
+		-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+	$SCRIPT_DIR/L07_SELECT_ALL_SAMPLES_SNP_PASS.sh \
 		$JAVA_1_8 \
 		$GATK_DIR \
 		$REF_GENOME \
@@ -776,6 +773,7 @@ SELECT_SNVS_ALL_PASS ()
 		$PREFIX
 }
 
+# select all passing indel/mixed sites
 SELECT_INDEL_ALL_PASS () 
 {
 	echo \
@@ -786,10 +784,10 @@ SELECT_INDEL_ALL_PASS ()
  		-q $QUEUE_LIST \
  		-p $PRIORITY \
  		-j y \
-	-N J10I_SELECT_INDEL_FOR_ALL_SAMPLES_PASS_$PROJECT_MS \
-		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_J10H_SELECT_INDEL_FOR_ALL_SAMPLES_PASS.log' \		
-		-hold_jid J10_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
-	$SCRIPT_DIR/J10I_SELECT_ALL_SAMPLES_INDEL_PASS.sh \
+	-N L08_SELECT_INDEL_FOR_ALL_SAMPLES_PASS_$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_L08_SELECT_INDEL_FOR_ALL_SAMPLES_PASS.log' \		
+		-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+	$SCRIPT_DIR/L08_SELECT_ALL_SAMPLES_INDEL_PASS.sh \
 		$JAVA_1_8 \
 		$GATK_DIR \
 		$REF_GENOME \
@@ -798,6 +796,8 @@ SELECT_INDEL_ALL_PASS ()
 		$PREFIX
 }
 
+CAT_REFINED_VARIANTS
+RUN_ANNOVAR
 GENERATE_STUDY_HAPMAP_SAMPLE_LISTS
 SELECT_SNVS_ALL
 SELECT_PASS_STUDY_ONLY_SNP
@@ -807,13 +807,12 @@ SELECT_PASS_STUDY_ONLY_INDELS
 SELECT_PASS_HAPMAP_ONLY_INDELS
 SELECT_SNVS_ALL_PASS
 SELECT_INDEL_ALL_PASS
-# need to create qc reports, aneuploidy reports and per chr verifybamid reports for the release
 
-
-
-###########################################################################
-###################Start of Vcf Splitter Functions#########################
-###########################################################################
+#######################################################################
+#######################################################################
+################### Start of Sample Breakouts #########################
+#######################################################################
+#######################################################################
 
 CREATE_SAMPLE_INFO_ARRAY ()
 {
@@ -1168,3 +1167,5 @@ done
 ##########################################################################
 ######################End of Functions####################################
 ##########################################################################
+
+# need to create qc reports, aneuploidy reports and per chr verifybamid reports for the release
