@@ -59,6 +59,8 @@ CIDRSEQSUITE_DIR_4_0="/mnt/research/tools/LINUX/CIDRSEQSUITE/Version_4_0"
 # 14 June 2018
 CIDRSEQSUITE_PROPS_DIR="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/STD_VQSR"
 CIDRSEQSUITE_7_5_0_DIR="/mnt/research/tools/LINUX/CIDRSEQSUITE/7.5.0"
+LAB_QC_DIR="/mnt/linuxtools/CUSTOM_CIDR/EnhancedSequencingQCReport/0.0.2"
+	# Copied from \\isilon-cifs\sequencing\CIDRSeqSuiteSoftware\RELEASES\7.0.0\QC_REPORT\EnhancedSequencingQCReport.jar
 
 ##################
 # PIPELINE FILES #
@@ -97,7 +99,7 @@ mkdir -p $CORE_PATH/$PROJECT_MS/{LOGS,COMMAND_LINES}
 mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/{BED_FILE_SPLIT,AGGREGATE}
 mkdir -p $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/
 mkdir -p $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE
-mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/ANNOVAR
+mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/{ANNOVAR,LAB_PREP_REPORTS_MS}
 mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX
 
 ##################################################
@@ -116,9 +118,6 @@ PROJECT_INFO_ARRAY=(`sed 's/\r//g' $SAMPLE_SHEET \
 	| awk '{print $1,$2,$3}' \
 	| sort \
 	| uniq`)
-
-# this should be unnecessary
-# SEQ_PROJECT=${PROJECT_INFO_ARRAY[0]} # same as $PROJECT_MS...
 
 REF_GENOME=${PROJECT_INFO_ARRAY[0]} # field 12 from the sample sheet
 PROJECT_DBSNP=${PROJECT_INFO_ARRAY[1]} # field 18 from the sample sheet
@@ -184,6 +183,30 @@ awk 'BEGIN{FS=","} NR>1{print $1,$8}' $SAMPLE_SHEET \
 GVCF_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/'$TOTAL_SAMPLES'.samples.gvcf.list'`)
 }
 
+# Run Ben's EnhancedSequencingQCReport which; 
+# Generates a QC report for lab specific metrics including Physique Report, Samples Table, Sequencer XML data, Pca and Phoenix.
+# Does not check if samples are dropped. 
+
+RUN_LAB_PREP_METRICS ()
+{
+	echo \
+	qsub \
+		-S /bin/bash \
+		-cwd \
+		-V \
+		-q $QUEUE_LIST \
+		-p $PRIORITY \
+		-j y \
+	-N A02-LAB_PREP_METRICS"_"$PROJECT_MS \
+		-o $CORE_PATH/$PROJECT_MS/LOGS/$PROJECT_MS"-LAB_PREP_METRICS.log" \
+	$SCRIPT_DIR/A02_LAB_PREP_METRICS.sh \
+		$JAVA_1_8 \
+		$LAB_QC_DIR \
+		$CORE_PATH \
+		$PROJECT_MS \
+		$SAMPLE_SHEET
+}
+
 ############################################################
 ##### CALL THE ABOVE FUNCTIONS TO SET-UP JOINT CALLING #####
 ############################################################
@@ -191,6 +214,8 @@ GVCF_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/'$TOTAL_SAMPLES'.samples.gvcf.list'`)
 CREATE_PROJECT_INFO_ARRAY
 FORMAT_AND_SCATTER_BAIT_BED
 CREATE_GVCF_LIST
+RUN_LAB_PREP_METRICS
+
 # need to add something that will generate lab prep qc metrics
 
 #######################################################################

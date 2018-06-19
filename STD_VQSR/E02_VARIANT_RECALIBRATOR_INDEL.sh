@@ -29,6 +29,9 @@
 # export all variables, useful to find out what compute node the program was executed on
 set
 
+# create a blank lane b/w the output variables and the program logging output
+echo
+
 # i gotta really not do this...
 export PATH=.:/isilon/sequencing/peng/softwares/R-3.1.1/bin:$PATH
 
