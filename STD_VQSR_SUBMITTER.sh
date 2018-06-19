@@ -126,7 +126,7 @@ PROJECT_BAIT_BED=${PROJECT_INFO_ARRAY[2]} # field 16 from the sample sheet
 
 # GET RID OF ALL THE COMMON BED FILE EFF-UPS,
 
-FORMAT_AND_SCATTER_BAIT_BED() 
+FORMAT_AND_SCATTER_BAIT_BED ()
 {
 BED_FILE_PREFIX=(`echo SPLITTED_BED_FILE_`)
 
@@ -162,7 +162,7 @@ ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX* | awk '{print "m
 }
 
 # take all of the project/sample combos in the sample sheet and write a g.vcf file path to a *list file
-CREATE_GVCF_LIST()
+CREATE_GVCF_LIST ()
 {
 # count how many unique sample id's (with project) are in the sample sheet.
 TOTAL_SAMPLES=(`awk 'BEGIN{FS=","} NR>1{print $1,$8}' $SAMPLE_SHEET \
@@ -226,7 +226,7 @@ RUN_LAB_PREP_METRICS
 
 # aggregate all of individual g.vcf into one cohort g.vcf per bed file chunk
 
-COMBINE_GVCF()
+COMBINE_GVCF ()
 {
 	echo \
 	qsub \
@@ -251,7 +251,7 @@ COMBINE_GVCF()
 
 # genotype the cohort g.vcf chunks
 
-GENOTYPE_GVCF()
+GENOTYPE_GVCF ()
 {
 	echo \
 	qsub \
@@ -276,7 +276,7 @@ GENOTYPE_GVCF()
 
 # add dnsnp ID, genotype summaries, gc percentage, variant class, tandem repeat units and homopolymer runs to genotyped g.vcf chunks.
 
-VARIANT_ANNOTATOR()
+VARIANT_ANNOTATOR ()
 {
 	echo \
 	qsub \
@@ -303,7 +303,7 @@ VARIANT_ANNOTATOR()
 # build a string of job names (comma delim) from the variant annotator scatter to store as variable to use as
 # hold_jid for the cat variants gather (it's used in the next section after the for loop below)
 
-GENERATE_CAT_VARIANTS_HOLD_ID()
+GENERATE_CAT_VARIANTS_HOLD_ID ()
 {
 	CAT_VARIANTS_HOLD_ID=$CAT_VARIANTS_HOLD_ID'C01_VARIANT_ANNOTATOR_'$PROJECT_MS'_'$BED_FILE_NAME','
 }
@@ -331,7 +331,7 @@ done
 # Other possibility is MergeVcfs (Picard)...GatherVcfs is supposedly used for scatter operations so hopefully more efficient
 # The way that CatVariants is constructed, I think would cause a upper limit to the scatter operation.
 
-CAT_VARIANTS()
+CAT_VARIANTS ()
 {
 	echo \
 	qsub \
@@ -357,7 +357,7 @@ CAT_VARIANTS()
 # to do: find a better to push out an R version to build the plots
 # right now, it's buried inside the shell script itself {grrrr}
 
-VARIANT_RECALIBRATOR_SNV()
+VARIANT_RECALIBRATOR_SNV ()
 {
 	echo \
 	qsub \
@@ -387,7 +387,7 @@ VARIANT_RECALIBRATOR_SNV()
 # to do: find a better to push out an R version to build the plots
 # right now, it's buried inside the shell script itself {grrrr}
 
-VARIANT_RECALIBRATOR_INDEL()
+VARIANT_RECALIBRATOR_INDEL ()
 {
 	echo \
 	qsub \
@@ -413,7 +413,7 @@ VARIANT_RECALIBRATOR_INDEL()
 # apply the snp vqsr model to the full vcf
 # this wait for both the snp and indel models to be done generating before running.
 
-APPLY_RECALIBRATION_SNV()
+APPLY_RECALIBRATION_SNV ()
 {
 	echo \
 	qsub \
@@ -437,7 +437,7 @@ APPLY_RECALIBRATION_SNV()
 
 # now apply the indel vqsr model to the full vcf file
 
-APPLY_RECALIBRATION_INDEL()
+APPLY_RECALIBRATION_INDEL ()
 {
 	echo \
 	qsub \
@@ -475,7 +475,7 @@ APPLY_RECALIBRATION_INDEL
 # do a scatter of genotype refinement using the same chunked bed files use to the g.vcf aggregation
 # external priors used are the final 1kg genomes dataset, exac v0.3, no family priors used (no ped file)
 
-CALCULATE_GENOTYPE_POSTERIORS()
+CALCULATE_GENOTYPE_POSTERIORS ()
 {
 	echo \
 	qsub \
@@ -502,7 +502,7 @@ CALCULATE_GENOTYPE_POSTERIORS()
 
 # recalculate the genotype summaries for the now refined genotypes for each vcf chunk
 
-VARIANT_ANNOTATOR_REFINED()
+VARIANT_ANNOTATOR_REFINED ()
 {
 	echo \
 	qsub \
@@ -526,7 +526,7 @@ VARIANT_ANNOTATOR_REFINED()
 		$BED_FILE_NAME
 }
 
-GENERATE_CAT_REFINED_VARIANTS_HOLD_ID()
+GENERATE_CAT_REFINED_VARIANTS_HOLD_ID ()
 {
 	CAT_REFINED_VARIANTS_HOLD_ID=$CAT_REFINED_VARIANTS_HOLD_ID'I01_VARIANT_ANNOTATOR_REFINED_'$PROJECT_MS'_'$BED_FILE_NAME','
 }
@@ -552,7 +552,7 @@ done
 
 # use cat variants to gather up all of the gt refined, reannotated vcf files above into one big file
 
-CAT_REFINED_VARIANTS()
+CAT_REFINED_VARIANTS ()
 {
 	echo \
 	qsub \
@@ -575,7 +575,7 @@ CAT_REFINED_VARIANTS()
 }
 
 # run annovar on the final gt refined vcf file
-RUN_ANNOVAR()
+RUN_ANNOVAR ()
 {
 	echo \
 	qsub \
@@ -606,7 +606,7 @@ RUN_ANNOVAR()
 #################################################################################################
 
 # generate list files by parsing the header of the final ms vcf file
-GENERATE_STUDY_HAPMAP_SAMPLE_LISTS () 
+GENERATE_STUDY_HAPMAP_SAMPLE_LISTS ()
 {
 	HAP_MAP_SAMPLE_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'_hapmap_samples.list'`)
 	
@@ -633,7 +633,7 @@ GENERATE_STUDY_HAPMAP_SAMPLE_LISTS ()
 }
 
 # select all the snp sites
-SELECT_SNVS_ALL () 
+SELECT_SNVS_ALL ()
 {
 	echo \
 	 qsub \
@@ -656,7 +656,7 @@ SELECT_SNVS_ALL ()
 }
 
 # select only passing snp sites that are polymorphic for the study samples
-SELECT_PASS_STUDY_ONLY_SNP () 
+SELECT_PASS_STUDY_ONLY_SNP ()
 {
 	echo \
 	qsub \
@@ -775,7 +775,7 @@ SELECT_PASS_HAPMAP_ONLY_INDELS ()
 }
 
 # select all passing snp sites
-SELECT_SNVS_ALL_PASS () 
+SELECT_SNVS_ALL_PASS ()
 {
 	echo \
 	qsub \
@@ -798,7 +798,7 @@ SELECT_SNVS_ALL_PASS ()
 }
 
 # select all passing indel/mixed sites
-SELECT_INDEL_ALL_PASS () 
+SELECT_INDEL_ALL_PASS ()
 {
 	echo \
 	qsub \
@@ -898,7 +898,7 @@ SELECT_PASSING_VARIANTS_PER_SAMPLE ()
 }
 
 # for each sample, make a vcf containing all passing variants and only falls in the on target bed file
-PASSING_VARIANTS_ON_TARGET_BY_SAMPLE()
+PASSING_VARIANTS_ON_TARGET_BY_SAMPLE ()
 {
 	echo \
 	qsub \
@@ -921,33 +921,13 @@ PASSING_VARIANTS_ON_TARGET_BY_SAMPLE()
 		$TARGET_BED
 }
 
-# for each sample use the passing on target snvs to calculate concordance and het sensitivity to array genotypes.
-# reconfigure using the new concordance tool.
-	CONCORDANCE_ON_TARGET_PER_SAMPLE()
-	{
-		echo \
-		qsub \
-			-S /bin/bash \
-			-cwd \
-			-V \
-			-q $QUEUE_LIST \
-			-p $PRIORITY \
-			-j y \
-		-N K03A01-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$UNIQUE_ID_SM_TAG \
-			-o $CORE_PATH/$PROJECT_SAMPLE/LOGS/K03A01-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$SAMPLE.log \
-			-hold_jid K03A01_PASSING_SNVS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
-		$SCRIPT_DIR/K03A01-1_CONCORDANCE_ON_TARGET_PER_SAMPLE.sh \
-			$JAVA_1_8 \
-			$CIDRSEQSUITE_7_5_0_DIR \
-			$VERACODE_CSV \
-			$CORE_PATH \
-			$PROJECT_SAMPLE \
-			$SM_TAG \
-			$TARGET_BED
-	}
+########################################################################
+### grabbing per sample snv only vcf files for on bait and on target ###
+################ arrary concordance and sensitivity ####################
+########################################################################
 
 # for each sample, make a vcf containing only passing snvs
-PASSING_SNVS_ON_BAIT_BY_SAMPLE()
+PASSING_SNVS_ON_BAIT_BY_SAMPLE ()
 {
 	echo \
 	qsub \
@@ -970,7 +950,7 @@ PASSING_SNVS_ON_BAIT_BY_SAMPLE()
 }
 
 # for each sample, make a vcf containing only passing snvs that fall within the on target bed file
-PASSING_SNVS_ON_TARGET_BY_SAMPLE()
+PASSING_SNVS_ON_TARGET_BY_SAMPLE ()
 {
 	echo \
 	qsub \
@@ -993,8 +973,37 @@ PASSING_SNVS_ON_TARGET_BY_SAMPLE()
 		$TARGET_BED
 }
 
+# for each sample use the passing on target snvs to calculate concordance and het sensitivity to array genotypes.
+# reconfigure using the new concordance tool.
+	CONCORDANCE_ON_TARGET_PER_SAMPLE ()
+	{
+		echo \
+		qsub \
+			-S /bin/bash \
+			-cwd \
+			-V \
+			-q $QUEUE_LIST \
+			-p $PRIORITY \
+			-j y \
+		-N K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$UNIQUE_ID_SM_TAG \
+			-o $CORE_PATH/$PROJECT_SAMPLE/LOGS/K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$SAMPLE.log \
+			-hold_jid K03A03_PASSING_SNVS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
+		$SCRIPT_DIR/K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE.sh \
+			$JAVA_1_8 \
+			$CIDRSEQSUITE_7_5_0_DIR \
+			$VERACODE_CSV \
+			$CORE_PATH \
+			$PROJECT_SAMPLE \
+			$SM_TAG \
+			$TARGET_BED
+	}
+
+##########################################################################
+### grabbing per sample indel only vcf files for on bait and on target ###
+##########################################################################
+
 # for each sample, make a vcf containing only passing indels
-PASSING_INDELS_ON_BAIT_BY_SAMPLE()
+PASSING_INDELS_ON_BAIT_BY_SAMPLE ()
 {
 	echo \
 	qsub \
@@ -1017,7 +1026,7 @@ PASSING_INDELS_ON_BAIT_BY_SAMPLE()
 }
 
 # for each sample, make a vcf containing only passing indels that fall within the on target bed file
-PASSING_INDELS_ON_TARGET_BY_SAMPLE()
+PASSING_INDELS_ON_TARGET_BY_SAMPLE ()
 {
 	echo \
 	qsub \
@@ -1040,8 +1049,12 @@ PASSING_INDELS_ON_TARGET_BY_SAMPLE()
 		$TARGET_BED
 }
 
+########################################################
+### grabbing per sample snv only vcf files for ti/tv ###
+########################################################
+
 # for each sample, make a vcf containing only passing snvs that fall within the on titv bed file
-PASSING_SNVS_TITV_ALL()
+PASSING_SNVS_TITV_ALL ()
 {
 	echo \
 	qsub \
@@ -1065,7 +1078,7 @@ PASSING_SNVS_TITV_ALL()
 }
 
 	# for each sample, calculate ti/tv for all passing snvs within the ti/tv bed file
-	TITV_ALL()
+	TITV_ALL ()
 	{
 		echo \
 		qsub \
@@ -1086,7 +1099,7 @@ PASSING_SNVS_TITV_ALL()
 	}
 
 # for each sample, make a vcf containing only passing snvs that fall within the on titv bed file and are in dbsnp129
-PASSING_SNVS_TITV_KNOWN()
+PASSING_SNVS_TITV_KNOWN ()
 {
 	echo \
 	qsub \
@@ -1111,7 +1124,7 @@ PASSING_SNVS_TITV_KNOWN()
 }
 
 	# for each sample, calculate ti/tv for all passing snvs within the ti/tv bed file that are in dbsnp129
-	TITV_KNOWN()
+	TITV_KNOWN ()
 	{
 		echo \
 		qsub \
@@ -1132,7 +1145,7 @@ PASSING_SNVS_TITV_KNOWN()
 	}
 
 # for each sample, make a vcf containing only passing snvs that fall within the on titv bed file and are NOT in dbsnp129
-PASSING_SNVS_TITV_NOVEL()
+PASSING_SNVS_TITV_NOVEL ()
 {
 	echo \
 	qsub \
@@ -1157,7 +1170,7 @@ PASSING_SNVS_TITV_NOVEL()
 }
 
 	# for each sample, calculate ti/tv for all passing snvs within the ti/tv bed file that are NOT in dbsnp129
-	TITV_NOVEL()
+	TITV_NOVEL ()
 	{
 		echo \
 		qsub \
@@ -1177,6 +1190,57 @@ PASSING_SNVS_TITV_NOVEL()
 			$SM_TAG
 	}
 
+##########################################################################
+### grabbing per sample indel only vcf files for on bait and on target ###
+##########################################################################
+
+# for each sample, make a vcf containing only passing mixed
+PASSING_MIXED_ON_BAIT_BY_SAMPLE ()
+{
+	echo \
+	qsub \
+		-S /bin/bash \
+		-cwd \
+		-V \
+		-q $QUEUE_LIST \
+		-p $PRIORITY \
+		-j y \
+	-N K03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
+		-o $CORE_PATH/$PROJECT_SAMPLE/LOGS/K03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE_$SAMPLE.log \
+		-hold_jid K03_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
+	$SCRIPT_DIR/K03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE.sh \
+		$JAVA_1_8 \
+		$GATK_DIR \
+		$SAMPLE_REF_GENOME \
+		$CORE_PATH \
+		$PROJECT_SAMPLE \
+		$SM_TAG
+}
+
+# for each sample, make a vcf containing only passing indels that fall within the on target bed file
+PASSING_MIXED_ON_TARGET_BY_SAMPLE ()
+{
+	echo \
+	qsub \
+		-S /bin/bash \
+		-cwd \
+		-V \
+		-q $QUEUE_LIST \
+		-p $PRIORITY \
+		-j y \
+	-N K03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
+		-o $CORE_PATH/$PROJECT_SAMPLE/LOGS/K03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE_$SAMPLE.log \
+		-hold_jid K03_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
+	$SCRIPT_DIR/K03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE.sh \
+		$JAVA_1_8 \
+		$GATK_DIR \
+		$SAMPLE_REF_GENOME \
+		$CORE_PATH \
+		$PROJECT_SAMPLE \
+		$SM_TAG \
+		$TARGET_BED
+}
+
 for SAMPLE in $(awk 'BEGIN {FS=","} NR>1 {print $8}' $SAMPLE_SHEET | sort | uniq )
 do
 	CREATE_SAMPLE_INFO_ARRAY
@@ -1194,6 +1258,8 @@ do
 	TITV_KNOWN
 	PASSING_SNVS_TITV_NOVEL
 	TITV_NOVEL
+	PASSING_MIXED_ON_BAIT_BY_SAMPLE
+	PASSING_MIXED_ON_TARGET_BY_SAMPLE
 done
 
 ##########################################################################
