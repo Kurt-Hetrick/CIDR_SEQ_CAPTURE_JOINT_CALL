@@ -39,6 +39,8 @@ PRIORITY="-15"
 # eventually, i want to push this out to something...maybe in the vcf file header.
 PIPELINE_VERSION=`git --git-dir=$SCRIPT_DIR/../.git --work-tree=$SCRIPT_DIR/.. log --pretty=format:'%h' -n 1`
 
+# TIMESTAMP=`date '+%F.%H-%M-%S'`
+
 #####################
 # PIPELINE PROGRAMS #
 #####################
@@ -55,12 +57,16 @@ CIDRSEQSUITE_JAVA_DIR="/mnt/linuxtools/JAVA/jre1.7.0_45/bin"
 CIDRSEQSUITE_6_1_1_DIR="/mnt/linuxtools/CIDRSEQSUITE/6.1.1"
 CIDRSEQSUITE_ANNOVAR_JAVA="/mnt/linuxtools/JAVA/jre1.6.0_25"
 CIDRSEQSUITE_DIR_4_0="/mnt/research/tools/LINUX/CIDRSEQSUITE/Version_4_0"
-# cp -p /u01/home/hling/cidrseqsuite.props.HGMD /mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/STD_VQSR/cidrseqsuite.props
-# 14 June 2018
 CIDRSEQSUITE_PROPS_DIR="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/STD_VQSR"
+	# cp -p /u01/home/hling/cidrseqsuite.props.HGMD /mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/STD_VQSR/cidrseqsuite.props
+	# 14 June 2018
 CIDRSEQSUITE_7_5_0_DIR="/mnt/research/tools/LINUX/CIDRSEQSUITE/7.5.0"
-LAB_QC_DIR="/mnt/linuxtools/CUSTOM_CIDR/EnhancedSequencingQCReport/0.0.2"
 	# Copied from \\isilon-cifs\sequencing\CIDRSeqSuiteSoftware\RELEASES\7.0.0\QC_REPORT\EnhancedSequencingQCReport.jar
+LAB_QC_DIR="/mnt/linuxtools/CUSTOM_CIDR/EnhancedSequencingQCReport/0.0.2"
+SAMTOOLS_DIR="/isilon/sequencing/Kurt/Programs/PYTHON/Anaconda2-5.0.0.1/bin/"
+	# This is samtools version 1.5
+	# I have no idea why other users other than me cannot index a cram file with a version of samtools that I built from the source
+	# Apparently the version that I built with Anaconda works for other users, but it performs REF_CACHE first...
 
 ##################
 # PIPELINE FILES #
@@ -96,10 +102,10 @@ fi
 ############################################################################################
 
 mkdir -p $CORE_PATH/$PROJECT_MS/{LOGS,COMMAND_LINES}
-mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/{BED_FILE_SPLIT,AGGREGATE}
+mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/{BED_FILE_SPLIT,AGGREGATE,QC_REPORT_PREP_$PREFIX}
 mkdir -p $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/
 mkdir -p $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE
-mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/{ANNOVAR,LAB_PREP_REPORTS_MS,QC_REPORT_MS,QC_REPORT_PREP_MS}
+mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/{ANNOVAR,LAB_PREP_REPORTS_MS,QC_REPORTS,QC_REPORT_PREP_$PREFIX}
 mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX
 
 ##################################################
@@ -858,6 +864,7 @@ CREATE_SAMPLE_INFO_ARRAY ()
 	SAMPLE_REF_GENOME=${SAMPLE_INFO_ARRAY[5]}
 	
 	UNIQUE_ID_SM_TAG=$(echo $SM_TAG | sed 's/@/_/g') # If there is an @ in the qsub or holdId name it breaks
+	2D_BARCODE=$(echo $SM_TAG | awk '{split($1,SM_TAG,/[@-]/); print SM_TAG[2]}') # SM_TAG = RIS_ID[@-]2D_BARCODE
 }
 
 # for each sample make a bunch directories if not already present in the samples defined project directory
@@ -1241,6 +1248,43 @@ PASSING_MIXED_ON_TARGET_BY_SAMPLE ()
 		$TARGET_BED
 }
 
+# THIS IS CREATING A JOB_ID FOR A SAMPLE WHEN ALL OF THE BREAKOUTs PER SAMPLE IS DONE
+# THIS IS TO MITIGATE CREATING A HOLD ID THAT IS TOO LONG FOR GENERATING THE QC REPORT.
+# ALTHOUGH AT SOME POINT THIS STRING MIGHT END BEING TOO LONG AT SOME POINT.
+# SO QC REPORTS MIGHT HAVE TO END UP BEING DONE OUTSIDE OF THE PIPELINE FOR SOME BIG PROJECTS.
+
+QC_REPORT_PREP ()
+{
+	echo \
+	qsub \
+		-S /bin/bash \
+		-cwd \
+		-V \
+		-q $QUEUE_LIST \
+		-p $PRIORITY \
+		-j y \
+	-N X"_"$2D_BARCODE \
+		-o $CORE_PATH/$PROJECT/LOGS/$SM_TAG/$SM_TAG"-QC_REPORT_PREP_QC.log" \
+		-hold_jid K03A01_PASSING_VARIANTS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
+			K03A02_PASSING_SNVS_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
+			K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$UNIQUE_ID_SM_TAG,\
+			K03A04_PASSING_INDELS_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
+			K03A05_PASSING_INDELS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
+			K03A06-1_TITV_ALL_$UNIQUE_ID_SM_TAG,\
+			K03A07-1_TITV_KNOWN_$UNIQUE_ID_SM_TAG,\
+			K03A08-1_TITV_NOVEL_$UNIQUE_ID_SM_TAG,\
+			K03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
+			K03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
+	$SCRIPT_DIR/X01-QC_REPORT_PREP.sh \
+		$SAMTOOLS_DIR \
+		$DATAMASH_DIR \
+		$CORE_PATH \
+		$PROJECT_SAMPLE \
+		$SM_TAG \
+		$PROJECT_MS \
+		$PREFIX
+}
+
 for SAMPLE in $(awk 'BEGIN {FS=","} NR>1 {print $8}' $SAMPLE_SHEET | sort | uniq )
 do
 	CREATE_SAMPLE_INFO_ARRAY
@@ -1260,6 +1304,7 @@ do
 	TITV_NOVEL
 	PASSING_MIXED_ON_BAIT_BY_SAMPLE
 	PASSING_MIXED_ON_TARGET_BY_SAMPLE
+	QC_REPORT_PREP
 done
 
 ##########################################################################
