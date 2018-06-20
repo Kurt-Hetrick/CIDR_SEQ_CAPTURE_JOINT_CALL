@@ -1263,7 +1263,7 @@ QC_REPORT_PREP ()
 		-q $QUEUE_LIST \
 		-p $PRIORITY \
 		-j y \
-	-N X"_"$2D_BARCODE \
+	-N Y"_"$2D_BARCODE \
 		-o $CORE_PATH/$PROJECT/LOGS/$SM_TAG/$SM_TAG"-QC_REPORT_PREP_QC.log" \
 		-hold_jid K03A01_PASSING_VARIANTS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
 			K03A02_PASSING_SNVS_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
@@ -1275,7 +1275,7 @@ QC_REPORT_PREP ()
 			K03A08-1_TITV_NOVEL_$UNIQUE_ID_SM_TAG,\
 			K03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
 			K03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
-	$SCRIPT_DIR/X01-QC_REPORT_PREP.sh \
+	$SCRIPT_DIR/Y01_QC_REPORT_PREP.sh \
 		$SAMTOOLS_DIR \
 		$DATAMASH_DIR \
 		$CORE_PATH \
@@ -1311,4 +1311,32 @@ done
 ######################End of Functions####################################
 ##########################################################################
 
-# need to create qc reports, aneuploidy reports and per chr verifybamid reports for the release
+# Maybe I'll make this a function and throw it into a loop, but today is not that day.
+# I think that i will have to make this a look to handle multiple projects...maybe not
+# but again, today is not that day.
+
+awk 'BEGIN {FS=","} NR>1 {print $8}' \
+$SAMPLE_SHEET \
+	| awk '{split($1,sm_tag,/[@-]/)} {print sm_tag[2]}' \
+	| sort -k 1,1 \
+	| uniq \
+	| $DATAMASH_DIR/datamash \
+		-s \
+		collapse 1 \
+	| awk 'gsub (/,/,",Y_",$1) \
+		{print "qsub",\
+			"-S /bin/bash",\
+			"-cwd",\
+			"-V",\
+			"-q" , "'$QUEUE_LIST'",\
+			"-p" , "'$PRIORITY'",\
+			"-j y",\
+		"-N" , "Y01-Y01-END_PROJECT_TASKS_" "'$PREFIX'",\
+			"-o","'$CORE_PATH'/'$PROJECT_MS'/LOGS/'$PREFIX'.END_PROJECT_TASKS.log",\
+			"-hold_jid" , "Y_"$1,\
+		"'$SCRIPT_DIR'" "/Y01-Y01_END_PROJECT_TASKS.sh",\
+			"'$CORE_PATH'",\
+			"'$DATAMASH_DIR'",\
+			"'$PROJECT_MS'",\
+			"'$PREFIX'",\
+			"'$SAMPLE_SHEET'" "\n" "sleep 0.1s"}'
