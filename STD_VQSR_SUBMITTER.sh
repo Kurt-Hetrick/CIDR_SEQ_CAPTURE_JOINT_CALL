@@ -15,9 +15,7 @@
 
 # CORE VARIABLES/SETTINGS
 
-	# datamash is used in the submitter
 	# gcc is so that it can be pushed out to the compute nodes via qsub (-V)
-	module load datamash
 	module load gcc/5.1.0
 
 	# CHANGE SCRIPT DIR TO WHERE YOU HAVE HAVE THE SCRIPTS BEING SUBMITTED
@@ -70,6 +68,7 @@
 		# This is samtools version 1.5
 		# I have no idea why other users other than me cannot index a cram file with a version of samtools that I built from the source
 		# Apparently the version that I built with Anaconda works for other users, but it performs REF_CACHE first...
+	DATAMASH_DIR="/mnt/research/tools/LINUX/DATAMASH/datamash-1.0.6"
 
 ##################
 # PIPELINE FILES #
@@ -1286,42 +1285,43 @@ done
 					$TARGET_BED
 			}
 
-		# THIS IS CREATING A JOB_ID FOR A SAMPLE WHEN ALL OF THE BREAKOUTs PER SAMPLE IS DONE
-		# THIS IS TO MITIGATE CREATING A HOLD ID THAT IS TOO LONG FOR GENERATING THE QC REPORT.
-		# ALTHOUGH AT SOME POINT THIS STRING MIGHT END BEING TOO LONG AT SOME POINT.
-		# SO QC REPORTS MIGHT HAVE TO END UP BEING DONE OUTSIDE OF THE PIPELINE FOR SOME BIG PROJECTS.
-
-			QC_REPORT_PREP ()
-			{
-				echo \
-				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q $QUEUE_LIST \
-					-p $PRIORITY \
-					-j y \
-				-N Y"_"$BARCODE_2D \
-					-o $CORE_PATH/$PROJECT/LOGS/$SM_TAG/$SM_TAG"-QC_REPORT_PREP_QC.log" \
-					-hold_jid K03A01_PASSING_VARIANTS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
-						K03A02_PASSING_SNVS_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
-						K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$UNIQUE_ID_SM_TAG,\
-						K03A04_PASSING_INDELS_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
-						K03A05_PASSING_INDELS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
-						K03A06-1_TITV_ALL_$UNIQUE_ID_SM_TAG,\
-						K03A07-1_TITV_KNOWN_$UNIQUE_ID_SM_TAG,\
-						K03A08-1_TITV_NOVEL_$UNIQUE_ID_SM_TAG,\
-						K03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
-						K03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
-				$SCRIPT_DIR/Y01_QC_REPORT_PREP.sh \
-					$SAMTOOLS_DIR \
-					$DATAMASH_DIR \
-					$CORE_PATH \
-					$PROJECT_SAMPLE \
-					$SM_TAG \
-					$PROJECT_MS \
-					$PREFIX
-			}
+	# MAKE A QC REPORT FOR EACH SAMPLE
+	# THIS IS CREATING A JOB_ID FOR A SAMPLE WHEN ALL OF THE BREAKOUTs PER SAMPLE IS DONE
+	# THIS IS TO MITIGATE CREATING A HOLD ID THAT IS TOO LONG FOR GENERATING THE QC REPORT.
+	# ALTHOUGH AT SOME POINT THIS STRING MIGHT END BEING TOO LONG AT SOME POINT.
+	# SO QC REPORTS MIGHT HAVE TO END UP BEING DONE OUTSIDE OF THE PIPELINE FOR SOME BIG PROJECTS.
+	# yucky, yuck...indenting creates a white space in the hold id which does not work so I have to do this hot mess.
+		QC_REPORT_PREP ()
+		{
+			echo \
+			qsub \
+				-S /bin/bash \
+				-cwd \
+				-V \
+				-q $QUEUE_LIST \
+				-p $PRIORITY \
+				-j y \
+			-N Y"_"$BARCODE_2D \
+				-o $CORE_PATH/$PROJECT/LOGS/$SM_TAG/$SM_TAG"-QC_REPORT_PREP_QC.log" \
+				-hold_jid K03A01_PASSING_VARIANTS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
+K03A02_PASSING_SNVS_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
+K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$UNIQUE_ID_SM_TAG,\
+K03A04_PASSING_INDELS_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
+K03A05_PASSING_INDELS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
+K03A06-1_TITV_ALL_$UNIQUE_ID_SM_TAG,\
+K03A07-1_TITV_KNOWN_$UNIQUE_ID_SM_TAG,\
+K03A08-1_TITV_NOVEL_$UNIQUE_ID_SM_TAG,\
+K03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
+K03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
+			$SCRIPT_DIR/Y01_QC_REPORT_PREP.sh \
+				$SAMTOOLS_DIR \
+				$DATAMASH_DIR \
+				$CORE_PATH \
+				$PROJECT_SAMPLE \
+				$SM_TAG \
+				$PROJECT_MS \
+				$PREFIX
+		}
 
 for SAMPLE in $(awk 'BEGIN {FS=","} NR>1 {print $8}' $SAMPLE_SHEET | sort | uniq )
 do
@@ -1367,14 +1367,13 @@ done
 	# Maybe I'll make this a function and throw it into a loop, but today is not that day.
 	# I think that i will have to make this a look to handle multiple projects...maybe not
 	# but again, today is not that day.
-	# datamash is from module load at in "CORE VARIABLES/SETTINGS" section
 
 		awk 'BEGIN {FS=","} NR>1 {print $8}' \
 		$SAMPLE_SHEET \
 			| awk '{split($1,sm_tag,/[@-]/)} {print sm_tag[2]}' \
 			| sort -k 1,1 \
 			| uniq \
-			| datamash \
+			| $DATAMASH_DIR/datamash \
 				-s \
 				collapse 1 \
 			| awk 'gsub (/,/,",Y_",$1) \
@@ -1386,7 +1385,7 @@ done
 					"-p" , "'$PRIORITY'",\
 					"-j y",\
 				"-N" , "Y01-Y01-END_PROJECT_TASKS_" "'$PREFIX'",\
-					"-o","'$CORE_PATH'" "/" "'$PROJECT_MS'" "/LOGS/" "'$PREFIX'" ".END_PROJECT_TASKS.log",\
+					"-o","'$CORE_PATH'" "/" "'$PROJECT_MS'" "/LOGS/Y01-Y01-" "'$PREFIX'" ".END_PROJECT_TASKS.log",\
 					"-hold_jid" , "Y_"$1,\
 				"'$SCRIPT_DIR'" "/Y01-Y01_END_PROJECT_TASKS.sh",\
 					"'$CORE_PATH'",\
