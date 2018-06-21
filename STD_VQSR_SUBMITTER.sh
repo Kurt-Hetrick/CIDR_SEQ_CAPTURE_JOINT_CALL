@@ -30,7 +30,7 @@
 	 | cut -d @ -f 1 \
 	 | sort \
 	 | uniq \
-	 | egrep -v "bigmem.q|all.q|cgc.q|programmers.q|rhel7.q|c6320.q" \
+	 | egrep -v "bigmem.q|all.q|cgc.q|programmers.q|rhel7.q" \
 	 | datamash collapse 1 \
 	 | awk '{print $1}'`
 
@@ -1015,30 +1015,30 @@ done
 					$TARGET_BED
 			}
 
-		# for each sample use the passing on target snvs to calculate concordance and het sensitivity to array genotypes.
-		# reconfigure using the new concordance tool.
-			CONCORDANCE_ON_TARGET_PER_SAMPLE ()
-			{
-				echo \
-				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q $QUEUE_LIST \
-					-p $PRIORITY \
-					-j y \
-				-N K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$UNIQUE_ID_SM_TAG \
-					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$SAMPLE.log \
-					-hold_jid K03A03_PASSING_SNVS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
-				$SCRIPT_DIR/K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE.sh \
-					$JAVA_1_8 \
-					$CIDRSEQSUITE_7_5_0_DIR \
-					$VERACODE_CSV \
-					$CORE_PATH \
-					$PROJECT_SAMPLE \
-					$SM_TAG \
-					$TARGET_BED
-			}
+			# for each sample use the passing on target snvs to calculate concordance and het sensitivity to array genotypes.
+			# reconfigure using the new concordance tool.
+				CONCORDANCE_ON_TARGET_PER_SAMPLE ()
+				{
+					echo \
+					qsub \
+						-S /bin/bash \
+						-cwd \
+						-V \
+						-q $QUEUE_LIST \
+						-p $PRIORITY \
+						-j y \
+					-N K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$UNIQUE_ID_SM_TAG \
+						-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$SAMPLE.log \
+						-hold_jid K03A03_PASSING_SNVS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
+					$SCRIPT_DIR/K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE.sh \
+						$JAVA_1_8 \
+						$CIDRSEQSUITE_7_5_0_DIR \
+						$VERACODE_CSV \
+						$CORE_PATH \
+						$PROJECT_SAMPLE \
+						$SM_TAG \
+						$TARGET_BED
+				}
 
 	##########################################################################
 	### grabbing per sample indel only vcf files for on bait and on target ###
@@ -1122,7 +1122,7 @@ done
 					$TITV_BED
 			}
 
-				# for each sample, calculate ti/tv for all passing snvs within the ti/tv bed file
+			# for each sample, calculate ti/tv for all passing snvs within the ti/tv bed file
 				TITV_ALL ()
 				{
 					echo \
@@ -1135,7 +1135,7 @@ done
 						-j y \
 					-N K03A06-1_TITV_ALL_$UNIQUE_ID_SM_TAG \
 						-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03A06-1_TITV_ALL_$SAMPLE.log \
-						-hold_jid K03_PASSING_SNVS_TITV_ALL_$UNIQUE_ID_SM_TAG \
+						-hold_jid K03A06_PASSING_SNVS_TITV_ALL_$UNIQUE_ID_SM_TAG \
 					$SCRIPT_DIR/K03A06-1_TITV_ALL.sh \
 						$SAMTOOLS_0118_DIR \
 						$CORE_PATH \
