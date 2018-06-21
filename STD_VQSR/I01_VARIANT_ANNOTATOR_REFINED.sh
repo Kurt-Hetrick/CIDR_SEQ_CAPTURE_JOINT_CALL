@@ -70,4 +70,4 @@ echo $PROJECT_MS",I01,VARIANT_ANNOTATOR_2,"$HOSTNAME","$START_VARIANT_ANNOTATOR_
 # check to see if the index is generated which should send an non-zero exit signal if not.
 # eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
 
-ls $CORE_PATH/$PROJECT_MS_MS/MULTI_SAMPLE/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.gz.tbi"
+ls $CORE_PATH/$PROJECT_MS/TEMP/$PREFIX"."$BED_FILE_NAME".BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.gz.tbi"

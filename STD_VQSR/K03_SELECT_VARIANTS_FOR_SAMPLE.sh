@@ -40,8 +40,9 @@ REF_GENOME=$3
 
 CORE_PATH=$4
 PROJECT_SAMPLE=$5
-SM_TAG=$6
-PREFIX=$7
+PROJECT_MS=$6
+SM_TAG=$7
+PREFIX=$8
 
 START_SELECT_ALL_SAMPLE=`date '+%s'`
 
@@ -52,7 +53,7 @@ CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
 CMD=$CMD' -T SelectVariants'
 CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 CMD=$CMD' -R '$REF_GENOME
-CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_SAMPLE'/MULTI_SAMPLE/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.gz'
+CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.gz'
 CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_SAMPLE'/VCF/RELEASE/FILTERED_ON_BAIT/'$SM_TAG'_MS_OnBait.vcf.gz'
 CMD=$CMD' --keepOriginalAC'
 CMD=$CMD' -ef'

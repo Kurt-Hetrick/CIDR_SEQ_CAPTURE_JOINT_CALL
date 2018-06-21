@@ -42,7 +42,7 @@ SM_TAG=$4
 
 START_ALL_TITV=`date '+%s'`
 
-CMD=$SAMTOOLS_0118_DIR'/bcftools/vcfutils.pl qstats '$CORE_PATH'/'$PROJECT_SAMPLE'/TEMP/'$SM_TAG'.Release.OnExon.FILTERED.vcf.gz'
+CMD=$SAMTOOLS_0118_DIR'/bcftools/vcfutils.pl qstats '$CORE_PATH'/'$PROJECT_SAMPLE'/TEMP/'$SM_TAG'.Release.OnExon.FILTERED.vcf'
 CMD=$CMD' >| '$CORE_PATH'/'$PROJECT_SAMPLE'/REPORTS/TI_TV_MS/'$SM_TAG'_All_.titv.txt'
 
 echo $CMD >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".command_lines.txt"

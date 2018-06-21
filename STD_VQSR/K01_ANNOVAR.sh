@@ -48,7 +48,7 @@ PREFIX=$6
 START_ANNOVAR=`date '+%s'`
 
 zcat $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.gz" \
-$CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf"
+>| $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf"
 
 # fyi after -annovar_directory_annotation the arguments are for
 # 1. path to vcf file directory
@@ -81,7 +81,7 @@ du -ah $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX \
 	| awk '{print "mv -v",$2,"'$CORE_PATH'""/""'$PROJECT_MS'""/REPORTS/ANNOVAR/"}' \
 	| bash
 
-rm -rvf $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX
+# rm -rvf $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX
 
 END_ANNOVAR=`date '+%s'`
 

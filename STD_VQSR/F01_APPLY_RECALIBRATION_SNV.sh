@@ -70,4 +70,4 @@ echo $PROJECT_MS",F01,APPLY_VQSR_SNV,"$HOSTNAME","$START_APPLY_VQSR_SNV","$END_A
 # check to see if the index is generated which should send an non-zero exit signal if not.
 # eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
 
-ls $CORE_PATH/$PROJECT_MS/TEMP/$PREFIX".raw.HC.SNP.VQSR.vcf.gz.tbi"
+ls $CORE_PATH/$PROJECT_MS/TEMP/$PREFIX".HC.SNP.VQSR.vcf.gz.tbi"
