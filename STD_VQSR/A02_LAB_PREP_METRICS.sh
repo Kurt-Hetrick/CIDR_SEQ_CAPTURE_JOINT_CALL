@@ -45,12 +45,6 @@ START_LAB_PREP_METRICS=`date '+%s'`
 
 SAMPLE_SHEET_NAME=`basename $SAMPLE_SHEET .csv`
 
-# Make a QC report just for a PROJECT_MS in the sample sheet.
-
-(head -n 1 $SAMPLE_SHEET ; \
-	awk 'BEGIN {FS=",";OFS=","} $1=="'$PROJECT_MS'" {print $0}' $SAMPLE_SHEET ) \
-	>| $CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME"_"$START_LAB_PREP_METRICS".csv"
-
 # Generates a QC report for lab specific metrics including Physique Report, Samples Table, Sequencer XML data, Pca and Phoenix. Does not check if samples are dropped.
                 # [1] path_to_sample_sheet
                 # [2] path_to_seq_proj ($CORE_PATH)
@@ -58,7 +52,7 @@ SAMPLE_SHEET_NAME=`basename $SAMPLE_SHEET .csv`
 
 $JAVA_1_8/java -jar $LAB_QC_DIR/EnhancedSequencingQCReport.jar \
 -lab_qc_metrics \
-$CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME"_"$START_LAB_PREP_METRICS".csv" \
+$SAMPLE_SHEET \
 $CORE_PATH \
 $CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".LAB_PREP_METRICS.csv"
 

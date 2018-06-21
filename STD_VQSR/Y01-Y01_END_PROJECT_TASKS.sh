@@ -203,7 +203,7 @@ echo
 		join -t , -1 2 -2 1 \
 		$CORE_PATH/$PROJECT_MS/TEMP/$PREFIX".QC_REPORT."$TIMESTAMP".TEMP.csv" \
 		$CORE_PATH/$PROJECT_MS/REPORTS/LAB_PREP_REPORTS_MS/$SAMPLE_SHEET_NAME".LAB_PREP_METRICS.csv" \
-		>| $CORE_PATH/$PROJECT_MS/REPORTS/QC_REPORTS/$SAMPLE_SHEET_NAME".QC_REPORT.csv"
+		>| $CORE_PATH/$PROJECT_MS/REPORTS/QC_REPORTS/$SAMPLE_SHEET_NAME".QC_REPORT."$TIMESTAMP".csv"
 
 ######################################################################################################
 ######################################################################################################
@@ -231,7 +231,7 @@ echo
 
 	# COMBINE ALL OF THE SAMPLE LEVEL ANEUPLOIDY AND PER CHROMOSOME VERIFYBAMID REPORTS INTO ONE FILE
 
-		for SM_TAG in $(awk 'BEGIN {FS=","} $1=="'$PROJECT_MS'" {print $8}' $SAMPLE_SHEET \
+		for SM_TAG in $(awk 'BEGIN {FS=","} $8=="'$SM_TAG'" {print $1,$8}' $SAMPLE_SHEET \
 			| sort \
 			| uniq );
 		do
