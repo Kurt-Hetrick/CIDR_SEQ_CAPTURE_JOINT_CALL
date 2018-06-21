@@ -34,32 +34,32 @@ echo
 
 # INPUT VARIABLES
 
-JAVA_1_8=$1
-GATK_DIR=$2
-REF_GENOME=$3
+	JAVA_1_8=$1
+	GATK_DIR=$2
+	REF_GENOME=$3
 
-CORE_PATH=$4
-PROJECT_SAMPLE=$5
-SM_TAG=$6
-TARGET_BED=$7
+	CORE_PATH=$4
+	PROJECT_SAMPLE=$5
+	SM_TAG=$6
+	TARGET_BED=$7
 
 START_SAMPLE_PASS_TARGET_VARIANT=`date '+%s'`
 
-CMD=$JAVA_1_8'/java -jar'
-CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
-CMD=$CMD' -T SelectVariants'
-CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
-CMD=$CMD' -R '$REF_GENOME
-CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_SAMPLE'/VCF/RELEASE/FILTERED_ON_BAIT/'$SM_TAG'_MS_OnBait.vcf.gz'
-CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_SAMPLE'/VCF/RELEASE/FILTERED_ON_TARGET/'$SM_TAG'_MS_OnTarget.vcf.gz'
-CMD=$CMD' -ef'
-CMD=$CMD' -env'
-CMD=$CMD' --keepOriginalAC'
-CMD=$CMD' -sn '$SM_TAG
-CMD=$CMD' -L '$TARGET_BED
+	CMD=$JAVA_1_8'/java -jar'
+	CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
+	CMD=$CMD' -T SelectVariants'
+	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
+	CMD=$CMD' -R '$REF_GENOME
+	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_SAMPLE'/VCF/RELEASE/FILTERED_ON_BAIT/'$SM_TAG'_MS_OnBait.vcf.gz'
+	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_SAMPLE'/VCF/RELEASE/FILTERED_ON_TARGET/'$SM_TAG'_MS_OnTarget.vcf.gz'
+	CMD=$CMD' -ef'
+	CMD=$CMD' -env'
+	CMD=$CMD' --keepOriginalAC'
+	CMD=$CMD' -sn '$SM_TAG
+	CMD=$CMD' -L '$TARGET_BED
 
-echo $CMD >> $CORE_PATH'/'$PROJECT_SAMPLE'/'$SM_TAG".command_lines.txt"
-echo >> $CORE_PATH'/'$PROJECT_SAMPLE'/'$SM_TAG".command_lines.txt"
+echo $CMD >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".command_lines.txt"
+echo >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".command_lines.txt"
 echo $CMD | bash
 
 END_SAMPLE_PASS_TARGET_VARIANT=`date '+%s'`

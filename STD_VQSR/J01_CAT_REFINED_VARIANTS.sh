@@ -34,33 +34,35 @@ echo
 
 # INPUT PARAMETERS
 
-JAVA_1_8=$1
-shift
-GATK_DIR=$1
-shift
-REF_GENOME=$1
-shift
-CORE_PATH=$1
-shift
-PROJECT_MS=$1
-shift
-PREFIX=$1
-shift
+	JAVA_1_8=$1
+	shift
+	GATK_DIR=$1
+	shift
+	REF_GENOME=$1
+	shift
+	CORE_PATH=$1
+	shift
+	PROJECT_MS=$1
+	shift
+	PREFIX=$1
+	shift
 
 START_CAT_VARIANTS=`date '+%s'`
 
 # Will want to check GATK 4 to see if this a full featured walker or not
 # As is right now, I would imagine that this limits your scatter count...
 
-CMD=$JAVA_1_8'/java'
-CMD=$CMD' -cp '$GATK_DIR'/GenomeAnalysisTK.jar'
-CMD=$CMD' org.broadinstitute.gatk.tools.CatVariants'
-CMD=$CMD' -R '$REF_GENOME
-CMD=$CMD' -assumeSorted'
-for VCF in $(ls $CORE_PATH/$PROJECT_MS/TEMP/$PREFIX'.SPLITTED_BED_FILE'*.REFINED.vcf.gz)
-do
-  CMD=$CMD' --variant '$VCF
-done
+	CMD=$JAVA_1_8'/java'
+	CMD=$CMD' -cp '$GATK_DIR'/GenomeAnalysisTK.jar'
+	CMD=$CMD' org.broadinstitute.gatk.tools.CatVariants'
+	CMD=$CMD' -R '$REF_GENOME
+	CMD=$CMD' -assumeSorted'
+
+for VCF in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BF*.r.vcf.gz)
+	do
+	  CMD=$CMD' --variant '$VCF
+	done
+
 CMD=$CMD' -out '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.gz'
 
 echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"

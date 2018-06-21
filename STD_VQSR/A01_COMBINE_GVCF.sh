@@ -34,37 +34,37 @@ echo
 
 # INPUT PARAMETERS
 
-JAVA_1_8=$1
-GATK_DIR=$2
-REF_GENOME=$3
+	JAVA_1_8=$1
+	GATK_DIR=$2
+	REF_GENOME=$3
 
-CORE_PATH=$4
-PROJECT_MS=$5
-GVCF_LIST=$6
-PREFIX=$7
-BED_FILE_NAME=$8
+	CORE_PATH=$4
+	PROJECT_MS=$5
+	GVCF_LIST=$6
+	PREFIX=$7
+	BED_FILE_NAME=$8
 
 START_COMBINE_GVCF=`date '+%s'`
 
-CMD=$JAVA_1_8'/java -jar'
-CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
-CMD=$CMD' -T CombineGVCFs'
-CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
-CMD=$CMD' -R '$REF_GENOME
-CMD=$CMD' --variant '$GVCF_LIST
-CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/GVCF/AGGREGATE/'$PREFIX'.'$BED_FILE_NAME'.g.vcf.gz'
-CMD=$CMD' -L '$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_NAME'.bed'
-CMD=$CMD' --annotation AS_BaseQualityRankSumTest'
-CMD=$CMD' --annotation AS_FisherStrand'
-CMD=$CMD' --annotation AS_MappingQualityRankSumTest'
-CMD=$CMD' --annotation AS_RMSMappingQuality'
-CMD=$CMD' --annotation AS_ReadPosRankSumTest'
-CMD=$CMD' --annotation AS_StrandOddsRatio'
-CMD=$CMD' --annotation FractionInformativeReads'
-CMD=$CMD' --annotation StrandBiasBySample'
-CMD=$CMD' --annotation StrandAlleleCountsBySample'
-CMD=$CMD' --annotation AlleleBalanceBySample'
-CMD=$CMD' --annotation AlleleBalance'
+	CMD=$JAVA_1_8'/java -jar'
+	CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
+	CMD=$CMD' -T CombineGVCFs'
+	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
+	CMD=$CMD' -R '$REF_GENOME
+	CMD=$CMD' --variant '$GVCF_LIST
+	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/GVCF/AGGREGATE/'$PREFIX'.'$BED_FILE_NAME'.g.vcf.gz'
+	CMD=$CMD' -L '$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_NAME'.bed'
+	CMD=$CMD' --annotation AS_BaseQualityRankSumTest'
+	CMD=$CMD' --annotation AS_FisherStrand'
+	CMD=$CMD' --annotation AS_MappingQualityRankSumTest'
+	CMD=$CMD' --annotation AS_RMSMappingQuality'
+	CMD=$CMD' --annotation AS_ReadPosRankSumTest'
+	CMD=$CMD' --annotation AS_StrandOddsRatio'
+	CMD=$CMD' --annotation FractionInformativeReads'
+	CMD=$CMD' --annotation StrandBiasBySample'
+	CMD=$CMD' --annotation StrandAlleleCountsBySample'
+	CMD=$CMD' --annotation AlleleBalanceBySample'
+	CMD=$CMD' --annotation AlleleBalance'
 
 echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
 echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"

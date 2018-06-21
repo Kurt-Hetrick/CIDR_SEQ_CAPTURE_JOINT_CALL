@@ -41,6 +41,10 @@
 	# eventually, i want to push this out to something...maybe in the vcf file header.
 	PIPELINE_VERSION=`git --git-dir=$SCRIPT_DIR/../.git --work-tree=$SCRIPT_DIR/.. log --pretty=format:'%h' -n 1`
 
+	# generate a random number b/w "0 - 32767" to be used for the job name for variant annotator both pre and post refinement
+	# this is to help cut down on the job name length so I can increase the scatter count
+	HACK=(`echo $RANDOM`)
+
 	# TIMESTAMP=`date '+%F.%H-%M-%S'`
 
 #####################
@@ -136,7 +140,7 @@
 
 		FORMAT_AND_SCATTER_BAIT_BED ()
 		{
-		BED_FILE_PREFIX=(`echo SPLITTED_BED_FILE_`)
+		BED_FILE_PREFIX=(`echo BF`)
 
 	# make sure that there is EOF
 	# remove CARRIAGE RETURNS
@@ -295,7 +299,7 @@
 				-q $QUEUE_LIST \
 				-p $PRIORITY \
 				-j y \
-			-N C01_VARIANT_ANNOTATOR_$PROJECT_MS'_'$BED_FILE_NAME \
+			-N C$HACK'_'$BED_FILE_NAME \
 				-o $CORE_PATH/$PROJECT_MS/LOGS/C01_VARIANT_ANNOTATOR_$BED_FILE_NAME.log \
 				-hold_jid B01_GENOTYPE_GVCF_$PROJECT_MS'_'$BED_FILE_NAME \
 			$SCRIPT_DIR/C01_VARIANT_ANNOTATOR.sh \
@@ -314,13 +318,13 @@
 
 		GENERATE_CAT_VARIANTS_HOLD_ID ()
 		{
-			CAT_VARIANTS_HOLD_ID=$CAT_VARIANTS_HOLD_ID'C01_VARIANT_ANNOTATOR_'$PROJECT_MS'_'$BED_FILE_NAME','
+			CAT_VARIANTS_HOLD_ID=$CAT_VARIANTS_HOLD_ID'C'$HACK'_'$BED_FILE_NAME','
 		}
 
 	# for each chunk of the original bed file, do combine gvcfs, then genotype gvcfs, then variant annotator
 	# then generate a string of all the variant annotator job names submitted
 
-for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/SPLITTED_BED_FILE*);
+for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*);
 do
 	BED_FILE_NAME=$(basename $BED_FILE .bed)
 	COMBINE_GVCF
@@ -530,7 +534,7 @@ done
 				-q $QUEUE_LIST \
 				-p $PRIORITY \
 				-j y \
-			-N I01_VARIANT_ANNOTATOR_REFINED_$PROJECT_MS"_"$BED_FILE_NAME \
+			-N I$HACK"_"$BED_FILE_NAME \
 				-o $CORE_PATH/$PROJECT_MS/LOGS/I01_VARIANT_ANNOTATOR_REFINED_$BED_FILE_NAME".log" \
 				-hold_jid H01_CALCULATE_GENOTYPE_POSTERIORS_$PROJECT_MS"_"$BED_FILE_NAME \
 			$SCRIPT_DIR/I01_VARIANT_ANNOTATOR_REFINED.sh \
@@ -549,13 +553,13 @@ done
 
 		GENERATE_CAT_REFINED_VARIANTS_HOLD_ID ()
 		{
-			CAT_REFINED_VARIANTS_HOLD_ID=$CAT_REFINED_VARIANTS_HOLD_ID'I01_VARIANT_ANNOTATOR_REFINED_'$PROJECT_MS'_'$BED_FILE_NAME','
+			CAT_REFINED_VARIANTS_HOLD_ID=$CAT_REFINED_VARIANTS_HOLD_ID'I'$HACK'_'$BED_FILE_NAME','
 		}
 
 	# for each chunk of the original bed file, do calculate_genotype_posteriors, then variant annotator
 	# then generate a string of all the variant annotator job names submitted
 
-for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/SPLITTED_BED_FILE*);
+for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*);
 do
 	BED_FILE_NAME=$(basename $BED_FILE .bed)
 	CALCULATE_GENOTYPE_POSTERIORS
