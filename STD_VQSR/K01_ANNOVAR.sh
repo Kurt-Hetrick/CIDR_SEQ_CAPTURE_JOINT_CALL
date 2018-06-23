@@ -47,7 +47,7 @@ PREFIX=$6
 
 START_ANNOVAR=`date '+%s'`
 
-zcat $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.gz" \
+cp $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf" \
 >| $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf"
 
 # fyi after -annovar_directory_annotation the arguments are for

@@ -58,12 +58,12 @@ START_CAT_VARIANTS=`date '+%s'`
 	CMD=$CMD' -R '$REF_GENOME
 	CMD=$CMD' -assumeSorted'
 
-for VCF in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BF*.n.vcf.gz)
+for VCF in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BF*.n.vcf)
 	do
 	  CMD=$CMD' --variant '$VCF
 	done
 
-CMD=$CMD' -out '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.raw.HC.vcf.gz'
+CMD=$CMD' -out '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.raw.HC.vcf'
 
 echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
 echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
@@ -79,4 +79,4 @@ echo $PROJECT_MS",D01,CAT_VARIANTS,"$HOSTNAME","$START_CAT_VARIANTS","$END_CAT_V
 # check to see if the index is generated which should send an non-zero exit signal if not.
 # eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
 
-ls $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".raw.HC.vcf.gz.tbi"
+ls $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".raw.HC.vcf.idx"

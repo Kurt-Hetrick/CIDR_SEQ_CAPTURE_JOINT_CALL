@@ -50,8 +50,8 @@ START_GENOTYPE_GVCF=`date '+%s'`
 	CMD=$CMD' -T GenotypeGVCFs'
 	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 	CMD=$CMD' -R '$REF_GENOME
-	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/GVCF/AGGREGATE/'$PREFIX'.'$BED_FILE_NAME'.g.vcf.gz'
-	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.'$BED_FILE_NAME'.temp.vcf.gz'
+	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/GVCF/AGGREGATE/'$PREFIX'.'$BED_FILE_NAME'.g.vcf'
+	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.'$BED_FILE_NAME'.temp.vcf'
 	CMD=$CMD' --annotation AS_BaseQualityRankSumTest'
 	CMD=$CMD' --annotation AS_FisherStrand'
 	CMD=$CMD' --annotation AS_MappingQualityRankSumTest'
@@ -79,5 +79,5 @@ echo $PROJECT_MS",B01,GENOTYPE_GVCF,"$HOSTNAME","$START_GENOTYPE_GVCF","$END_GEN
 # check to see if the index is generated which should send an non-zero exit signal if not.
 # eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
 
-ls $CORE_PATH/$PROJECT_MS/TEMP/$PREFIX"."$BED_FILE_NAME".temp.vcf.gz.tbi"
+ls $CORE_PATH/$PROJECT_MS/TEMP/$PREFIX"."$BED_FILE_NAME".temp.vcf.idx"
 

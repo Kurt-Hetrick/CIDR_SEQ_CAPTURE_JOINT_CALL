@@ -54,9 +54,9 @@ START_VARIANT_ANNOTATOR=`date '+%s'`
 	CMD=$CMD' -T VariantAnnotator'
 	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 	CMD=$CMD' -R '$REF_GENOME
-	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.'$BED_FILE_NAME'.temp.vcf.gz'
-	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$BED_FILE_NAME'.n.vcf.gz'
-	CMD=$CMD' -L '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.'$BED_FILE_NAME'.temp.vcf.gz'
+	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.'$BED_FILE_NAME'.temp.vcf'
+	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$BED_FILE_NAME'.n.vcf'
+	CMD=$CMD' -L '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.'$BED_FILE_NAME'.temp.vcf'
 	CMD=$CMD' --dbsnp '$DBSNP
 	CMD=$CMD' -A GenotypeSummaries'
 	CMD=$CMD' -A GCContent'
@@ -78,4 +78,4 @@ echo $PROJECT_MS",C01,VARIANT_ANNOTATOR,"$HOSTNAME","$START_VARIANT_ANNOTATOR","
 # check to see if the index is generated which should send an non-zero exit signal if not.
 # eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
 
-ls $CORE_PATH/$PROJECT_MS/TEMP/$BED_FILE_NAME".n.vcf.gz.tbi"
+ls $CORE_PATH/$PROJECT_MS/TEMP/$BED_FILE_NAME".n.vcf.idx"

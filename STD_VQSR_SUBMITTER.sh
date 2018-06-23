@@ -98,15 +98,15 @@
 	## This checks to see if bed file directory and split gvcf list has been created from a previous run.
 	## If so, remove them to not interfere with current run
 
-	if [ -d $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT ]
-	then
-		rm -rf $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT
-	fi
+	# if [ -d $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT ]
+	# then
+	# 	rm -rf $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT
+	# fi
 
-	if [ -d $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS ]
-	then
-		rm -rf $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS
-	fi
+	# if [ -d $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS ]
+	# then
+	# 	rm -rf $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS
+	# fi
 
 ############################################################################################
 ##### MAKE THE FOLLOWING FOLDERS IN THE PROJECT WHERE THE MULTI-SAMPLE VCF IS GOING TO #####
@@ -143,61 +143,61 @@
 
 	# GET RID OF ALL THE COMMON BED FILE EFF-UPS,
 
-		FORMAT_AND_SCATTER_BAIT_BED ()
-		{
-		BED_FILE_PREFIX=(`echo BF`)
+		# FORMAT_AND_SCATTER_BAIT_BED ()
+		# {
+		# BED_FILE_PREFIX=(`echo BF`)
 
-			# make sure that there is EOF
-			# remove CARRIAGE RETURNS
-			# remove CHR PREFIXES (THIS IS FOR GRCH37)
-			# CONVERT VARIABLE LENGTH WHITESPACE FIELD DELIMETERS TO SINGLE TAB.
+		# 	# make sure that there is EOF
+		# 	# remove CARRIAGE RETURNS
+		# 	# remove CHR PREFIXES (THIS IS FOR GRCH37)
+		# 	# CONVERT VARIABLE LENGTH WHITESPACE FIELD DELIMETERS TO SINGLE TAB.
 
-				awk 1 $PROJECT_BAIT_BED | sed -r 's/\r//g ; s/chr//g ; s/[[:space:]]+/\t/g' \
-				>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed
+		# 		awk 1 $PROJECT_BAIT_BED | sed -r 's/\r//g ; s/chr//g ; s/[[:space:]]+/\t/g' \
+		# 		>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed
 
-				# SORT TO GRCH37 ORDER
-				(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n ; \
-				 	awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
-				 	awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
-				 	awk '$1=="MT"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) \
-				>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed
+		# 		# SORT TO GRCH37 ORDER
+		# 		(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n ; \
+		# 		 	awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
+		# 		 	awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
+		# 		 	awk '$1=="MT"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) \
+		# 		>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed
 
-			# Determining how many records will be in each mini-bed file.
-			# The +1 at the end is to round up the number of records per mini-bed file to ensure all records are captured.
-			# So the last mini-bed file will be smaller.
-			# IIRC. this statement isn't really true, but I don't feel like figuring it out right now. KNH
+		# 	# Determining how many records will be in each mini-bed file.
+		# 	# The +1 at the end is to round up the number of records per mini-bed file to ensure all records are captured.
+		# 	# So the last mini-bed file will be smaller.
+		# 	# IIRC. this statement isn't really true, but I don't feel like figuring it out right now. KNH
 
-				INTERVALS_DIVIDED=`wc -l $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
-					| awk '{print $1"/""'$NUMBER_OF_BED_FILES'"}' \
-					| bc \
-					| awk '{print $0+1}'`
+		# 		INTERVALS_DIVIDED=`wc -l $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
+		# 			| awk '{print $1"/""'$NUMBER_OF_BED_FILES'"}' \
+		# 			| bc \
+		# 			| awk '{print $0+1}'`
 
-				split -l $INTERVALS_DIVIDED -a 4 -d \
-					$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
-					$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX
+		# 		split -l $INTERVALS_DIVIDED -a 4 -d \
+		# 			$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
+		# 			$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX
 
-			# ADD A .bed suffix to all of the now splitted files
+		# 	# ADD A .bed suffix to all of the now splitted files
 
-				ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX* | awk '{print "mv",$0,$0".bed"}' | bash
-				}
+		# 		ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX* | awk '{print "mv",$0,$0".bed"}' | bash
+		# 		}
 
 	# UNIQUE THE SAMPLE INTO SAMPLE/PROJECT COMBOS AND CREATE A SAMPLE SHEET INTO 300 SAMPLE CHUNKS.
 
-		awk 'BEGIN {FS=",";OFS="\t"} NR>1 {print $1,$8}' \
-		$SAMPLE_SHEET \
-			| sort -k 1,1 -k 2,2 \
-			| uniq \
-			| split -l 300 -a 4 -d - \
-			$CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS/
+		# awk 'BEGIN {FS=",";OFS="\t"} NR>1 {print $1,$8}' \
+		# $SAMPLE_SHEET \
+		# 	| sort -k 1,1 -k 2,2 \
+		# 	| uniq \
+		# 	| split -l 300 -a 4 -d - \
+		# 	$CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS/
 
-		# # Use the chunked up sample sheets to create gvcf list chunks
+		# # # Use the chunked up sample sheets to create gvcf list chunks
 
-			for PROJECT_SAMPLE_LISTS in $(ls $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS/*)
-				do
-					awk 'BEGIN {OFS="/"} {print "'$CORE_PATH'",$1,"GVCF",$2".g.vcf.gz"}' \
-						$PROJECT_SAMPLE_LISTS \
-						>| $PROJECT_SAMPLE_LISTS.list
-			done
+		# 	for PROJECT_SAMPLE_LISTS in $(ls $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS/*)
+		# 		do
+		# 			awk 'BEGIN {OFS="/"} {print "'$CORE_PATH'",$1,"GVCF",$2".g.vcf.gz"}' \
+		# 				$PROJECT_SAMPLE_LISTS \
+		# 				>| $PROJECT_SAMPLE_LISTS.list
+		# 	done
 
 	# take all of the project/sample combos in the sample sheet and write a g.vcf file path to a *list file
 	# At this point this is just for record keeping...it is being scatterred above
@@ -251,10 +251,10 @@
 ############################################################
 
 	CREATE_PROJECT_INFO_ARRAY
-	FORMAT_AND_SCATTER_BAIT_BED
-	CREATE_GVCF_LIST
-	RUN_LAB_PREP_METRICS
-	echo sleep 0.1s
+	# FORMAT_AND_SCATTER_BAIT_BED
+	# CREATE_GVCF_LIST
+	# RUN_LAB_PREP_METRICS
+	# echo sleep 0.1s
 
 #######################################################################
 #######################################################################
@@ -286,12 +286,6 @@ COMBINE_GVCF ()
 		$PREFIX \
 		$BED_FILE_NAME
 }
-
-# # for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*);
-# # do
-# # 	BED_FILE_NAME=$(basename $BED_FILE .bed)
-# # 	COMBINE_GVCF
-# # 	echo sleep 0.1s
 
 for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed);
 do

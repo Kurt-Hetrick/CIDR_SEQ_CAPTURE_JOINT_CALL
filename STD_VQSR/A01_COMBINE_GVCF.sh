@@ -55,7 +55,7 @@ START_COMBINE_GVCF=`date '+%s'`
 	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 	CMD=$CMD' -R '$REF_GENOME
 	CMD=$CMD' --variant '$PGVCF_LIST
-	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/GVCF/AGGREGATE/'$PGVCF_LIST_NAME'.'$PREFIX'.'$BED_FILE_NAME'.g.vcf.gz'
+	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/GVCF/AGGREGATE/'$PGVCF_LIST_NAME'.'$PREFIX'.'$BED_FILE_NAME'.g.vcf'
 	CMD=$CMD' -L '$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_NAME'.bed'
 	CMD=$CMD' --annotation AS_BaseQualityRankSumTest'
 	CMD=$CMD' --annotation AS_FisherStrand'
@@ -83,4 +83,4 @@ echo $PROJECT_MS",A01,COMBINE_GVCF,"$HOSTNAME","$START_COMBINE_GVCF","$END_COMBI
 # check to see if the index is generated which should send an non-zero exit signal if not.
 # eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
 
-ls $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE/$PGVCF_LIST_NAME"."$PREFIX"."$BED_FILE_NAME".g.vcf.gz.tbi"
+ls $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE/$PGVCF_LIST_NAME"."$PREFIX"."$BED_FILE_NAME".g.vcf.idx"
