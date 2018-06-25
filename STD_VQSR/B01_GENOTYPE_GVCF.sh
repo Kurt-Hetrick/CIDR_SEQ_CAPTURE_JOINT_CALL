@@ -50,7 +50,12 @@ START_GENOTYPE_GVCF=`date '+%s'`
 	CMD=$CMD' -T GenotypeGVCFs'
 	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 	CMD=$CMD' -R '$REF_GENOME
-	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/GVCF/AGGREGATE/'$PREFIX'.'$BED_FILE_NAME'.g.vcf'
+
+for VCF in $(ls $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE/*$BED_FILE_NAME.g.vcf)
+	do
+	  CMD=$CMD' --variant '$VCF
+	done
+
 	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.'$BED_FILE_NAME'.temp.vcf'
 	CMD=$CMD' --annotation AS_BaseQualityRankSumTest'
 	CMD=$CMD' --annotation AS_FisherStrand'
