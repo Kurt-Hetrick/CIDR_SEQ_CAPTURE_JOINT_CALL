@@ -30,7 +30,7 @@
 	 | cut -d @ -f 1 \
 	 | sort \
 	 | uniq \
-	 | egrep -v "bigmem.q|all.q|cgc.q|programmers.q|rhel7.q" \
+	 | egrep -v "bigmem.q|all.q|cgc.q|programmers.q|rhel7.q|qtest.q" \
 	 | datamash collapse 1 \
 	 | awk '{print $1}'`
 
@@ -73,6 +73,7 @@
 		# I have no idea why other users other than me cannot index a cram file with a version of samtools that I built from the source
 		# Apparently the version that I built with Anaconda works for other users, but it performs REF_CACHE first...
 	DATAMASH_DIR="/mnt/research/tools/LINUX/DATAMASH/datamash-1.0.6"
+	TABIX_DIR="/mnt/research/tools/LINUX/TABIX/tabix-0.2.6"
 
 ##################
 # PIPELINE FILES #
@@ -95,18 +96,18 @@
 ##################################################
 ##################################################
 
-	## This checks to see if bed file directory and split gvcf list has been created from a previous run.
-	## If so, remove them to not interfere with current run
+	# This checks to see if bed file directory and split gvcf list has been created from a previous run.
+	# If so, remove them to not interfere with current run
 
-	# if [ -d $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT ]
-	# then
-	# 	rm -rf $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT
-	# fi
+	if [ -d $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT ]
+	then
+		rm -rf $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT
+	fi
 
-	# if [ -d $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS ]
-	# then
-	# 	rm -rf $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS
-	# fi
+	if [ -d $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS ]
+	then
+		rm -rf $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS
+	fi
 
 ############################################################################################
 ##### MAKE THE FOLLOWING FOLDERS IN THE PROJECT WHERE THE MULTI-SAMPLE VCF IS GOING TO #####
@@ -141,63 +142,76 @@
 			PROJECT_BAIT_BED=${PROJECT_INFO_ARRAY[2]} # field 16 from the sample sheet
 		}
 
+	# Keep this in here to reference...I'll probably going to use this somewhere.
+	# generates a chrosome list from a bait bed file at the project level. so I only have to make one iteration per project instead of one per sample
+
+		# CREATE_CHROMOSOME_LIST ()
+		# {
+		# REF_CHROM_SET=$(sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' $PROJECT_BAIT_BED \
+		# | sed -r 's/[[:space:]]+/\t/g' \
+		# | cut -f 1 \
+		# | sort \
+		# | uniq \
+		# | $DATAMASH_DIR/datamash collapse 1 | sed 's/,/ /g')
+	# }	
+
 	# GET RID OF ALL THE COMMON BED FILE EFF-UPS,
 
-		# FORMAT_AND_SCATTER_BAIT_BED ()
-		# {
-		# BED_FILE_PREFIX=(`echo BF`)
+		FORMAT_AND_SCATTER_BAIT_BED ()
+		{
+		BED_FILE_PREFIX=(`echo BF`)
 
-		# 	# make sure that there is EOF
-		# 	# remove CARRIAGE RETURNS
-		# 	# remove CHR PREFIXES (THIS IS FOR GRCH37)
-		# 	# CONVERT VARIABLE LENGTH WHITESPACE FIELD DELIMETERS TO SINGLE TAB.
+			# make sure that there is EOF
+			# remove CARRIAGE RETURNS
+			# remove CHR PREFIXES (THIS IS FOR GRCH37)
+			# CONVERT VARIABLE LENGTH WHITESPACE FIELD DELIMETERS TO SINGLE TAB.
 
-		# 		awk 1 $PROJECT_BAIT_BED | sed -r 's/\r//g ; s/chr//g ; s/[[:space:]]+/\t/g' \
-		# 		>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed
+				awk 1 $PROJECT_BAIT_BED | sed -r 's/\r//g ; s/chr//g ; s/[[:space:]]+/\t/g' \
+				>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed
 
-		# 		# SORT TO GRCH37 ORDER
-		# 		(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n ; \
-		# 		 	awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
-		# 		 	awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
-		# 		 	awk '$1=="MT"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) \
-		# 		>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed
+				# SORT TO GRCH37 ORDER
+				(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n ; \
+				 	awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
+				 	awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
+				 	awk '$1=="MT"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) \
+				>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed
 
-		# 	# Determining how many records will be in each mini-bed file.
-		# 	# The +1 at the end is to round up the number of records per mini-bed file to ensure all records are captured.
-		# 	# So the last mini-bed file will be smaller.
-		# 	# IIRC. this statement isn't really true, but I don't feel like figuring it out right now. KNH
+			# Determining how many records will be in each mini-bed file.
+			# The +1 at the end is to round up the number of records per mini-bed file to ensure all records are captured.
+			# So the last mini-bed file will be smaller.
+			# IIRC. this statement isn't really true, but I don't feel like figuring it out right now. KNH
 
-		# 		INTERVALS_DIVIDED=`wc -l $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
-		# 			| awk '{print $1"/""'$NUMBER_OF_BED_FILES'"}' \
-		# 			| bc \
-		# 			| awk '{print $0+1}'`
+				INTERVALS_DIVIDED=`wc -l $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
+					| awk '{print $1"/""'$NUMBER_OF_BED_FILES'"}' \
+					| bc \
+					| awk '{print $0+1}'`
 
-		# 		split -l $INTERVALS_DIVIDED -a 4 -d \
-		# 			$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
-		# 			$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX
+				split -l $INTERVALS_DIVIDED -a 4 -d \
+					$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
+					$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX
 
-		# 	# ADD A .bed suffix to all of the now splitted files
+			# ADD A .bed suffix to all of the now splitted files
 
-		# 		ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX* | awk '{print "mv",$0,$0".bed"}' | bash
-		# 		}
+				ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX* | awk '{print "mv",$0,$0".bed"}' | bash
+				}
 
 	# UNIQUE THE SAMPLE INTO SAMPLE/PROJECT COMBOS AND CREATE A SAMPLE SHEET INTO 300 SAMPLE CHUNKS.
 
-		# awk 'BEGIN {FS=",";OFS="\t"} NR>1 {print $1,$8}' \
-		# $SAMPLE_SHEET \
-		# 	| sort -k 1,1 -k 2,2 \
-		# 	| uniq \
-		# 	| split -l 300 -a 4 -d - \
-		# 	$CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS/
+		awk 'BEGIN {FS=",";OFS="\t"} NR>1 {print $1,$8}' \
+		$SAMPLE_SHEET \
+			| sort -k 1,1 -k 2,2 \
+			| uniq \
+			| split -l 300 -a 4 -d - \
+			$CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS/
 
-		# # # Use the chunked up sample sheets to create gvcf list chunks
+		# # Use the chunked up sample sheets to create gvcf list chunks
 
-		# 	for PROJECT_SAMPLE_LISTS in $(ls $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS/*)
-		# 		do
-		# 			awk 'BEGIN {OFS="/"} {print "'$CORE_PATH'",$1,"GVCF",$2".g.vcf.gz"}' \
-		# 				$PROJECT_SAMPLE_LISTS \
-		# 				>| $PROJECT_SAMPLE_LISTS.list
-		# 	done
+			for PROJECT_SAMPLE_LISTS in $(ls $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS/*)
+				do
+					awk 'BEGIN {OFS="/"} {print "'$CORE_PATH'",$1,"GVCF",$2".g.vcf.gz"}' \
+						$PROJECT_SAMPLE_LISTS \
+						>| $PROJECT_SAMPLE_LISTS.list
+			done
 
 	# take all of the project/sample combos in the sample sheet and write a g.vcf file path to a *list file
 	# At this point this is just for record keeping...it is being scatterred above
@@ -251,10 +265,11 @@
 ############################################################
 
 	CREATE_PROJECT_INFO_ARRAY
-	# FORMAT_AND_SCATTER_BAIT_BED
-	# CREATE_GVCF_LIST
-	# RUN_LAB_PREP_METRICS
-	# echo sleep 0.1s
+	# CREATE_CHROMOSOME_LIST
+	FORMAT_AND_SCATTER_BAIT_BED
+	CREATE_GVCF_LIST
+	RUN_LAB_PREP_METRICS
+	echo sleep 0.1s
 
 #######################################################################
 #######################################################################
@@ -287,16 +302,16 @@
 			$BED_FILE_NAME
 	}
 
-# for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed);
-# do
-# 	BED_FILE_NAME=$(basename $BED_FILE .bed)
-# 		for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS/*list)
-# 			do
-# 				PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
-# 				# COMBINE_GVCF
-# 				echo sleep 0.1s
-# 		done
-# done
+for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed);
+do
+	BED_FILE_NAME=$(basename $BED_FILE .bed)
+		for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS/*list)
+			do
+				PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
+				COMBINE_GVCF
+				echo sleep 0.1s
+		done
+done
 
 #####################################################################
 
@@ -527,7 +542,7 @@ done
 				$PREFIX
 		}
 
-call cat variants and vqsr
+# call cat variants and vqsr
 
 	CAT_VARIANTS
 	echo sleep 0.1s
@@ -900,7 +915,7 @@ done
 					$PREFIX
 			}
 
-# cat refined variants, annovar, variant summary stat vcf breakouts
+# # cat refined variants, annovar, variant summary stat vcf breakouts
 
 	CAT_REFINED_VARIANTS
 	echo sleep 0.1s
@@ -928,6 +943,7 @@ done
 ################### Start of Sample Breakouts #########################
 #######################################################################
 #######################################################################
+
 
 	# for each unique sample id in the sample sheet grab the bed files, ref genome, project and store as an array
 
@@ -962,11 +978,9 @@ done
 			$CORE_PATH/$PROJECT_SAMPLE/MIXED/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET} \
 			$CORE_PATH/$PROJECT_SAMPLE/VCF/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET} \
 			$CORE_PATH/$PROJECT_SAMPLE/REPORTS/{TI_TV_MS,CONCORDANCE_MS} \
-			$CORE_PATH/$PROJECT_SAMPLE/TEMP/$SM_TAG"_MS_CONCORDANCE" \
+			$CORE_PATH/$PROJECT_SAMPLE/TEMP/{$SM_TAG"_MS_CONCORDANCE",$SM_TAG"_SCATTER"} \
 			$CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG
 		}
-
-	# for each sample, make a vcf containing all passing variants
 
 		SELECT_PASSING_VARIANTS_PER_SAMPLE ()
 		{
@@ -978,13 +992,11 @@ done
 				-q $QUEUE_LIST \
 				-p $PRIORITY \
 				-j y \
-			-N K03_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03_SELECT_VARIANTS_FOR_SAMPLE_$SM_TAG.log \
+			-N "K03_SELECT_VARIANTS_FOR_SAMPLE_"$UNIQUE_ID_SM_TAG \
+				-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03_SELECT_VARIANTS_FOR_SAMPLE_$SM_TAG".log" \
 				-hold_jid J01_CAT_REFINED_VARIANTS_$PROJECT_MS \
-			$SCRIPT_DIR/K03_SELECT_VARIANTS_FOR_SAMPLE.sh \
-				$JAVA_1_8 \
-				$GATK_DIR \
-				$SAMPLE_REF_GENOME \
+			$SCRIPT_DIR/K03_SELECT_VARIANTS_FOR_SAMPLE_DIRTY.sh \
+				$TABIX_DIR \
 				$CORE_PATH \
 				$PROJECT_SAMPLE \
 				$PROJECT_MS \
@@ -992,7 +1004,6 @@ done
 				$PREFIX
 		}
 
-	# for each sample, make a vcf containing all passing variants and only falls in the on target bed file
 
 		PASSING_VARIANTS_ON_TARGET_BY_SAMPLE ()
 		{
@@ -1005,7 +1016,7 @@ done
 				-p $PRIORITY \
 				-j y \
 			-N K03A01_PASSING_VARIANTS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
-				-hold_jid K03_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
+				-hold_jid "K03_SELECT_VARIANTS_FOR_SAMPLE_"$UNIQUE_ID_SM_TAG \
 				-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03A01_PASSING_VARIANTS_ON_TARGET_BY_SAMPLE_$SAMPLE.log \
 			$SCRIPT_DIR/K03A01_PASSING_VARIANTS_ON_TARGET_BY_SAMPLE.sh \
 				$JAVA_1_8 \
@@ -1016,13 +1027,6 @@ done
 				$SM_TAG \
 				$TARGET_BED
 		}
-
-	########################################################################
-	### grabbing per sample snv only vcf files for on bait and on target ###
-	################ arrary concordance and sensitivity ####################
-	########################################################################
-
-		# for each sample, make a vcf containing only passing snvs
 
 			PASSING_SNVS_ON_BAIT_BY_SAMPLE ()
 			{
@@ -1036,7 +1040,7 @@ done
 					-j y \
 				-N K03A02_PASSING_SNVS_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
 					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03A02_PASSING_SNVS_ON_BAIT_BY_SAMPLE_$SAMPLE.log \
-					-hold_jid K03_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
+					-hold_jid "K03_SELECT_VARIANTS_FOR_SAMPLE_"$UNIQUE_ID_SM_TAG \
 				$SCRIPT_DIR/K03A02_PASSING_SNVS_ON_BAIT_BY_SAMPLE.sh \
 					$JAVA_1_8 \
 					$GATK_DIR \
@@ -1060,7 +1064,7 @@ done
 					-j y \
 				-N K03A03_PASSING_SNVS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
 					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03A03_PASSING_SNVS_ON_TARGET_BY_SAMPLE_$SAMPLE.log \
-					-hold_jid K03_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
+					-hold_jid "K03_SELECT_VARIANTS_FOR_SAMPLE_"$UNIQUE_ID_SM_TAG \
 				$SCRIPT_DIR/K03A03_PASSING_SNVS_ON_TARGET_BY_SAMPLE.sh \
 					$JAVA_1_8 \
 					$GATK_DIR \
@@ -1114,7 +1118,7 @@ done
 					-j y \
 				-N K03A04_PASSING_INDELS_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
 					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03A04_PASSING_INDELS_ON_BAIT_BY_SAMPLE_$SAMPLE.log \
-					-hold_jid K03_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
+					-hold_jid "K03_SELECT_VARIANTS_FOR_SAMPLE_"$UNIQUE_ID_SM_TAG \
 				$SCRIPT_DIR/K03A04_PASSING_INDELS_ON_BAIT_BY_SAMPLE.sh \
 					$JAVA_1_8 \
 					$GATK_DIR \
@@ -1138,7 +1142,7 @@ done
 					-j y \
 				-N K03A05_PASSING_INDELS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
 					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03A05_PASSING_INDELS_ON_TARGET_BY_SAMPLE_$SAMPLE.log \
-					-hold_jid K03_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
+					-hold_jid "K03_SELECT_VARIANTS_FOR_SAMPLE_"$UNIQUE_ID_SM_TAG \
 				$SCRIPT_DIR/K03A05_PASSING_INDELS_ON_TARGET_BY_SAMPLE.sh \
 					$JAVA_1_8 \
 					$GATK_DIR \
@@ -1167,7 +1171,7 @@ done
 					-j y \
 				-N K03A06_PASSING_SNVS_TITV_ALL_$UNIQUE_ID_SM_TAG \
 					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03A06_PASSING_SNVS_TITV_ALL_$SAMPLE.log \
-					-hold_jid K03_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
+					-hold_jid "K03_SELECT_VARIANTS_FOR_SAMPLE_"$UNIQUE_ID_SM_TAG \
 				$SCRIPT_DIR/K03A06_PASSING_SNVS_TITV_ALL.sh \
 					$JAVA_1_8 \
 					$GATK_DIR \
@@ -1179,6 +1183,7 @@ done
 			}
 
 			# for each sample, calculate ti/tv for all passing snvs within the ti/tv bed file
+
 				TITV_ALL ()
 				{
 					echo \
@@ -1213,7 +1218,7 @@ done
 					-j y \
 				-N K03A07_PASSING_SNVS_TITV_KNOWN_$UNIQUE_ID_SM_TAG \
 					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03A07_PASSING_SNVS_TITV_KNOWN_$SAMPLE.log \
-					-hold_jid K03_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
+					-hold_jid "K03_SELECT_VARIANTS_FOR_SAMPLE_"$UNIQUE_ID_SM_TAG \
 				$SCRIPT_DIR/K03A07_PASSING_SNVS_TITV_KNOWN.sh \
 					$JAVA_1_8 \
 					$GATK_DIR \
@@ -1226,6 +1231,7 @@ done
 			}
 
 				# for each sample, calculate ti/tv for all passing snvs within the ti/tv bed file that are in dbsnp129
+
 				TITV_KNOWN ()
 				{
 					echo \
@@ -1247,6 +1253,7 @@ done
 				}
 
 		# for each sample, make a vcf containing only passing snvs that fall within the on titv bed file and are NOT in dbsnp129
+
 			PASSING_SNVS_TITV_NOVEL ()
 			{
 				echo \
@@ -1259,7 +1266,7 @@ done
 					-j y \
 				-N K03A08_PASSING_SNVS_TITV_NOVEL_$UNIQUE_ID_SM_TAG \
 					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03A08_PASSING_SNVS_TITV_NOVEL_$SAMPLE.log \
-					-hold_jid K03_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
+					-hold_jid "K03_SELECT_VARIANTS_FOR_SAMPLE_"$UNIQUE_ID_SM_TAG \
 				$SCRIPT_DIR/K03A08_PASSING_SNVS_TITV_NOVEL.sh \
 					$JAVA_1_8 \
 					$GATK_DIR \
@@ -1272,6 +1279,7 @@ done
 			}
 
 				# for each sample, calculate ti/tv for all passing snvs within the ti/tv bed file that are NOT in dbsnp129
+
 				TITV_NOVEL ()
 				{
 					echo \
@@ -1297,6 +1305,7 @@ done
 	##########################################################################
 
 		# for each sample, make a vcf containing only passing mixed
+
 			PASSING_MIXED_ON_BAIT_BY_SAMPLE ()
 			{
 				echo \
@@ -1309,7 +1318,7 @@ done
 					-j y \
 				-N K03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
 					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAGK03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE_$SAMPLE.log \
-					-hold_jid K03_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
+					-hold_jid "K03_SELECT_VARIANTS_FOR_SAMPLE_"$UNIQUE_ID_SM_TAG \
 				$SCRIPT_DIR/K03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE.sh \
 					$JAVA_1_8 \
 					$GATK_DIR \
@@ -1320,6 +1329,7 @@ done
 			}
 
 		# for each sample, make a vcf containing only passing indels that fall within the on target bed file
+
 			PASSING_MIXED_ON_TARGET_BY_SAMPLE ()
 			{
 				echo \
@@ -1332,7 +1342,7 @@ done
 					-j y \
 				-N K03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
 					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAGK03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE_$SAMPLE.log \
-					-hold_jid K03_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
+					-hold_jid "K03_SELECT_VARIANTS_FOR_SAMPLE_"$UNIQUE_ID_SM_TAG \
 				$SCRIPT_DIR/K03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE.sh \
 					$JAVA_1_8 \
 					$GATK_DIR \
@@ -1349,6 +1359,7 @@ done
 	# ALTHOUGH AT SOME POINT THIS STRING MIGHT END BEING TOO LONG AT SOME POINT.
 	# SO QC REPORTS MIGHT HAVE TO END UP BEING DONE OUTSIDE OF THE PIPELINE FOR SOME BIG PROJECTS.
 	# yucky, yuck...indenting creates a white space in the hold id which does not work so I have to do this hot mess.
+	
 		QC_REPORT_PREP ()
 		{
 			echo \
@@ -1416,6 +1427,7 @@ do
 	PASSING_MIXED_ON_TARGET_BY_SAMPLE
 	echo sleep 0.1s
 	QC_REPORT_PREP
+	echo sleep 0.1s
 done
 
 ##########################################################################
@@ -1450,4 +1462,4 @@ done
 					"'$DATAMASH_DIR'",\
 					"'$PROJECT_MS'",\
 					"'$PREFIX'",\
-					"'$SAMPLE_SHEET'" "\n" "sleep 0.1s"}'
+					"'$SAMPLE_SHEET'" "\n" "sleep 0.1s"}'	
