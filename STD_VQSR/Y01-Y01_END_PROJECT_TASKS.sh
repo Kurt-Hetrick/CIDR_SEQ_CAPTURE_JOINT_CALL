@@ -203,7 +203,7 @@ echo
 		join -t , -1 2 -2 1 \
 		$CORE_PATH/$PROJECT_MS/TEMP/$PREFIX".QC_REPORT."$TIMESTAMP".TEMP.csv" \
 		$CORE_PATH/$PROJECT_MS/REPORTS/LAB_PREP_REPORTS_MS/$SAMPLE_SHEET_NAME".LAB_PREP_METRICS.csv" \
-		>| $CORE_PATH/$PROJECT_MS/REPORTS/QC_REPORTS/$SAMPLE_SHEET_NAME".QC_REPORT."$TIMESTAMP".csv"
+		>| $CORE_PATH/$PROJECT_MS/REPORTS/QC_REPORTS/$PREFIX".QC_REPORT."$TIMESTAMP".csv"
 
 ######################################################################################################
 ######################################################################################################

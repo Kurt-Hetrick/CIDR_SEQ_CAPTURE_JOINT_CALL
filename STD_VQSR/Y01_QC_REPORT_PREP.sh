@@ -56,28 +56,64 @@ echo
 ##### "PROJECT_SAMPLE","SM_TAG","RG_PU","Library_Name" #####
 ############################################################
 
-$SAMTOOLS_DIR/samtools view -H \
-$CORE_PATH/$PROJECT_SAMPLE/CRAM/$SM_TAG".cram" \
-| grep ^@RG \
-| awk 'BEGIN {OFS="\t"} {split($10,SMtag,":"); split($9,PU,":"); split($6,Library,":"); split(Library[2],Library_Unit,"_"); \
-print "'$PROJECT_SAMPLE'",SMtag[2],PU[2],Library[2],Library_Unit[1],Library_Unit[2],substr(Library_Unit[2],1,1),substr(Library_Unit[2],2,2),\
-Library_Unit[3],Library_Unit[4],substr(Library_Unit[4],1,1),substr(Library_Unit[4],2,2)}' \
-| $DATAMASH_DIR/datamash \
--s \
--g 1,2 \
-collapse 3 \
-unique 4 \
-unique 5 \
-unique 6 \
-unique 7 \
-unique 8 \
-unique 9 \
-unique 10 \
-unique 11 \
-unique 12 \
-| sed 's/,/;/g' \
-| $DATAMASH_DIR/datamash transpose \
->| $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
+	# grab field number for SM_TAG
+
+		SM_FIELD=(`$SAMTOOLS_DIR/samtools view -H \
+		$CORE_PATH/$PROJECT_SAMPLE/CRAM/$SM_TAG".cram" \
+			| grep -m 1 ^@RG \
+			| sed 's/\t/\n/g' \
+			| cat -n \
+			| sed 's/^ *//g' \
+			| awk '$2~/^SM:/ {print $1}'`)
+
+	# grab field number for PLATFORM_UNIT_TAG
+
+		PU_FIELD=(`$SAMTOOLS_DIR/samtools view -H \
+		$CORE_PATH/$PROJECT_SAMPLE/CRAM/$SM_TAG".cram" \
+			| grep -m 1 ^@RG \
+			| sed 's/\t/\n/g' \
+			| cat -n \
+			| sed 's/^ *//g' \
+			| awk '$2~/^PU:/ {print $1}'`)
+
+	# grab field number for LIBRARY_TAG
+
+		LB_FIELD=(`$SAMTOOLS_DIR/samtools view -H \
+		$CORE_PATH/$PROJECT_SAMPLE/CRAM/$SM_TAG".cram" \
+			| grep -m 1 ^@RG \
+			| sed 's/\t/\n/g' \
+			| cat -n \
+			| sed 's/^ *//g' \
+			| awk '$2~/^LB:/ {print $1}'`)
+
+	# Now grab the header and format
+
+		$SAMTOOLS_DIR/samtools view -H \
+		$CORE_PATH/$PROJECT_SAMPLE/CRAM/$SM_TAG".cram" \
+			| grep ^@RG \
+			| awk \
+				-v SM_FIELD="$SM_FIELD" \
+				-v PU_FIELD="$PU_FIELD" \
+				-v LB_FIELD="$LB_FIELD" \
+				'BEGIN {OFS="\t"} {split($SM_FIELD,SMtag,":"); split($PU_FIELD,PU,":"); split($LB_FIELD,Library,":"); split(Library[2],Library_Unit,"_"); \
+				print "'$PROJECT_SAMPLE'",SMtag[2],PU[2],Library[2],Library_Unit[1],Library_Unit[2],substr(Library_Unit[2],1,1),substr(Library_Unit[2],2,2),\
+				Library_Unit[3],Library_Unit[4],substr(Library_Unit[4],1,1),substr(Library_Unit[4],2,2)}' \
+			| $DATAMASH_DIR/datamash \
+				-s \
+				-g 1,2 \
+				collapse 3 \
+				unique 4 \
+				unique 5 \
+				unique 6 \
+				unique 7 \
+				unique 8 \
+				unique 9 \
+				unique 10 \
+				unique 11 \
+				unique 12 \
+			| sed 's/,/;/g' \
+			| $DATAMASH_DIR/datamash transpose \
+		>| $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
 
 #################################################
 ##### GENDER CHECK FROM ANEUPLOIDY CHECK ########
