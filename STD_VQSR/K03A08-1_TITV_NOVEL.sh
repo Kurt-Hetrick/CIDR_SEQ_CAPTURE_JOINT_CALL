@@ -45,8 +45,8 @@ START_NOVEL_TITV=`date '+%s'`
 CMD=$SAMTOOLS_0118_DIR'/bcftools/vcfutils.pl qstats '$CORE_PATH'/'$PROJECT_SAMPLE'/TEMP/'$SM_TAG'.Release.Novel.TiTv.vcf'
 CMD=$CMD' >| '$CORE_PATH'/'$PROJECT_SAMPLE'/REPORTS/TI_TV_MS/'$SM_TAG'_Novel_.titv.txt'
 
-echo $CMD >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".command_lines.txt"
-echo >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".command_lines.txt"
+echo $CMD >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
+echo >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
 echo $CMD | bash
 
 END_NOVEL_TITV=`date '+%s'`

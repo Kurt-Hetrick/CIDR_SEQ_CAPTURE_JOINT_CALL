@@ -118,9 +118,9 @@ org.broadinstitute.gatk.tools.CatVariants \
 --assumeSorted \
 --variant $CORE_PATH/$PROJECT_MS/TEMP/$SM_TAG".FINAL.list" \
 --outputFile $CORE_PATH/$PROJECT_SAMPLE/VCF/RELEASE/FILTERED_ON_BAIT/$SM_TAG"_MS_OnBait.vcf.gz" \
->> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".command_lines.txt"
+>> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
 
-echo >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".command_lines.txt"
+echo >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
 
 # if file is not present exit !=0
 

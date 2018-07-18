@@ -60,8 +60,8 @@ CMD=$CMD' --excludeNonVariants'
 CMD=$CMD' -L '$TITV_BED
 CMD=$CMD' --concordance '$KNOWN_SNPS
 
-echo $CMD >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".command_lines.txt"
-echo >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".command_lines.txt"
+echo $CMD >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
+echo >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
 echo $CMD | bash
 
 END_KNOWN_SNV_TITV=`date '+%s'`
