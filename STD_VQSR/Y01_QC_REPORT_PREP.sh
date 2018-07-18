@@ -260,17 +260,36 @@ echo
 ##### "PCT_TARGET_BASES_100X","HS_LIBRARY_SIZE","AT_DROPOUT","GC_DROPOUT","THEORETICAL_HET_SENSITIVITY","HET_SNP_Q","BAIT_SET","PCT_USABLE_BASES_ON_BAIT"} ###############
 ##########################################################################################################################################################################
 
-	awk 'BEGIN {FS="\t";OFS="\t"} \
+	# this will take when there are no reads in the file...but i don't think that it will handle when there are reads, but none fall on target
+	# the next time i that happens i'll fix this to handle it.
+
+		awk 'BEGIN {FS="\t";OFS="\t"} \
 		NR==8 \
 		{if ($12=="?"&&$44=="") print $2,$3,$4,"NaN",($14/1000000000),"NaN","NaN",$22,$23,$24,$25,$29,"NaN","NaN","NaN","NaN",\
 		$36,$37,$38,$39,$40,$41,$42,$43,"NaN",$51,$52,$53,$54,$1,"NaN" ; \
-		else if ($12!="?") print $2,$3,$4,$12,($14/1000000000),$19,$21,$22,$23,$24,$25,$29,$31,$32,$33,$34,\
-		$36,$37,$38,$39,$40,$41,$42,$43,"NaN",$51,$52,$53,$54,$1,$26 ; \
 		else print $2,$3,$4,$12,($14/1000000000),$19,$21,$22,$23,$24,$25,$29,$31,$32,$33,$34,\
 		$36,$37,$38,$39,$40,$41,$42,$43,$44,$51,$52,$53,$54,$1,$26}' \
-	$CORE_PATH/$PROJECT_SAMPLE/REPORTS/HYB_SELECTION/$SM_TAG"_hybridization_selection_metrics.txt" \
-	| $DATAMASH_DIR/datamash transpose \
-	>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
+		$CORE_PATH/$PROJECT/REPORTS/HYB_SELECTION/$SM_TAG"_hybridization_selection_metrics.txt" \
+		| $DATAMASH_DIR/datamash transpose \
+		>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
+
+	# this was supposed to be
+	## if there are no reads, then print x
+	## if there are no reads in the target area, the print y
+	## else the data is fine and do as you intended.
+	## however i no longer have anything to test this on...
+
+		# awk 'BEGIN {FS="\t";OFS="\t"} \
+		# 	NR==8 \
+		# 	{if ($12=="?"&&$44=="") print $2,$3,$4,"NaN",($14/1000000000),"NaN","NaN",$22,$23,$24,$25,$29,"NaN","NaN","NaN","NaN",\
+		# 	$36,$37,$38,$39,$40,$41,$42,$43,"NaN",$51,$52,$53,$54,$1,"NaN" ; \
+		# 	else if ($12!="?") print $2,$3,$4,$12,($14/1000000000),$19,$21,$22,$23,$24,$25,$29,$31,$32,$33,$34,\
+		# 	$36,$37,$38,$39,$40,$41,$42,$43,"NaN",$51,$52,$53,$54,$1,$26 ; \
+		# 	else print $2,$3,$4,$12,($14/1000000000),$19,$21,$22,$23,$24,$25,$29,$31,$32,$33,$34,\
+		# 	$36,$37,$38,$39,$40,$41,$42,$43,$44,$51,$52,$53,$54,$1,$26}' \
+		# $CORE_PATH/$PROJECT_SAMPLE/REPORTS/HYB_SELECTION/$SM_TAG"_hybridization_selection_metrics.txt" \
+		# | $DATAMASH_DIR/datamash transpose \
+		# >> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
 
 ##############################################
 ##### BAIT BIAS REPORT FOR Cref and Gref #####
