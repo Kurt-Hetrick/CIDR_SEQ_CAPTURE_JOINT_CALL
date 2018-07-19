@@ -1,6 +1,8 @@
 #! /bin/bash
 
-# INPUT VARIABLES
+###################
+# INPUT VARIABLES #
+###################
 
 	PROJECT_MS=$1 # the project where the multi-sample vcf is being written to
 	SAMPLE_SHEET=$2 # full/relative path to the sample sheet
@@ -13,7 +15,9 @@
 			NUMBER_OF_BED_FILES=500
 		fi
 
-# CORE VARIABLES/SETTINGS
+###########################
+# CORE VARIABLES/SETTINGS #
+###########################
 
 	# gcc is so that it can be pushed out to the compute nodes via qsub (-V)
 	module load gcc/5.1.0
@@ -119,6 +123,7 @@
 	mkdir -p $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE
 	mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/{ANNOVAR,LAB_PREP_REPORTS_MS,QC_REPORTS,QC_REPORT_PREP_$PREFIX}
 	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX
+	mkdir -p $CORE_PATH/$PROJECT_MS/LOGS/{A01_COMBINE_GVCF,B01_GENOTYPE_GVCF}
 
 ##################################################
 ### FUNCTIONS FOR JOINT CALLING PROJECT SET-UP ###
@@ -277,30 +282,30 @@
 #######################################################################
 #######################################################################
 
-# aggregate all of individual g.vcf into one cohort g.vcf per bed file chunk
+	# aggregate all of individual g.vcf into one cohort g.vcf per bed file chunk
 
-	COMBINE_GVCF ()
-	{
-		echo \
-		qsub \
-			-S /bin/bash \
-			-cwd \
-			-V \
-			-q $QUEUE_LIST \
-			-p $PRIORITY \
-			-j y \
-		-N 'A01_COMBINE_GVCF_'$PROJECT_MS'_'$PGVCF_LIST_NAME'_'$BED_FILE_NAME \
-			-o $CORE_PATH/$PROJECT_MS/LOGS/"A01_COMBINE_GVCF_"$PGVCF_LIST_NAME"_"$BED_FILE_NAME".log" \
-		$SCRIPT_DIR/A01_COMBINE_GVCF.sh \
-			$JAVA_1_8 \
-			$GATK_DIR \
-			$REF_GENOME \
-			$CORE_PATH \
-			$PROJECT_MS \
-			$PGVCF_LIST \
-			$PREFIX \
-			$BED_FILE_NAME
-	}
+		COMBINE_GVCF ()
+		{
+			echo \
+			qsub \
+				-S /bin/bash \
+				-cwd \
+				-V \
+				-q $QUEUE_LIST \
+				-p $PRIORITY \
+				-j y \
+			-N 'A01_COMBINE_GVCF_'$PROJECT_MS'_'$PGVCF_LIST_NAME'_'$BED_FILE_NAME \
+				-o $CORE_PATH/$PROJECT_MS/LOGS/A01_COMBINE_GVCF/"A01_COMBINE_GVCF_"$PGVCF_LIST_NAME"_"$BED_FILE_NAME".log" \
+			$SCRIPT_DIR/A01_COMBINE_GVCF.sh \
+				$JAVA_1_8 \
+				$GATK_DIR \
+				$REF_GENOME \
+				$CORE_PATH \
+				$PROJECT_MS \
+				$PGVCF_LIST \
+				$PREFIX \
+				$BED_FILE_NAME
+		}
 
 for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed);
 do
@@ -317,17 +322,17 @@ done
 
 	BUILD_HOLD_ID_GENOTYPE_GVCF ()
 	{
-	for PROJECT_A in $PROJECT_MS;
-	# yeah, so uh, this looks bad, but I just needed a way to set a new project variable that equals the multi-sample project variable.
-	do
-		GENOTYPE_GVCF_HOLD_ID="-hold_jid "
+		for PROJECT_A in $PROJECT_MS;
+		# yeah, so uh, this looks bad, but I just needed a way to set a new project variable that equals the multi-sample project variable.
+		do
+			GENOTYPE_GVCF_HOLD_ID="-hold_jid "
 
-			for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_A/TEMP/SPLIT_SS/*list)
-				do
-					PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
-					GENOTYPE_GVCF_HOLD_ID=$GENOTYPE_GVCF_HOLD_ID'A01_COMBINE_GVCF_'$PROJECT_A'_'$PGVCF_LIST_NAME'_'$BED_FILE_NAME','
-			done
-	done
+				for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_A/TEMP/SPLIT_SS/*list)
+					do
+						PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
+						GENOTYPE_GVCF_HOLD_ID=$GENOTYPE_GVCF_HOLD_ID'A01_COMBINE_GVCF_'$PROJECT_A'_'$PGVCF_LIST_NAME'_'$BED_FILE_NAME','
+				done
+		done
 	}
 
 	# genotype the cohort g.vcf chunks
@@ -343,7 +348,7 @@ done
 				-p $PRIORITY \
 				-j y \
 			-N B01_GENOTYPE_GVCF_$PROJECT_MS'_'$BED_FILE_NAME \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/B01_GENOTYPE_GVCF_$BED_FILE_NAME.log \
+				-o $CORE_PATH/$PROJECT_MS/LOGS/B01_GENOTYPE_GVCF/B01_GENOTYPE_GVCF_$BED_FILE_NAME.log \
 				$GENOTYPE_GVCF_HOLD_ID \
 			$SCRIPT_DIR/B01_GENOTYPE_GVCF.sh \
 				$JAVA_1_8 \
@@ -368,7 +373,7 @@ done
 				-p $PRIORITY \
 				-j y \
 			-N C$HACK'_'$BED_FILE_NAME \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/C01_VARIANT_ANNOTATOR_$BED_FILE_NAME.log \
+				-o $CORE_PATH/$PROJECT_MS/LOGS/C01_VARIANT_ANNOTATOR/C01_VARIANT_ANNOTATOR_$BED_FILE_NAME.log \
 				-hold_jid B01_GENOTYPE_GVCF_$PROJECT_MS'_'$BED_FILE_NAME \
 			$SCRIPT_DIR/C01_VARIANT_ANNOTATOR.sh \
 				$JAVA_1_8 \
@@ -575,7 +580,7 @@ done
 				-p $PRIORITY \
 				-j y \
 			-N H01_CALCULATE_GENOTYPE_POSTERIORS_$PROJECT_MS"_"$BED_FILE_NAME \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/H01_CALCULATE_GENOTYPE_POSTERIORS_$BED_FILE_NAME".log" \
+				-o $CORE_PATH/$PROJECT_MS/LOGS/H01_CALCULATE_GENOTYPE_POSTERIORS/H01_CALCULATE_GENOTYPE_POSTERIORS_$BED_FILE_NAME".log" \
 				-hold_jid G01_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
 			$SCRIPT_DIR/H01_CALCULATE_GENOTYPE_POSTERIORS.sh \
 				$JAVA_1_8 \
@@ -602,7 +607,7 @@ done
 				-p $PRIORITY \
 				-j y \
 			-N I$HACK"_"$BED_FILE_NAME \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/I01_VARIANT_ANNOTATOR_REFINED_$BED_FILE_NAME".log" \
+				-o $CORE_PATH/$PROJECT_MS/LOGS/I01_VARIANT_ANNOTATOR_REFINED/I01_VARIANT_ANNOTATOR_REFINED_$BED_FILE_NAME".log" \
 				-hold_jid H01_CALCULATE_GENOTYPE_POSTERIORS_$PROJECT_MS"_"$BED_FILE_NAME \
 			$SCRIPT_DIR/I01_VARIANT_ANNOTATOR_REFINED.sh \
 				$JAVA_1_8 \
@@ -1317,7 +1322,7 @@ done
 					-p $PRIORITY \
 					-j y \
 				-N K03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
-					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAGK03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE_$SAMPLE.log \
+					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE_$SAMPLE.log \
 					-hold_jid "K03_SELECT_VARIANTS_FOR_SAMPLE_"$UNIQUE_ID_SM_TAG \
 				$SCRIPT_DIR/K03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE.sh \
 					$JAVA_1_8 \
@@ -1341,7 +1346,7 @@ done
 					-p $PRIORITY \
 					-j y \
 				-N K03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
-					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAGK03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE_$SAMPLE.log \
+					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE_$SAMPLE.log \
 					-hold_jid "K03_SELECT_VARIANTS_FOR_SAMPLE_"$UNIQUE_ID_SM_TAG \
 				$SCRIPT_DIR/K03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE.sh \
 					$JAVA_1_8 \
