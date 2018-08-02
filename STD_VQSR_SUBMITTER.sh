@@ -36,7 +36,7 @@
 	 | uniq \
 	 | egrep -v "bigmem.q|all.q|cgc.q|programmers.q|rhel7.q|qtest.q" \
 	 | datamash collapse 1 \
-	 | awk '{print $1}'`
+	 | awk '{print $1,"-l \x27hostname=!DellR730-03\x27"}'`
 
 	# EVENTUALLY I WANT THIS SET UP AS AN OPTION WITH A DEFAULT OF X
 
