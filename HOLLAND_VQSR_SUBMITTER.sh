@@ -125,7 +125,7 @@
 	mkdir -p $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE
 	mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/{ANNOVAR,LAB_PREP_REPORTS_MS,QC_REPORTS,QC_REPORT_PREP_$PREFIX}
 	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX
-	mkdir -p $CORE_PATH/$PROJECT_MS/LOGS/{A01_COMBINE_GVCF,B01_GENOTYPE_GVCF}
+	mkdir -p $CORE_PATH/$PROJECT_MS/LOGS/{A01_COMBINE_GVCF,B01_GENOTYPE_GVCF,C01_VARIANT_ANNOTATOR,H01_CALCULATE_GENOTYPE_POSTERIORS,I01_VARIANT_ANNOTATOR_REFINED}
 
 ##################################################
 ### FUNCTIONS FOR JOINT CALLING PROJECT SET-UP ###
@@ -1469,10 +1469,12 @@ done
 					"-V",\
 					"-q" , "'$QUEUE_LIST'",\
 					"-p" , "'$PRIORITY'",\
-					"-j y",\
+					"-m","e",\
+					"-M","cidr_sequencing_notifications@lists.johnshopkins.edu",\
 				"-N" , "Y01-Y01-END_PROJECT_TASKS_" "'$PREFIX'",\
-					"-o","'$CORE_PATH'" "/" "'$PROJECT_MS'" "/LOGS/Y01-Y01-" "'$PREFIX'" ".END_PROJECT_TASKS.log",\
-					"-hold_jid" , "Y_"$1,\
+				"-o","'$CORE_PATH'" "/" "'$PROJECT_MS'" "/LOGS/Y01-Y01-" "'$PREFIX'" ".END_PROJECT_TASKS.log",\
+					"-j y",\
+				"-hold_jid" , "Y_"$1,\
 				"'$SCRIPT_DIR'" "/Y01-Y01_END_PROJECT_TASKS.sh",\
 					"'$CORE_PATH'",\
 					"'$DATAMASH_DIR'",\

@@ -1464,10 +1464,12 @@ done
 					"-V",\
 					"-q" , "'$QUEUE_LIST'",\
 					"-p" , "'$PRIORITY'",\
-					"-j y",\
+					"-m","e",\
+					"-M","cidr_sequencing_notifications@lists.johnshopkins.edu",\
 				"-N" , "Y01-Y01-END_PROJECT_TASKS_" "'$PREFIX'",\
-					"-o","'$CORE_PATH'" "/" "'$PROJECT_MS'" "/LOGS/Y01-Y01-" "'$PREFIX'" ".END_PROJECT_TASKS.log",\
-					"-hold_jid" , "Y_"$1,\
+				"-o","'$CORE_PATH'" "/" "'$PROJECT_MS'" "/LOGS/Y01-Y01-" "'$PREFIX'" ".END_PROJECT_TASKS.log",\
+					"-j y",\
+				"-hold_jid" , "Y_"$1,\
 				"'$SCRIPT_DIR'" "/Y01-Y01_END_PROJECT_TASKS.sh",\
 					"'$CORE_PATH'",\
 					"'$DATAMASH_DIR'",\
