@@ -141,7 +141,7 @@
 	mkdir -p $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE
 	mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/{ANNOVAR,LAB_PREP_REPORTS_MS,QC_REPORTS,QC_REPORT_PREP_$PREFIX}
 	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX
-	mkdir -p $CORE_PATH/$PROJECT_MS/LOGS/{A01_COMBINE_GVCF,B01_GENOTYPE_GVCF}
+	mkdir -p $CORE_PATH/$PROJECT_MS/LOGS/{A01_COMBINE_GVCF,B01_GENOTYPE_GVCF,C01_VARIANT_ANNOTATOR}
 
 ##################################################
 ### FUNCTIONS FOR JOINT CALLING PROJECT SET-UP ###
@@ -191,7 +191,7 @@
 			TOTAL_SAMPLES=(`(cat $OLD_GVCF_LIST ; awk 'BEGIN{FS=","} NR>1 {print $1,$8}' $SAMPLE_SHEET \
 				| sort \
 				| uniq \
-				| awk 'BEGIN {OFS="/"} {print "'$CORE_PATH'" $1 , "GVCF" , $2 ".g.vcf.gz"}') \
+				| awk 'BEGIN {OFS="/"} {print "'$CORE_PATH'" , $1 , "GVCF" , $2 ".g.vcf.gz"}') \
 				| sort \
 				| uniq \
 				| wc -l`)
@@ -199,12 +199,12 @@
 			(cat $OLD_GVCF_LIST ; awk 'BEGIN{FS=","} NR>1 {print $1,$8}' $SAMPLE_SHEET \
 				| sort \
 				| uniq \
-				| awk 'BEGIN {OFS="/"} {print "'$CORE_PATH'" $1 , "GVCF" , $2 ".g.vcf.gz"}') \
+				| awk 'BEGIN {OFS="/"} {print "'$CORE_PATH'" , $1 , "GVCF" , $2 ".g.vcf.gz"}') \
 				| sort \
 				| uniq \
-			>| $CORE_PATH'/'$PROJECT'/'$PROJECT_MS'-'$TOTAL_SAMPLES'.samples.list'
+			>| $CORE_PATH'/'$PROJECT_MS'/'$PROJECT_MS'-'$TOTAL_SAMPLES'.samples.list'
 
-			GVCF_LIST=(`echo $CORE_PATH'/'$PROJECT'/'$PROJECT_MS'-'$TOTAL_SAMPLES'.samples.list'`)
+			GVCF_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/'$PROJECT_MS'-'$TOTAL_SAMPLES'.samples.list'`)
 
 			# Take the list above and split it into groups of 300
 				split -l 300 -a 4 -d $GVCF_LIST \
@@ -1043,7 +1043,7 @@ done
 					-N J02A11_SETUP_AND_RUN_ANNOVER_$UNIQUE_ID_SM_TAG \
 						-o $CORE_PATH/$PROJECT_MS/LOGS/J02A11_SETUP_AND_RUN_ANNOVAR_$SM_TAG".log" \
 					-hold_jid J02_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
-					$SCRIPT_DIR/J02A11_SETUP_AND_RUN_ANNOVER.sh \
+					$SCRIPT_DIR/J02A11_SETUP_AND_RUN_ANNOVAR.sh \
 						$PROJECT_SAMPLE \
 						$SM_TAG \
 						$CIDRSEQSUITE_ANNOVAR_JAVA \
