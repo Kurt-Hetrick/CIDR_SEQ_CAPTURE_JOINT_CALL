@@ -30,19 +30,19 @@
 
 	# Generate a list of active queue and remove the ones that I don't want to use
 	QUEUE_LIST=`qstat -f -s r \
-	 | egrep -v "^[0-9]|^-|^queue" \
-	 | cut -d @ -f 1 \
-	 | sort \
-	 | uniq \
-	 | egrep -v "bigmem.q|all.q|cgc.q|programmers.q|rhel7.q|qtest.q" \
-	 | datamash collapse 1 \
-	 | awk '{print $1}'`
+		| egrep -v "^[0-9]|^-|^queue" \
+		| cut -d @ -f 1 \
+		| sort \
+		| uniq \
+		| egrep -v "bigmem.q|all.q|cgc.q|programmers.q|rhel7.q|qtest.q" \
+		| datamash collapse 1 \
+		| awk '{print $1}'`
 
 	 # | awk '{print $1,"-l \x27hostname=!DellR730-03\x27"}'`
 
 	# EVENTUALLY I WANT THIS SET UP AS AN OPTION WITH A DEFAULT OF X
 
-	PRIORITY="-20"
+	PRIORITY="-14"
 
 	# eventually, i want to push this out to something...maybe in the vcf file header.
 	PIPELINE_VERSION=`git --git-dir=$SCRIPT_DIR/../.git --work-tree=$SCRIPT_DIR/.. log --pretty=format:'%h' -n 1`
@@ -50,6 +50,10 @@
 	# generate a random number b/w "0 - 32767" to be used for the job name for variant annotator both pre and post refinement
 	# this is to help cut down on the job name length so I can increase the scatter count
 	HACK=(`echo $RANDOM`)
+
+	# explicitly setting this b/c not everybody has had the $HOME directory transferred and I'm not going to through
+	# and figure out who does and does not have this set correctly
+	umask 0007
 
 	# TIMESTAMP=`date '+%F.%H-%M-%S'`
 
@@ -106,13 +110,13 @@
 	# If so, remove them to not interfere with current run
 
 	if [ -d $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT ]
-	then
-		rm -rf $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT
+		then
+			rm -rf $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT
 	fi
 
-	if [ -d $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS ]
-	then
-		rm -rf $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS
+	if [ -d $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST ]
+		then
+			rm -rf $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST
 	fi
 
 ############################################################################################
@@ -120,11 +124,10 @@
 ############################################################################################
 
 	mkdir -p $CORE_PATH/$PROJECT_MS/{LOGS,COMMAND_LINES}
-	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/{BED_FILE_SPLIT,AGGREGATE,QC_REPORT_PREP_$PREFIX,SPLIT_SS}
+	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/{BED_FILE_SPLIT,AGGREGATE,QC_REPORT_PREP_$PREFIX,SPLIT_LIST}
 	mkdir -p $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/
 	mkdir -p $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE
 	mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/{ANNOVAR,LAB_PREP_REPORTS_MS,QC_REPORTS,QC_REPORT_PREP_$PREFIX}
-	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX
 	mkdir -p $CORE_PATH/$PROJECT_MS/LOGS/{A01_COMBINE_GVCF,B01_GENOTYPE_GVCF,C01_VARIANT_ANNOTATOR,H01_CALCULATE_GENOTYPE_POSTERIORS,I01_VARIANT_ANNOTATOR_REFINED}
 
 ##################################################
@@ -146,7 +149,7 @@
 
 			REF_GENOME=${PROJECT_INFO_ARRAY[0]} # field 12 from the sample sheet
 			PROJECT_DBSNP=${PROJECT_INFO_ARRAY[1]} # field 18 from the sample sheet
-			# PROJECT_BAIT_BED=${PROJECT_INFO_ARRAY[2]} # field 16 from the sample sheet
+			PROJECT_BAIT_BED=${PROJECT_INFO_ARRAY[2]} # field 16 from the sample sheet
 		}
 
 		# Keep this in here to reference...I'll probably going to use this somewhere.
@@ -160,7 +163,7 @@
 			# | sort \
 			# | uniq \
 			# | $DATAMASH_DIR/datamash collapse 1 | sed 's/,/ /g')
-		# }	
+			# }	
 
 	# get the full path of the last gvcf list file.
 	# take the sample sheet and create a gvcf list from that
@@ -175,7 +178,7 @@
 			TOTAL_SAMPLES=(`(cat $OLD_GVCF_LIST ; awk 'BEGIN{FS=","} NR>1 {print $1,$8}' $SAMPLE_SHEET \
 				| sort \
 				| uniq \
-				| awk 'BEGIN {OFS="/"} {print "'$CORE_PATH'" $1 , "GVCF" , $2 ".g.vcf.gz"}') \
+				| awk 'BEGIN {OFS="/"} {print "'$CORE_PATH'" , $1 , "GVCF" , $2 ".g.vcf.gz"}') \
 				| sort \
 				| uniq \
 				| wc -l`)
@@ -183,12 +186,12 @@
 			(cat $OLD_GVCF_LIST ; awk 'BEGIN{FS=","} NR>1 {print $1,$8}' $SAMPLE_SHEET \
 				| sort \
 				| uniq \
-				| awk 'BEGIN {OFS="/"} {print "'$CORE_PATH'" $1 , "GVCF" , $2 ".g.vcf.gz"}') \
+				| awk 'BEGIN {OFS="/"} {print "'$CORE_PATH'" , $1 , "GVCF" , $2 ".g.vcf.gz"}') \
 				| sort \
 				| uniq \
-			>| $CORE_PATH'/'$PROJECT'/'$PROJECT_MS'-'$TOTAL_SAMPLES'.samples.list'
+			>| $CORE_PATH'/'$PROJECT_MS'/'$PROJECT_MS'-'$TOTAL_SAMPLES'.samples.list'
 
-			GVCF_LIST=(`echo $CORE_PATH'/'$PROJECT'/'$PROJECT_MS'-'$TOTAL_SAMPLES'.samples.list'`)
+			GVCF_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/'$PROJECT_MS'-'$TOTAL_SAMPLES'.samples.list'`)
 
 			# Take the list above and split it into groups of 300
 				split -l 300 -a 4 -d $GVCF_LIST \
@@ -200,53 +203,54 @@
 					| bash	
 		}
 
-	# GET RID OF ALL THE COMMON BED FILE EFF-UPS,
+	# GET RID OF ALL THE COMMON BED FILE EFF-UPS AND BREAK UP INTO CHUNKS
 
 		FORMAT_AND_SCATTER_BAIT_BED ()
 		{
-			BED_FILE_PREFIX=(`echo BF`)
+				BED_FILE_PREFIX=(`echo BF`)
 
-			# make sure that there is EOF
-			# remove CARRIAGE RETURNS
-			# remove CHR PREFIXES (THIS IS FOR GRCH37)
-			# CONVERT VARIABLE LENGTH WHITESPACE FIELD DELIMETERS TO SINGLE TAB.
+				# make sure that there is EOF
+				# remove CARRIAGE RETURNS
+				# remove CHR PREFIXES (THIS IS FOR GRCH37)
+				# CONVERT VARIABLE LENGTH WHITESPACE FIELD DELIMETERS TO SINGLE TAB.
 
-				awk 1 $PROJECT_BAIT_BED | sed -r 's/\r//g ; s/chr//g ; s/[[:space:]]+/\t/g' \
-				>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed
+					awk 1 $PROJECT_BAIT_BED \
+						| sed -r 's/\r//g ; s/chr//g ; s/[[:space:]]+/\t/g' \
+					>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed
 
-			# SORT TO GRCH37 ORDER
+				# SORT TO GRCH37 ORDER
 
-				(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n ; \
-				 	awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
-				 	awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
-				 	awk '$1=="MT"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) \
-				>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed
+					(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n ; \
+					 	awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
+					 	awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
+					 	awk '$1=="MT"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) \
+					>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed
 
-			# get a line count for the number of for the bed file above
-			# divide the line count by the number of mini-bed files you want
-			# if there is a remainder round up the next integer
+				# get a line count for the number of for the bed file above
+				# divide the line count by the number of mini-bed files you want
+				# if there is a remainder round up the next integer
 
-			# this somehow sort of works, but the math ends up being off...
-			# if I wanted 1000 fold scatter gather, this would actually create 997.
-			# and I don't see how this actually rounds up, but it must otherwise split would not work.
+				# this somehow sort of works, but the math ends up being off...
+				# if I wanted 1000 fold scatter gather, this would actually create 997.
+				# and I don't see how this actually rounds up, but it must otherwise split would not work.
 
-				INTERVALS_DIVIDED=`wc -l $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
-					| awk '{print $1"/""'$NUMBER_OF_BED_FILES'"}' \
-					| bc \
-					| awk '{print $0+1}'`
+					INTERVALS_DIVIDED=`wc -l $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
+						| awk '{print $1"/""'$NUMBER_OF_BED_FILES'"}' \
+						| bc \
+						| awk '{print $0+1}'`
 
-				split -l $INTERVALS_DIVIDED \
-					-a 4 \
-					-d \
-				$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
-				$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX
+					split -l $INTERVALS_DIVIDED \
+						-a 4 \
+						-d \
+					$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
+					$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX
 
-			# ADD A .bed suffix to all of the now splitted files
+				# ADD A .bed suffix to all of the now splitted files
 
-				ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX* \
-					| awk '{print "mv",$0,$0".bed"}' \
-					| bash
-		}
+					ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX* \
+						| awk '{print "mv",$0,$0".bed"}' \
+						| bash
+			}
 
 	# Run Ben's EnhancedSequencingQCReport which;
 	# Generates a QC report for lab specific metrics including Physique Report, Samples Table, Sequencer XML data, Pca and Phoenix.
@@ -317,7 +321,7 @@
 for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed);
 do
 	BED_FILE_NAME=$(basename $BED_FILE .bed)
-		for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS/*list)
+		for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST/*list)
 			do
 				PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
 				COMBINE_GVCF
@@ -334,7 +338,7 @@ done
 		do
 			GENOTYPE_GVCF_HOLD_ID="-hold_jid "
 
-				for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_A/TEMP/SPLIT_SS/*list)
+				for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_A/TEMP/SPLIT_LIST/*list)
 					do
 						PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
 						GENOTYPE_GVCF_HOLD_ID=$GENOTYPE_GVCF_HOLD_ID'A01_COMBINE_GVCF_'$PROJECT_A'_'$PGVCF_LIST_NAME'_'$BED_FILE_NAME','
@@ -415,11 +419,11 @@ do
 	GENERATE_CAT_VARIANTS_HOLD_ID
 done
 
-##############################################################
-##############################################################
-##### VCF Gather, VQSR and Genotype Refinement Functions #####
-##############################################################
-##############################################################
+###############################
+###############################
+##### VCF Gather and VQSR #####
+###############################
+###############################
 
 	# use cat variants to gather up all of the vcf files above into one big file
 	# MIGHT WANT TO LOOK INTO GatherVcfs (Picard) here
@@ -670,11 +674,33 @@ done
 				-j y \
 			-N J01_CAT_REFINED_VARIANTS_$PROJECT_MS \
 				-o $CORE_PATH/$PROJECT_MS/LOGS/J01_CAT_REFINED_VARIANTS.log \
-				-hold_jid $CAT_REFINED_VARIANTS_HOLD_ID \
+			-hold_jid $CAT_REFINED_VARIANTS_HOLD_ID \
 			$SCRIPT_DIR/J01_CAT_REFINED_VARIANTS.sh \
 				$JAVA_1_8 \
 				$GATK_DIR \
 				$REF_GENOME \
+				$CORE_PATH \
+				$PROJECT_MS \
+				$PREFIX
+		}
+
+	# bgzip and index genotype refined vcf
+
+		BGZIP_INDEX_REFINED_VARIANTS ()
+		{
+			echo \
+			qsub \
+				-S /bin/bash \
+				-cwd \
+				-V \
+				-q $QUEUE_LIST \
+				-p $PRIORITY \
+				-j y \
+			-N J01A01_BGZIP_INDEX_$PROJECT_MS \
+				-o $CORE_PATH/$PROJECT_MS/LOGS/J01A01_BGZIP_INDEX_VARIANTS.log \
+			-hold_jid J01_CAT_REFINED_VARIANTS_$PROJECT_MS \
+			$SCRIPT_DIR/J01A01_BGZIP_INDEX_VARIANTS.sh \
+				$TABIX_DIR \
 				$CORE_PATH \
 				$PROJECT_MS \
 				$PREFIX
@@ -732,7 +758,7 @@ done
 			 			-j y \
 					-N K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 						-o $CORE_PATH/$PROJECT_MS/LOGS/'K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS-'$PREFIX'.log' \
-			 			-hold_jid J01_CAT_REFINED_VARIANTS_$PROJECT_MS \
+			 		-hold_jid J01_CAT_REFINED_VARIANTS_$PROJECT_MS \
 					$SCRIPT_DIR/K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS.sh \
 						$CORE_PATH \
 						$PROJECT_MS \
@@ -751,8 +777,8 @@ done
 			 		-p $PRIORITY \
 			 		-j y \
 				-N K02A01_SELECT_SNPS_FOR_ALL_SAMPLES_$PROJECT_MS \
-				 	-o $CORE_PATH/$PROJECT_MS/LOGS/'K02A01_SELECT_SNPS_FOR_ALL_SAMPLES-'$PREFIX'.log' \
-				 	-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+					-o $CORE_PATH/$PROJECT_MS/LOGS/'K02A01_SELECT_SNPS_FOR_ALL_SAMPLES-'$PREFIX'.log' \
+				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 				$SCRIPT_DIR/K02A01_SELECT_ALL_SAMPLES_SNP.sh \
 				 	$JAVA_1_8 \
 				 	$GATK_DIR \
@@ -775,7 +801,7 @@ done
 			 		-j y \
 				-N K02A02_SELECT_PASS_STUDY_ONLY_SNP_$PROJECT_MS \
 					-o $CORE_PATH/$PROJECT_MS/LOGS/'K02A02_SELECT_PASS_STUDY_ONLY_SNP-'$PREFIX'.log' \
-					-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 				$SCRIPT_DIR/K02A02_SELECT_PASS_STUDY_ONLY_SNP.sh \
 					$JAVA_1_8 \
 					$GATK_DIR \
@@ -799,7 +825,7 @@ done
 			 		-j y \
 				-N K02A03_SELECT_PASS_HAPMAP_ONLY_SNP_$PROJECT_MS \
 				 	-o $CORE_PATH/$PROJECT_MS/LOGS/'K02A03_SELECT_PASS_HAPMAP_ONLY_SNP-'$PREFIX'.log' \
-					-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 				$SCRIPT_DIR/K02A03_SELECT_PASS_HAPMAP_ONLY_SNP.sh \
 					$JAVA_1_8 \
 					$GATK_DIR \
@@ -823,7 +849,7 @@ done
 			 		-j y \
 				-N K02A04_SELECT_INDELS_FOR_ALL_SAMPLES_$PROJECT_MS \
 					-o $CORE_PATH/$PROJECT_MS/LOGS/'K02A04_SELECT_INDELS_FOR_ALL_SAMPLES-'$PREFIX'.log' \
-					-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 				$SCRIPT_DIR/K02A04_SELECT_ALL_SAMPLES_INDELS.sh \
 					$JAVA_1_8 \
 					$GATK_DIR \
@@ -846,7 +872,7 @@ done
 			 		-j y \
 				-N K02A05_SELECT_PASS_STUDY_ONLY_INDEL_$PROJECT_MS \
 					-o $CORE_PATH/$PROJECT_MS/LOGS/'K02A05_SELECT_PASS_STUDY_ONLY_INDEL-'$PREFIX'.log' \
-					-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 				$SCRIPT_DIR/K02A05_SELECT_PASS_STUDY_ONLY_INDEL.sh \
 					$JAVA_1_8 \
 					$GATK_DIR \
@@ -870,7 +896,7 @@ done
 			 		-j y \
 				-N K02A06_SELECT_PASS_HAPMAP_ONLY_INDEL_$PROJECT_MS \
 					-o $CORE_PATH/$PROJECT_MS/LOGS/'K02A06_SELECT_PASS_HAPMAP_ONLY_INDEL-'$PREFIX'.log' \
-					-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 				$SCRIPT_DIR/K02A06_SELECT_PASS_HAPMAP_ONLY_INDEL.sh \
 					$JAVA_1_8 \
 					$GATK_DIR \
@@ -894,7 +920,7 @@ done
 			 		-j y \
 				-N K02A07_SELECT_SNP_FOR_ALL_SAMPLES_PASS_$PROJECT_MS \
 					-o $CORE_PATH/$PROJECT_MS/LOGS/'K02A07_SELECT_SNP_FOR_ALL_SAMPLES_PASS-'$PREFIX'.log' \
-					-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 				$SCRIPT_DIR/K02A07_SELECT_ALL_SAMPLES_SNP_PASS.sh \
 					$JAVA_1_8 \
 					$GATK_DIR \
@@ -917,7 +943,7 @@ done
 			 		-j y \
 				-N K02A08_SELECT_INDEL_FOR_ALL_SAMPLES_PASS_$PROJECT_MS \
 					-o $CORE_PATH/$PROJECT_MS/LOGS/'K02A08_SELECT_INDEL_FOR_ALL_SAMPLES_PASS-'$PREFIX'.log' \
-					-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
+				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 				$SCRIPT_DIR/K02A08_SELECT_ALL_SAMPLES_INDEL_PASS.sh \
 					$JAVA_1_8 \
 					$GATK_DIR \
@@ -933,6 +959,8 @@ done
 	echo sleep 0.1s
 	# RUN_ANNOVAR
 	# echo sleep 0.1s
+	BGZIP_INDEX_REFINED_VARIANTS
+	echo sleep 0.1s
 	GENERATE_STUDY_HAPMAP_SAMPLE_LISTS
 	SELECT_SNVS_ALL
 	echo sleep 0.1s
@@ -1007,9 +1035,11 @@ done
 				-j y \
 			-N "K03_SELECT_VARIANTS_FOR_SAMPLE_"$UNIQUE_ID_SM_TAG \
 				-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03_SELECT_VARIANTS_FOR_SAMPLE_$SM_TAG".log" \
-			-hold_jid J01_CAT_REFINED_VARIANTS_$PROJECT_MS \
+			-hold_jid J01A01_BGZIP_INDEX_$PROJECT_MS \
 			$SCRIPT_DIR/K03_SELECT_VARIANTS_FOR_SAMPLE.sh \
-				$TABIX_DIR \
+				$JAVA_1_8 \
+				$GATK_DIR \
+				$SAMPLE_REF_GENOME \
 				$CORE_PATH \
 				$PROJECT_SAMPLE \
 				$PROJECT_MS \
