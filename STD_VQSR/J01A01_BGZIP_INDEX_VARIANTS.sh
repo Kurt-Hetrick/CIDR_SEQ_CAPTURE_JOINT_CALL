@@ -34,49 +34,43 @@ echo
 
 # INPUT PARAMETERS
 
-	JAVA_1_8=$1
-	shift
-	GATK_DIR=$1
-	shift
-	REF_GENOME=$1
-	shift
-	CORE_PATH=$1
-	shift
-	PROJECT_MS=$1
-	shift
-	PREFIX=$1
-	shift
+	TABIX_DIR=$1
 
-START_CAT_VARIANTS=`date '+%s'`
+	CORE_PATH=$2
+	PROJECT_MS=$3
+	PREFIX=$4
 
-# Will want to check GATK 4 to see if this a full featured walker or not
-# As is right now, I would imagine that this limits your scatter count...
+START_BGZIP_INDEX=`date '+%s'`
 
-	CMD=$JAVA_1_8'/java'
-	CMD=$CMD' -cp '$GATK_DIR'/GenomeAnalysisTK.jar'
-	CMD=$CMD' org.broadinstitute.gatk.tools.CatVariants'
-	CMD=$CMD' -R '$REF_GENOME
-	CMD=$CMD' -assumeSorted'
+# compress vcf file with bgzip
 
-for VCF in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BF*.r.vcf.gz)
-	do
-	  CMD=$CMD' --variant '$VCF
-	done
+	CMD1=$TABIX_DIR'/bgzip -c '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf'
+	CMD1=$CMD1' >| '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.gz'
 
-CMD=$CMD' -out '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf'
+# index vcf file
 
-echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo $CMD | bash
+	CMD2=$TABIX_DIR'/tabix -p vcf -f '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.gz'
 
-END_CAT_VARIANTS=`date '+%s'`
+END_BGZIP_INDEX=`date '+%s'`
 
-HOSTNAME=`hostname`
+# send command line to command line file
 
-echo $PROJECT_MS",J01,CAT_REFINED_VARIANTS,"$HOSTNAME","$START_CAT_VARIANTS","$END_CAT_VARIANTS \
+	# bgzip command
+
+		echo $CMD1 >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo $CMD1 | bash
+
+	# tabix command
+
+		echo $CMD2 >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo $CMD2 | bash
+
+echo $PROJECT_MS",K01,BGZIP_VARIANTS,"$HOSTNAME","$START_BGZIP_INDEX","$END_BGZIP_INDEX \
 >> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"
 
 # check to see if the index is generated which should send an non-zero exit signal if not.
 # eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
 
-ls $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.idx"
+ls $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.gz.tbi"
