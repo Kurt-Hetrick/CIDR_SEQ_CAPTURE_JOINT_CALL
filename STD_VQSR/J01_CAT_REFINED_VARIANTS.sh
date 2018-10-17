@@ -79,4 +79,4 @@ echo $PROJECT_MS",J01,CAT_REFINED_VARIANTS,"$HOSTNAME","$START_CAT_VARIANTS","$E
 # check to see if the index is generated which should send an non-zero exit signal if not.
 # eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
 
-ls $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.idx"
+ls $CORE_PATH/$PROJECT_MS/TEMP/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.idx"
