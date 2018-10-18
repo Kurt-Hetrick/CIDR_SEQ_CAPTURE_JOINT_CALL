@@ -51,7 +51,7 @@ START_GENOTYPE_GVCF=`date '+%s'`
 	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 	CMD=$CMD' -R '$REF_GENOME
 
-for VCF in $(ls $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE/*$BED_FILE_NAME.g.vcf)
+for VCF in $(ls $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE/*$PREFIX"."$BED_FILE_NAME.g.vcf)
 	do
 	  CMD=$CMD' --variant '$VCF
 	done

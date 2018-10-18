@@ -8,7 +8,7 @@
 #$ -S /bin/bash
 
 # tell sge to submit any of these queue when available
-#$ -q prod.q,rnd.q
+#$ -q prod.q,rnd.q,bigdata.q,lemon.q,c6320.q
 
 # tell sge that you are in the users current working directory
 #$ -cwd
@@ -26,11 +26,11 @@
 ##### END QSUB PARAMETER SETTINGS #####
 #######################################
 
-# export all variables, useful to find out what compute node the program was executed on
-set
+	# export all variables, useful to find out what compute node the program was executed on
+	set
 
-# create a blank lane b/w the output variables and the program logging output
-echo
+	# create a blank lane b/w the output variables and the program logging output
+	echo
 
 # INPUT PARAMETERS
 
@@ -328,6 +328,36 @@ echo
 		| awk 'BEGIN {OFS="\t"} {print $0}' \
 		| $DATAMASH_DIR/datamash transpose \
 	>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
+
+# ###########################################################
+# ##### BASE DISTRIBUTION REPORT AVERAGE FROM PER CYCLE #####
+# ###########################################################
+# ##### THIS IS THE HEADER ##################################
+# ##### PCT_A,PCT_C,PCT_G,PCT_T,PCT_N #######################
+# ###########################################################
+
+# 	awk 'NR>7' $CORE_PATH/$PROJECT/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/$SM_TAG".base_distribution_by_cycle_metrics.txt" \
+# 		| sed '/^$/d' \
+# 		| $DATAMASH_DIR/datamash \
+# 			mean 3 \
+# 			mean 4 \
+# 			mean 5 \
+# 			mean 6 \
+# 			mean 7 \
+# 		| $DATAMASH_DIR/datamash transpose \
+# 	>> $CORE_PATH/$PROJECT/TEMP/$SM_TAG".QC_REPORT_TEMP.txt"
+
+# ############################################
+# ##### BASE SUBSTITUTION RATE ###############
+# ############################################
+# ##### THIS IS THE HEADER ###################
+# ##### PCT_A_to_C,PCT_A_to_G,PCT_A_to_T #####
+# ##### PCT_C_to_A,PCT_C_to_G,PCT_C_to_T #####
+# ############################################
+
+# 	awk 'NR>7 {print $6*100}' /mnt/research/active/Peters_CRC_SeqPilot_020317_1_trimAgg/BASE_SUBSTITUTION_RATES/137875-1163267954.error_summary_metrics.txt \
+# 		| sed '/^$/d' \
+# 	>> $CORE_PATH/$PROJECT/TEMP/$SM_TAG".QC_REPORT_TEMP.txt"
 
 ###############################################################
 ##### GENERATE COUNT PCT,IN DBSNP FOR ON BAIT SNVS ############
