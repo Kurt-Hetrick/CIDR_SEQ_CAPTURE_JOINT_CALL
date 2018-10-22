@@ -36,8 +36,8 @@
 
 	PROJECT_SAMPLE=$1
 	SM_TAG=$2
-	CIDR_SEQSUITE_JAVA=$3
-	CIDR_SEQSUITE_DIR_4_0=$4
+	CIDRSEQSUITE_ANNOVAR_JAVA=$3
+	CIDRSEQSUITE_DIR_4_0=$4
 	CORE_PATH=$5
 
 # decompress filtered on bait vcf file into a sample temp foler
