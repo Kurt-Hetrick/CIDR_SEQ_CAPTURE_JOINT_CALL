@@ -80,7 +80,7 @@
 	TABIX_DIR="/mnt/linuxtools/TABIX/tabix-0.2.6"
 	CIDRSEQSUITE_JAVA_DIR="/mnt/linuxtools/JAVA/jre1.7.0_45/bin"
 	CIDRSEQSUITE_6_1_1_DIR="/mnt/linuxtools/CIDRSEQSUITE/6.1.1"
-	CIDRSEQSUITE_ANNOVAR_JAVA="/mnt/linuxtools/JAVA/jre1.6.0_25/bin"
+	CIDRSEQSUITE_ANNOVAR_JAVA="/mnt/linuxtools/JAVA/jdk1.8.0_73/bin"
 	CIDRSEQSUITE_DIR_4_0="/mnt/research/tools/LINUX/CIDRSEQSUITE/Version_4_0"
 	CIDRSEQSUITE_PROPS_DIR="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/STD_VQSR"
 		# cp -p /u01/home/hling/cidrseqsuite.props.HGMD /mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/STD_VQSR/cidrseqsuite.props
@@ -88,12 +88,11 @@
 	CIDRSEQSUITE_7_5_0_DIR="/mnt/research/tools/LINUX/CIDRSEQSUITE/7.5.0"
 	LAB_QC_DIR="/mnt/linuxtools/CUSTOM_CIDR/EnhancedSequencingQCReport/0.0.5"
 		# Copied from /mnt/research/tools/LINUX/CIDRSEQSUITE/pipeline_dependencies/QC_REPORT/EnhancedSequencingQCReport.jar
-	SAMTOOLS_DIR="/isilon/sequencing/Kurt/Programs/PYTHON/Anaconda2-5.0.0.1/bin/"
-		# This is samtools version 1.5
+	SAMTOOLS_DIR="/mnt/linuxtools/ANACONDA/anaconda2-5.0.0.1/bin"
+		# This is samtools version 1.7
 		# I have no idea why other users other than me cannot index a cram file with a version of samtools that I built from the source
 		# Apparently the version that I built with Anaconda works for other users, but it performs REF_CACHE first...
-	DATAMASH_DIR="/mnt/research/tools/LINUX/DATAMASH/datamash-1.0.6"
-	TABIX_DIR="/mnt/research/tools/LINUX/TABIX/tabix-0.2.6"
+	DATAMASH_DIR="/mnt/linuxtools/DATAMASH/datamash-1.0.6"
 
 ##################
 # PIPELINE FILES #
