@@ -98,17 +98,16 @@
 # PIPELINE FILES #
 ##################
 
-	HAPMAP_VCF="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/b37/hapmap_3.3.b37.vcf"
-	OMNI_VCF="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/b37/1000G_omni2.5.b37.vcf"
-	ONEKG_SNPS_VCF="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/b37/1000G_phase1.snps.high_confidence.b37.vcf"
-	DBSNP_138_VCF="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/b37/dbsnp_138.b37.vcf"
-	ONEKG_INDELS_VCF="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/b37/Mills_and_1000G_gold_standard.indels.b37.vcf"
-	P3_1KG="/mnt/research/tools/PIPELINE_FILES/GRCh37_aux_files/ALL.wgs.phase3_shapeit2_mvncall_integrated_v5.20130502.sites.vcf.gz"
-	ExAC="/mnt/research/tools/PIPELINE_FILES/GRCh37_aux_files/ExAC.r0.3.sites.vep.vcf.gz"
-	KNOWN_SNPS="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/b37/dbsnp_138.b37.excluding_sites_after_129.vcf"
+	HAPMAP_VCF="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/hapmap_3.3.hg38.vcf.gz"
+	OMNI_VCF="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/1000G_omni2.5.hg38.vcf.gz"
+	ONEKG_SNPS_VCF="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/1000G_phase1.snps.high_confidence.hg38.vcf.gz"
+	DBSNP_138_VCF="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/dbsnp_138.hg38.vcf.gz"
+	ONEKG_INDELS_VCF="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz"
+
+	KNOWN_SNPS="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/dbsnp_138.hg38.liftover.excluding_sites_after_129.vcf.gz"
 	VERACODE_CSV="/mnt/linuxtools/CIDRSEQSUITE/Veracode_hg18_hg19.csv"
 	# THIS IS A UNION BED FILE B/W VERSION 4 AND VERSION 5/CLINICAL
-	MERGED_MENDEL_BED_FILE="/mnt/research/active/M_Valle_MD_SeqWholeExome_120417_1/BED_Files/BAITS_Merged_S03723314_S06588914.bed"
+	MERGED_MENDEL_BED_FILE="/mnt/research/active/M_Valle_MD_SeqWholeExome_120417_1_GRCh38/BED_Files/BAITS_Merged_S03723314_S06588914.lift.hg38.bed"
 
 ##################################################
 ##################################################
@@ -331,14 +330,14 @@
 		}
 
 for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed);
-do
-	BED_FILE_NAME=$(basename $BED_FILE .bed)
-		for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST/*list)
-			do
-				PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
-				COMBINE_GVCF
-				echo sleep 0.1s
-		done
+	do
+		BED_FILE_NAME=$(basename $BED_FILE .bed)
+			for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST/*list)
+				do
+					PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
+					COMBINE_GVCF
+					echo sleep 0.1s
+			done
 done
 
 #####################################################################
@@ -347,14 +346,14 @@ done
 	{
 		for PROJECT_A in $PROJECT_MS;
 		# yeah, so uh, this looks bad, but I just needed a way to set a new project variable that equals the multi-sample project variable.
-		do
-			GENOTYPE_GVCF_HOLD_ID="-hold_jid "
+			do
+				GENOTYPE_GVCF_HOLD_ID="-hold_jid "
 
-				for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_A/TEMP/SPLIT_LIST/*list)
-					do
-						PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
-						GENOTYPE_GVCF_HOLD_ID=$GENOTYPE_GVCF_HOLD_ID'A01_COMBINE_GVCF_'$PROJECT_A'_'$PGVCF_LIST_NAME'_'$BED_FILE_NAME','
-				done
+					for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_A/TEMP/SPLIT_LIST/*list)
+						do
+							PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
+							GENOTYPE_GVCF_HOLD_ID=$GENOTYPE_GVCF_HOLD_ID'A01_COMBINE_GVCF_'$PROJECT_A'_'$PGVCF_LIST_NAME'_'$BED_FILE_NAME','
+					done
 		done
 	}
 
@@ -421,14 +420,14 @@ done
 	# then generate a string of all the variant annotator job names submitted
 
 for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed);
-do
-	BED_FILE_NAME=$(basename $BED_FILE .bed)
-	BUILD_HOLD_ID_GENOTYPE_GVCF
-	GENOTYPE_GVCF
-	echo sleep 0.1s
-	VARIANT_ANNOTATOR
-	echo sleep 0.1s
-	GENERATE_CAT_VARIANTS_HOLD_ID
+	do
+		BED_FILE_NAME=$(basename $BED_FILE .bed)
+		BUILD_HOLD_ID_GENOTYPE_GVCF
+		GENOTYPE_GVCF
+		echo sleep 0.1s
+		VARIANT_ANNOTATOR
+		echo sleep 0.1s
+		GENERATE_CAT_VARIANTS_HOLD_ID
 done
 
 ###############################
