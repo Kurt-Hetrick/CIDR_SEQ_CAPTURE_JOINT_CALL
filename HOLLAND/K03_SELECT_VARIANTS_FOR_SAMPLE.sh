@@ -43,6 +43,7 @@
 	PROJECT_MS=$6
 	SM_TAG=$7
 	PREFIX=$8
+	TABIX_DIR=$9
 
 START_SELECT_ALL_SAMPLE=`date '+%s'`
 
@@ -53,20 +54,30 @@ START_SELECT_ALL_SAMPLE=`date '+%s'`
 	CMD=$CMD' -T SelectVariants'
 	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 	CMD=$CMD' -R '$REF_GENOME
-	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf.gz'
-	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_SAMPLE'/VCF/RELEASE/FILTERED_ON_BAIT/'$SM_TAG'_MS_OnBait.vcf.gz'
+	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.BEDsuperset.VQSR.vcf.gz'
+	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_SAMPLE'/TEMP/'$SM_TAG'_MS_OnBait.TEMP.vcf.gz'
 	CMD=$CMD' --keepOriginalAC'
 	CMD=$CMD' -ef'
 	CMD=$CMD' -env'
+	CMD=$CMD' --removeUnusedAlternates'
 	CMD=$CMD' -sn '$SM_TAG
 
 echo $CMD >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
 echo >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
 echo $CMD | bash
 
-END_SELECT_ALL_SAMPLE=`date '+%s'`
+# Now remove the records where the alternate allele is just a *
 
-HOSTNAME=`hostname`
+	( zgrep "^#" $CORE_PATH/$PROJECT_SAMPLE/TEMP/$SM_TAG"_MS_OnBait.TEMP.vcf.gz" ; \
+		zgrep -v "^#" $CORE_PATH/$PROJECT_SAMPLE/TEMP/$SM_TAG"_MS_OnBait.TEMP.vcf.gz" | awk '$5!="*"' ) \
+	$TABIX_DIR/bgzip -c /dev/stdin \
+	>| $CORE_PATH/$PROJECT_SAMPLE/VCF/RELEASE/FILTERED_ON_BAIT/$SM_TAG"_MS_OnBait.vcf.gz"
+
+# index the vcf file
+
+	$TABIX_DIR/tabix -f -p vcf $CORE_PATH/$PROJECT_SAMPLE/VCF/RELEASE/FILTERED_ON_BAIT/$SM_TAG"_MS_OnBait.vcf.gz"
+
+END_SELECT_ALL_SAMPLE=`date '+%s'`
 
 echo $PROJECT_SAMPLE",K01,SELECT_ALL_SAMPLE,"$HOSTNAME","$START_SELECT_ALL_SAMPLE","$END_SELECT_ALL_SAMPLE \
 >> $CORE_PATH/$PROJECT_SAMPLE/REPORTS/$PROJECT_SAMPLE".JOINT.CALL.WALL.CLOCK.TIMES.csv"

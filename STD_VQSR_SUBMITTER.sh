@@ -1035,7 +1035,8 @@ done
 				$PROJECT_SAMPLE \
 				$PROJECT_MS \
 				$SM_TAG \
-				$PREFIX
+				$PREFIX \
+				$TABIX_DIR
 		}
 
 		# used for very big projects.

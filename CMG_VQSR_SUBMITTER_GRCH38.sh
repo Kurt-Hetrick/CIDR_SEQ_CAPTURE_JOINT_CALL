@@ -160,21 +160,21 @@
 
 			REF_GENOME=${PROJECT_INFO_ARRAY[0]} # field 12 from the sample sheet
 			PROJECT_DBSNP=${PROJECT_INFO_ARRAY[1]} # field 18 from the sample sheet
-			# PROJECT_BAIT_BED=${PROJECT_INFO_ARRAY[2]} # field 16 from the sample sheet (NOT NECESSARY. MIGHT BE MORE THAN ONE)
 		}
 
 		# Keep this in here to reference...I'll probably going to use this somewhere.
 		# generates a chrosome list from a bait bed file at the project level. so I only have to make one iteration per project instead of one per sample
 
-			# CREATE_CHROMOSOME_LIST ()
-			# {
-			# REF_CHROM_SET=$(sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' $PROJECT_BAIT_BED \
-			# | sed -r 's/[[:space:]]+/\t/g' \
-			# | cut -f 1 \
-			# | sort \
-			# | uniq \
-			# | $DATAMASH_DIR/datamash collapse 1 | sed 's/,/ /g')
-			# }
+			CREATE_CHROMOSOME_LIST ()
+			{
+				REF_CHROM_SET=$(sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' $MERGED_MENDEL_BED_FILE \
+					| sed -r 's/[[:space:]]+/\t/g' \
+					| cut -f 1 \
+					| sort \
+					| uniq \
+					| $DATAMASH_DIR/datamash collapse 1 \
+					| sed 's/,/ /g')
+			}
 
 	# get the full path of the last gvcf list file.
 	# take the sample sheet and create a gvcf list from that
@@ -1025,7 +1025,8 @@ done
 				$PROJECT_SAMPLE \
 				$PROJECT_MS \
 				$SM_TAG \
-				$PREFIX
+				$PREFIX \
+				$TABIX_DIR
 		}
 
 			SETUP_AND_RUN_ANNOVAR ()

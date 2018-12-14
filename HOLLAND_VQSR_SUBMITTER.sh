@@ -1044,7 +1044,8 @@ done
 				$PROJECT_SAMPLE \
 				$PROJECT_MS \
 				$SM_TAG \
-				$PREFIX
+				$PREFIX \
+				$TABIX_DIR
 		}
 
 		# grab only the passing variants that fall with the target bed file

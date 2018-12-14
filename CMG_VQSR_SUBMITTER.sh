@@ -1027,7 +1027,8 @@ done
 				$PROJECT_SAMPLE \
 				$PROJECT_MS \
 				$SM_TAG \
-				$PREFIX
+				$PREFIX \
+				$TABIX_DIR
 		}
 
 			SETUP_AND_RUN_ANNOVAR ()
