@@ -961,22 +961,22 @@ done
 	# echo sleep 0.1s
 	BGZIP_INDEX_REFINED_VARIANTS
 	echo sleep 0.1s
-	GENERATE_STUDY_HAPMAP_SAMPLE_LISTS
-	SELECT_SNVS_ALL
-	echo sleep 0.1s
-	SELECT_PASS_STUDY_ONLY_SNP
-	echo sleep 0.1s
-	SELECT_PASS_HAPMAP_ONLY_SNP
-	echo sleep 0.1s
-	SELECT_INDELS_ALL
-	echo sleep 0.1s
-	SELECT_PASS_STUDY_ONLY_INDELS
-	echo sleep 0.1s
-	SELECT_PASS_HAPMAP_ONLY_INDELS
-	echo sleep 0.1s
-	SELECT_SNVS_ALL_PASS
-	echo sleep 0.1s
-	SELECT_INDEL_ALL_PASS
+	# GENERATE_STUDY_HAPMAP_SAMPLE_LISTS
+	# SELECT_SNVS_ALL
+	# echo sleep 0.1s
+	# SELECT_PASS_STUDY_ONLY_SNP
+	# echo sleep 0.1s
+	# SELECT_PASS_HAPMAP_ONLY_SNP
+	# echo sleep 0.1s
+	# SELECT_INDELS_ALL
+	# echo sleep 0.1s
+	# SELECT_PASS_STUDY_ONLY_INDELS
+	# echo sleep 0.1s
+	# SELECT_PASS_HAPMAP_ONLY_INDELS
+	# echo sleep 0.1s
+	# SELECT_SNVS_ALL_PASS
+	# echo sleep 0.1s
+	# SELECT_INDEL_ALL_PASS
 
 #######################################################################
 #######################################################################

@@ -1030,27 +1030,27 @@ done
 		}
 
 			SETUP_AND_RUN_ANNOVAR ()
-				{
-					echo \
-					qsub \
-						-S /bin/bash \
-						-cwd \
-						-V \
-						-q $ANNOVAR_QUEUE_LIST \
-						-p $PRIORITY \
-						-j y \
-						-pe slots 5 \
-						-R y \
-					-N J02A11_SETUP_AND_RUN_ANNOVER_$UNIQUE_ID_SM_TAG \
-						-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/J02A11_SETUP_AND_RUN_ANNOVAR_$SM_TAG".log" \
-					-hold_jid J02_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
-					$SCRIPT_DIR/J02A11_SETUP_AND_RUN_ANNOVAR.sh \
-						$PROJECT_SAMPLE \
-						$SM_TAG \
-						$CIDRSEQSUITE_ANNOVAR_JAVA \
-						$CIDRSEQSUITE_DIR_4_0 \
-						$CORE_PATH
-				}
+			{
+				echo \
+				qsub \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $ANNOVAR_QUEUE_LIST \
+					-p $PRIORITY \
+					-j y \
+					-pe slots 5 \
+					-R y \
+				-N J02A11_SETUP_AND_RUN_ANNOVER_$UNIQUE_ID_SM_TAG \
+					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/J02A11_SETUP_AND_RUN_ANNOVAR_$SM_TAG".log" \
+				-hold_jid J02_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
+				$SCRIPT_DIR/J02A11_SETUP_AND_RUN_ANNOVAR.sh \
+					$PROJECT_SAMPLE \
+					$SM_TAG \
+					$CIDRSEQSUITE_ANNOVAR_JAVA \
+					$CIDRSEQSUITE_DIR_4_0 \
+					$CORE_PATH
+			}
 
 
 		PASSING_VARIANTS_ON_TARGET_BY_SAMPLE ()
