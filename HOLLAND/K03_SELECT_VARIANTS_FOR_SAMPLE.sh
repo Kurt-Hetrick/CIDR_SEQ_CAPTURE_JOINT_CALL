@@ -70,7 +70,7 @@ echo $CMD | bash
 
 	( zgrep "^#" $CORE_PATH/$PROJECT_SAMPLE/TEMP/$SM_TAG"_MS_OnBait.TEMP.vcf.gz" ; \
 		zgrep -v "^#" $CORE_PATH/$PROJECT_SAMPLE/TEMP/$SM_TAG"_MS_OnBait.TEMP.vcf.gz" | awk '$5!="*"' ) \
-	$TABIX_DIR/bgzip -c /dev/stdin \
+	| $TABIX_DIR/bgzip -c /dev/stdin \
 	>| $CORE_PATH/$PROJECT_SAMPLE/VCF/RELEASE/FILTERED_ON_BAIT/$SM_TAG"_MS_OnBait.vcf.gz"
 
 # index the vcf file
