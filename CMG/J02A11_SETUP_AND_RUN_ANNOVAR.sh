@@ -39,6 +39,7 @@
 	CIDRSEQSUITE_ANNOVAR_JAVA=$3
 	CIDRSEQSUITE_DIR_4_0=$4
 	CORE_PATH=$5
+	CIDRSEQSUITE_PROPS_DIR=$6
 
 # decompress filtered on bait vcf file into a sample temp foler
  
@@ -47,8 +48,9 @@
 
 # run annovar
 
-	$CIDRSEQSUITE_ANNOVAR_JAVA/java \
-	-jar $CIDRSEQSUITE_DIR_4_0/CIDRSeqSuite.jar \
+	$CIDRSEQSUITE_ANNOVAR_JAVA/java -jar \
+	-Duser.home=$CIDRSEQSUITE_PROPS_DIR \
+	$CIDRSEQSUITE_DIR_4_0/CIDRSeqSuite.jar \
 	-pipeline \
 	-annovar_directory_annotation \
 	$CORE_PATH/$PROJECT_SAMPLE/TEMP/$SM_TAG"_ANNOVAR" \
