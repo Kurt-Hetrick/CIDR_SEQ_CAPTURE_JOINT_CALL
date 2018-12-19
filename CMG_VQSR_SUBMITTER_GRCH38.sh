@@ -93,6 +93,7 @@
 		# I have no idea why other users other than me cannot index a cram file with a version of samtools that I built from the source
 		# Apparently the version that I built with Anaconda works for other users, but it performs REF_CACHE first...
 	DATAMASH_DIR="/mnt/linuxtools/DATAMASH/datamash-1.0.6"
+	R_DIRECTORY="/mnt/linuxtools/R/R-3.1.1/bin"
 
 ##################
 # PIPELINE FILES #
@@ -490,7 +491,8 @@ done
 				$DBSNP_138_VCF \
 				$CORE_PATH \
 				$PROJECT_MS \
-				$PREFIX
+				$PREFIX \
+				$R_DIRECTORY
 		}
 
 	# run the indel vqsr model (concurrently done with the snp model above)
@@ -517,7 +519,8 @@ done
 				$ONEKG_INDELS_VCF \
 				$CORE_PATH \
 				$PROJECT_MS \
-				$PREFIX
+				$PREFIX \
+				$R_DIRECTORY
 		}
 
 	# apply the snp vqsr model to the full vcf

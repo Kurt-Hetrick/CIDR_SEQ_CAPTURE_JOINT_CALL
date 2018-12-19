@@ -32,9 +32,6 @@
 	# create a blank lane b/w the output variables and the program logging output
 	echo
 
-# i gotta really not do this...
-export PATH=.:/isilon/sequencing/peng/softwares/R-3.1.1/bin:$PATH
-
 # INPUT PARAMETERS
 
 	JAVA_1_8=$1
@@ -48,6 +45,8 @@ export PATH=.:/isilon/sequencing/peng/softwares/R-3.1.1/bin:$PATH
 	CORE_PATH=$8
 	PROJECT_MS=$9
 	PREFIX=${10}
+	R_DIRECTORY=${11}
+		export PATH=.:$R_DIRECTORY:$PATH
 
 START_VQSR_SNV=`date '+%s'`
 
@@ -93,8 +92,6 @@ echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
 echo $CMD | bash
 
 END_VQSR_SNV=`date '+%s'`
-
-HOSTNAME=`hostname`
 
 echo $PROJECT_MS",E01,VQSR_SNV,"$HOSTNAME","$START_VQSR_SNV","$END_VQSR_SNV \
 >> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"
