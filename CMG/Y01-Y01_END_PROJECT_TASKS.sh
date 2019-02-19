@@ -167,6 +167,17 @@ echo
 					"Gref_Q",\
 					"DEAMINATION_Q",\
 					"OxoG_Q",\
+					"PCT_A",\
+					"PCT_C",\
+					"PCT_G",\
+					"PCT_T",\
+					"PCT_N",\
+					"PCT_A_to_C",\
+					"PCT_A_to_G",\
+					"PCT_A_to_T",\
+					"PCT_C_to_A",\
+					"PCT_C_to_G",\
+					"PCT_C_to_T",\
 					"COUNT_SNV_ON_BAIT",\
 					"PERCENT_SNV_ON_BAIT_SNP138",\
 					"COUNT_SNV_ON_TARGET",\
@@ -211,61 +222,65 @@ echo
 ######################################################################################################
 ######################################################################################################
 
-	# CREATE AND ARRAY FOR UNIQ PROJECT SAMPLE COMBINATIONS.
+	#############################
+	##### not doing for now #####
+	#############################
 
-		CREATE_SAMPLE_ARRAY ()
-		{
-		SAMPLE_ARRAY=(`awk 1 $SAMPLE_SHEET \
-			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
-			| awk 'BEGIN {FS=","} $8=="'$SM_TAG'" {print $1,$8}' \
-			| sort \
-			| uniq`)
+# 	# CREATE AND ARRAY FOR UNIQ PROJECT SAMPLE COMBINATIONS.
 
-			# $1
-			PROJECT_SAMPLE=${SAMPLE_ARRAY[0]}
+# 		CREATE_SAMPLE_ARRAY ()
+# 		{
+# 		SAMPLE_ARRAY=(`awk 1 $SAMPLE_SHEET \
+# 			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+# 			| awk 'BEGIN {FS=","} $8=="'$SM_TAG'" {print $1,$8}' \
+# 			| sort \
+# 			| uniq`)
 
-			# $8
-			SM_TAG=${SAMPLE_ARRAY[1]}
+# 			# $1
+# 			PROJECT_SAMPLE=${SAMPLE_ARRAY[0]}
 
-		}
+# 			# $8
+# 			SM_TAG=${SAMPLE_ARRAY[1]}
 
-	# COMBINE ALL OF THE SAMPLE LEVEL ANEUPLOIDY AND PER CHROMOSOME VERIFYBAMID REPORTS INTO ONE FILE
+# 		}
 
-		for SM_TAG in $(awk 'BEGIN {FS=","} $8=="'$SM_TAG'" {print $1,$8}' $SAMPLE_SHEET \
-			| sort \
-			| uniq );
-		do
-				CREATE_SAMPLE_ARRAY
+# 	# COMBINE ALL OF THE SAMPLE LEVEL ANEUPLOIDY AND PER CHROMOSOME VERIFYBAMID REPORTS INTO ONE FILE
 
-				######################################################
-				#### Concatenate all aneuploidy reports together #####
-				######################################################
+# 		for SM_TAG in $(awk 'BEGIN {FS=","} $8=="'$SM_TAG'" {print $1,$8}' $SAMPLE_SHEET \
+# 			| sort \
+# 			| uniq );
+# 		do
+# 				CREATE_SAMPLE_ARRAY
 
-					cat $CORE_PATH/$PROJECT_SAMPLE/REPORTS/ANEUPLOIDY_CHECK/$SM_TAG".chrom_count_report.txt" \
-					>> $CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".ANEUPLOIDY_REPORT."$TIMESTAMP".txt"
+# 				######################################################
+# 				#### Concatenate all aneuploidy reports together #####
+# 				######################################################
 
-				#######################################################################
-				##### Concatenate all per chromosome verifybamID reports together #####
-				#######################################################################
+# 					cat $CORE_PATH/$PROJECT_SAMPLE/REPORTS/ANEUPLOIDY_CHECK/$SM_TAG".chrom_count_report.txt" \
+# 					>> $CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".ANEUPLOIDY_REPORT."$TIMESTAMP".txt"
 
-					cat $CORE_PATH/$PROJECT_SAMPLE/REPORTS/VERIFYBAMID_CHR/$SM_TAG".VERIFYBAMID.PER_CHR.txt " \
-					>> $CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".PER_CHR_VERIFYBAMID."$TIMESTAMP".txt"		
+# 				#######################################################################
+# 				##### Concatenate all per chromosome verifybamID reports together #####
+# 				#######################################################################
 
-		done
+# 					cat $CORE_PATH/$PROJECT_SAMPLE/REPORTS/VERIFYBAMID_CHR/$SM_TAG".VERIFYBAMID.PER_CHR.txt " \
+# 					>> $CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".PER_CHR_VERIFYBAMID."$TIMESTAMP".txt"		
 
-# FORMAT THE ANEUPLOIDY CHECK REPORT
+# 		done
 
-	( cat $CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".ANEUPLOIDY_REPORT."$TIMESTAMP".txt" | grep "^SM_TAG" | uniq ; \
-		cat $CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".ANEUPLOIDY_REPORT."$TIMESTAMP".txt" | grep -v "SM_TAG" ) \
-		| sed 's/\t/,/g' \
-		>| $CORE_PATH/$PROJECT_MS/REPORTS/QC_REPORTS/$PREFIX".ANEUPLOIDY_CHECK."$TIMESTAMP".csv"
+# # FORMAT THE ANEUPLOIDY CHECK REPORT
 
-# FORMAT THE PER CHROMOSOME VERIFYBAMID REPORT
+# 	( cat $CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".ANEUPLOIDY_REPORT."$TIMESTAMP".txt" | grep "^SM_TAG" | uniq ; \
+# 		cat $CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".ANEUPLOIDY_REPORT."$TIMESTAMP".txt" | grep -v "SM_TAG" ) \
+# 		| sed 's/\t/,/g' \
+# 		>| $CORE_PATH/$PROJECT_MS/REPORTS/QC_REPORTS/$PREFIX".ANEUPLOIDY_CHECK."$TIMESTAMP".csv"
 
-	( cat $CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".PER_CHR_VERIFYBAMID."$TIMESTAMP".txt" | grep "^#" | uniq ; \
-			cat $CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".PER_CHR_VERIFYBAMID."$TIMESTAMP".txt" | grep -v "^#" ) \
-			| sed 's/\t/,/g' \
-			>| $CORE_PATH/$PROJECT_MS/REPORTS/QC_REPORTS/$PREFIX".PER_CHR_VERIFYBAMID."$TIMESTAMP".csv"
+# # FORMAT THE PER CHROMOSOME VERIFYBAMID REPORT
+
+# 	( cat $CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".PER_CHR_VERIFYBAMID."$TIMESTAMP".txt" | grep "^#" | uniq ; \
+# 			cat $CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".PER_CHR_VERIFYBAMID."$TIMESTAMP".txt" | grep -v "^#" ) \
+# 			| sed 's/\t/,/g' \
+# 			>| $CORE_PATH/$PROJECT_MS/REPORTS/QC_REPORTS/$PREFIX".PER_CHR_VERIFYBAMID."$TIMESTAMP".csv"
 
 ###################################################
 #### Clean up the Wall Clock minutes tracker. #####

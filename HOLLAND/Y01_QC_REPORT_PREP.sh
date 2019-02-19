@@ -98,6 +98,7 @@ echo
 				'BEGIN {OFS="\t"} {split($SM_FIELD,SMtag,":"); split($PU_FIELD,PU,":"); split($LB_FIELD,Library,":"); split(Library[2],Library_Unit,"_"); \
 				print "'$PROJECT_SAMPLE'",SMtag[2],PU[2],Library[2],Library_Unit[1],Library_Unit[2],substr(Library_Unit[2],1,1),substr(Library_Unit[2],2,2),\
 				Library_Unit[3],Library_Unit[4],substr(Library_Unit[4],1,1),substr(Library_Unit[4],2,2)}' \
+			| awk 'BEGIN { FS = OFS = "\t" } { for(i=1; i<=NF; i++) if($i ~ /^ *$/) $i = "NA" }; 1' \
 			| $DATAMASH_DIR/datamash \
 				-s \
 				-g 1,2 \
@@ -195,7 +196,8 @@ echo
 ##### "PCT_READS_ALIGNED_IN_PAIRS_R1","PCT_ADAPTER_R1" ################################################
 #######################################################################################################
 
-	awk 'BEGIN {OFS="\t"} NR==8 {if ($1=="UNPAIRED") print "0","0","0","0","0","0","0","0"; else print $7,$9,$11,$13,$14,$15,$18,$24}' \
+	awk 'BEGIN {OFS="\t"} NR==8 {if ($1=="UNPAIRED") print "0","0","0","0","0","0","0","0"; \
+		else print $7*100,$9,$11,$13,$14,$15,$18*100,$24*100}' \
 	$CORE_PATH/$PROJECT_SAMPLE/REPORTS/ALIGNMENT_SUMMARY/$SM_TAG".alignment_summary_metrics.txt" \
 	| $DATAMASH_DIR/datamash transpose \
 	>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
@@ -209,7 +211,8 @@ echo
 ##### "PCT_READS_ALIGNED_IN_PAIRS_R2","PCT_ADAPTER_R2" ################################################
 #######################################################################################################
 
-	awk 'BEGIN {OFS="\t"} NR==9 {if ($1=="") print "0","0","0","0","0","0","0","0" ; else print $7,$9,$11,$13,$14,$15,$18,$24}' \
+	awk 'BEGIN {OFS="\t"} NR==9 {if ($1=="") print "0","0","0","0","0","0","0","0" ; \
+		else print $7*100,$9,$11,$13,$14,$15,$18*100,$24*100}' \
 	$CORE_PATH/$PROJECT_SAMPLE/REPORTS/ALIGNMENT_SUMMARY/$SM_TAG".alignment_summary_metrics.txt" \
 	| $DATAMASH_DIR/datamash transpose \
 	>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
@@ -227,7 +230,7 @@ echo
 	awk 'BEGIN {OFS="\t"} \
 		NR==10 \
 		{if ($1=="") print "0","0","0","0","0","0","0","0","0","0","0","0" ; \
-		else print $2,($2*$16/1000000000),$7,$13,$14,$15,$18,$22,$23,$11,$16,$20}' \
+		else print $2,($2*$16/1000000000),$7*100,$13,$14,$15,$18*100,$22,$23*100,$11,$16,$20*100}' \
 	$CORE_PATH/$PROJECT_SAMPLE/REPORTS/ALIGNMENT_SUMMARY/$SM_TAG".alignment_summary_metrics.txt" \
 	| $DATAMASH_DIR/datamash transpose \
 	>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
@@ -244,7 +247,7 @@ echo
 	awk 'BEGIN {OFS="\t"} \
 		NR==8 \
 		{if ($9!~/[0-9]/) print $5,$8,"NaN","NaN",$4,$7,$3,"NaN",$6,$2,"NaN" ; \
-		else print $5,$8,$9,$10,$4,$7,$3,($7/$3),$6,$2,($6/$2)}' \
+		else print $5,$8,$9*100,$10,$4,$7,$3,($7/$3),$6,$2,($6/$2)}' \
 	$CORE_PATH/$PROJECT_SAMPLE/REPORTS/PICARD_DUPLICATES/$SM_TAG"_MARK_DUPLICATES.txt" \
 	| $DATAMASH_DIR/datamash transpose \
 	>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
@@ -267,8 +270,8 @@ echo
 		NR==8 \
 		{if ($12=="?"&&$44=="") print $2,$3,$4,"NaN",($14/1000000000),"NaN","NaN",$22,$23,$24,$25,$29,"NaN","NaN","NaN","NaN",\
 		$36,$37,$38,$39,$40,$41,$42,$43,"NaN",$51,$52,$53,$54,$1,"NaN" ; \
-		else print $2,$3,$4,$12,($14/1000000000),$19,$21,$22,$23,$24,$25,$29,$31,$32,$33,$34,\
-		$36,$37,$38,$39,$40,$41,$42,$43,$44,$51,$52,$53,$54,$1,$26}' \
+		else print $2,$3,$4,$12*100,($14/1000000000),$19*100,$21,$22,$23,$24,$25,$29*100,$31*100,$32*100,$33*100,$34*100,\
+		$36*100,$37*100,$38*100,$39*100,$40*100,$41*100,$42*100,$43*100,$44,$51,$52,$53,$54,$1,$26*100}' \
 		$CORE_PATH/$PROJECT_SAMPLE/REPORTS/HYB_SELECTION/$SM_TAG"_hybridization_selection_metrics.txt" \
 		| $DATAMASH_DIR/datamash transpose \
 		>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
@@ -328,6 +331,36 @@ echo
 		| awk 'BEGIN {OFS="\t"} {print $0}' \
 		| $DATAMASH_DIR/datamash transpose \
 	>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
+
+###########################################################
+##### BASE DISTRIBUTION REPORT AVERAGE FROM PER CYCLE #####
+###########################################################
+##### THIS IS THE HEADER ##################################
+##### PCT_A,PCT_C,PCT_G,PCT_T,PCT_N #######################
+###########################################################
+
+	sed '/^$/d' $CORE_PATH/$PROJECT/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/$SM_TAG".base_distribution_by_cycle_metrics.txt" \
+		| awk 'NR>6' \
+		| $DATAMASH_DIR/datamash \
+			mean 3 \
+			mean 4 \
+			mean 5 \
+			mean 6 \
+			mean 7 \
+		| $DATAMASH_DIR/datamash transpose \
+	>> $CORE_PATH/$PROJECT/TEMP/$SM_TAG".QC_REPORT_TEMP.txt"
+
+############################################
+##### BASE SUBSTITUTION RATE ###############
+############################################
+##### THIS IS THE HEADER ###################
+##### PCT_A_to_C,PCT_A_to_G,PCT_A_to_T #####
+##### PCT_C_to_A,PCT_C_to_G,PCT_C_to_T #####
+############################################
+
+	sed '/^$/d' $CORE_PATH/$PROJECT/REPORTS/ERROR_SUMMARY/$SM_TAG".error_summary_metrics.txt" \
+		| awk 'NR>6 {print $6*100}' \
+	>> $CORE_PATH/$PROJECT/TEMP/$SM_TAG".QC_REPORT_TEMP.txt"
 
 ###############################################################
 ##### GENERATE COUNT PCT,IN DBSNP FOR ON BAIT SNVS ############

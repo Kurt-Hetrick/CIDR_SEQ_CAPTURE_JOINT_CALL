@@ -20,7 +20,7 @@
 ###########################
 
 	# gcc is so that it can be pushed out to the compute nodes via qsub (-V)
-	module load gcc/5.1.0
+	module load gcc/7.2.0
 
 	# CHANGE SCRIPT DIR TO WHERE YOU HAVE HAVE THE SCRIPTS BEING SUBMITTED
 	SCRIPT_DIR="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/CMG"
@@ -88,7 +88,7 @@
 	CIDRSEQSUITE_7_5_0_DIR="/mnt/research/tools/LINUX/CIDRSEQSUITE/7.5.0"
 	LAB_QC_DIR="/mnt/linuxtools/CUSTOM_CIDR/EnhancedSequencingQCReport/0.0.5"
 		# Copied from /mnt/research/tools/LINUX/CIDRSEQSUITE/pipeline_dependencies/QC_REPORT/EnhancedSequencingQCReport.jar
-	SAMTOOLS_DIR="/isilon/sequencing/Kurt/Programs/PYTHON/Anaconda2-5.0.0.1/bin/"
+	SAMTOOLS_DIR="/mnt/linuxtools/ANACONDA/anaconda2-5.0.0.1/bin"
 		# This is samtools version 1.5
 		# I have no idea why other users other than me cannot index a cram file with a version of samtools that I built from the source
 		# Apparently the version that I built with Anaconda works for other users, but it performs REF_CACHE first...
@@ -127,9 +127,9 @@
 			rm -rf $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT
 	fi
 
-	if [ -d $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS ]
+	if [ -d $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST ]
 		then
-			rm -rf $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS
+			rm -rf $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST
 	fi
 
 ############################################################################################
@@ -1046,7 +1046,7 @@ done
 						-j y \
 						-pe slots 5 \
 						-R y \
-					-N J02A11_SETUP_AND_RUN_ANNOVER_$UNIQUE_ID_SM_TAG \
+					-N J02A11_SETUP_AND_RUN_ANNOVAR_$UNIQUE_ID_SM_TAG \
 						-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/J02A11_SETUP_AND_RUN_ANNOVAR_$SM_TAG".log" \
 					-hold_jid J02_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
 					$SCRIPT_DIR/J02A11_SETUP_AND_RUN_ANNOVAR.sh \
@@ -1436,7 +1436,6 @@ J02A07-1_TITV_KNOWN_$UNIQUE_ID_SM_TAG,\
 J02A08-1_TITV_NOVEL_$UNIQUE_ID_SM_TAG,\
 J02A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
 J02A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
-J02A11_SETUP_AND_RUN_ANNOVER_$UNIQUE_ID_SM_TAG \
 $SCRIPT_DIR/Y01_QC_REPORT_PREP.sh \
 	$SAMTOOLS_DIR \
 	$DATAMASH_DIR \
@@ -1495,8 +1494,9 @@ done
 	# I think that i will have to make this a look to handle multiple projects...maybe not
 	# but again, today is not that day.
 
-		awk 'BEGIN {FS=","} NR>1 {print $8}' \
-		$SAMPLE_SHEET \
+		awk 1 $SAMPLE_SHEET \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d; /^,/d' \
+			| awk 'BEGIN {FS=","; OFS="\t"} NR>1 {print $1,$8}' \
 			| awk '{split($1,sm_tag,/[@-]/)} {print sm_tag[2]}' \
 			| sort -k 1,1 \
 			| uniq \
@@ -1515,10 +1515,17 @@ done
 					"-M","cidr_sequencing_notifications@lists.johnshopkins.edu",\
 				"-N" , "Y01-Y01-END_PROJECT_TASKS_" "'$PREFIX'",\
 					"-o","'$CORE_PATH'" "/" "'$PROJECT_MS'" "/LOGS/Y01-Y01-" "'$PREFIX'" ".END_PROJECT_TASKS.log",\
-				"-hold_jid" , "Y_"$1,\
+				"-hold_jid" , "Y_" $1 ",A02-LAB_PREP_METRICS_" "'$PROJECT_MS'",\
 				"'$SCRIPT_DIR'" "/Y01-Y01_END_PROJECT_TASKS.sh",\
 					"'$CORE_PATH'",\
 					"'$DATAMASH_DIR'",\
 					"'$PROJECT_MS'",\
 					"'$PREFIX'",\
 					"'$SAMPLE_SHEET'" "\n" "sleep 0.1s"}'		
+
+# email when finished submitting
+
+printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`" \
+	| mail -s "CMG.VQSR_SUBMITTER.sh submitted" \
+		-r khetric1@jhmi.edu \
+		cidr_sequencing_notifications@lists.johnshopkins.edu
