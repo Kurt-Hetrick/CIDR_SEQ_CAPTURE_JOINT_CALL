@@ -20,7 +20,7 @@
 ###########################
 
 	# gcc is so that it can be pushed out to the compute nodes via qsub (-V)
-	module load gcc/5.1.0
+	module load gcc/7.2.0
 
 	# CHANGE SCRIPT DIR TO WHERE YOU HAVE HAVE THE SCRIPTS BEING SUBMITTED
 	SCRIPT_DIR="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/CMG_GRCH38"
@@ -34,7 +34,7 @@
 		| cut -d @ -f 1 \
 		| sort \
 		| uniq \
-		| egrep -v "bigmem.q|all.q|cgc.q|programmers.q|rhel7.q|qtest.q" \
+		| egrep -v "bigmem.q|all.q|cgc.q|programmers.q|rhel7.q|qtest.q|c6420.q" \
 		| datamash collapse 1 \
 		| awk '{print $1}'`
 
@@ -44,7 +44,7 @@
 		| cut -d @ -f 1 \
 		| sort \
 		| uniq \
-		| egrep -v "all.q|cgc.q|programmers.q|rhel7.q|qtest.q" \
+		| egrep -v "all.q|cgc.q|programmers.q|rhel7.q|qtest.q|c6420.q" \
 		| datamash collapse 1 \
 		| awk '{print $1}'`
 
@@ -94,6 +94,8 @@
 		# Apparently the version that I built with Anaconda works for other users, but it performs REF_CACHE first...
 	DATAMASH_DIR="/mnt/linuxtools/DATAMASH/datamash-1.0.6"
 	R_DIRECTORY="/mnt/linuxtools/R/R-3.1.1/bin"
+	GATK_DIR_4011="/mnt/linuxtools/GATK/gatk-4.0.11.0"
+	PICARD_DIR="/mnt/linuxtools/PICARD/picard-2.18.25"
 
 ##################
 # PIPELINE FILES #
@@ -104,11 +106,20 @@
 	ONEKG_SNPS_VCF="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/1000G_phase1.snps.high_confidence.hg38.vcf.gz"
 	DBSNP_138_VCF="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/dbsnp_138.hg38.vcf.gz"
 	ONEKG_INDELS_VCF="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz"
+	AXIOM_VCF="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/Axiom_Exome_Plus.genotypes.all_populations.poly.hg38.vcf.gz"
 
 	KNOWN_SNPS="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/dbsnp_138.hg38.liftover.excluding_sites_after_129.vcf.gz"
+		# md5 85f3e9f0d5f30de2a046594b4ab4de86
 	VERACODE_CSV="/mnt/linuxtools/CIDRSEQSUITE/Veracode_hg18_hg19.csv"
-	# THIS IS A UNION BED FILE B/W VERSION 4 AND VERSION 5/CLINICAL
-	MERGED_MENDEL_BED_FILE="/mnt/research/active/M_Valle_MD_SeqWholeExome_120417_1_GRCh38/BED_Files/BAITS_Merged_S03723314_S06588914.lift.hg38.bed"
+	MERGED_MENDEL_BED_FILE="/mnt/research/active/M_Valle_MD_SeqWholeExome_120417_1_GRCh38/BED_Files/BAITS_Merged_S03723314_S06588914.lift.hg38.collapsed.bed"
+		# 4aa700700812d52c19f97c584eaca918
+	REF_DICT="/mnt/shared_resources/public_resources/GRCh38DH/GRCh38_full_analysis_set_plus_decoy_hla.dict"
+	HG19_REF="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/hg19/ucsc.hg19.fasta"
+	HG38_TO_HG19_CHAIN="/mnt/shared_resources/public_resources/liftOver_chain/hg38ToHg19.over.chain"
+	HG19_DICT="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/hg19/ucsc.hg19.dict"
+	# not doing this right now. if we start doing MT captures then have to look into hg19 to hg18 to b37...
+		# HG19_TO_B37_CHAIN=""
+		# B37_DICT=""
 
 ##################################################
 ##################################################
@@ -135,7 +146,7 @@
 ############################################################################################
 
 	mkdir -p $CORE_PATH/$PROJECT_MS/{LOGS,COMMAND_LINES}
-	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/{BED_FILE_SPLIT,AGGREGATE,QC_REPORT_PREP_$PREFIX,SPLIT_LIST}
+	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/{BED_FILE_SPLIT,AGGREGATE,QC_REPORT_PREP_$PREFIX,SPLIT_SS}
 	mkdir -p $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/
 	mkdir -p $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE
 	mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/{ANNOVAR,LAB_PREP_REPORTS_MS,QC_REPORTS,QC_REPORT_PREP_$PREFIX}
@@ -1433,7 +1444,6 @@ J02A07-1_TITV_KNOWN_$UNIQUE_ID_SM_TAG,\
 J02A08-1_TITV_NOVEL_$UNIQUE_ID_SM_TAG,\
 J02A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
 J02A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
-J02A11_SETUP_AND_RUN_ANNOVER_$UNIQUE_ID_SM_TAG \
 $SCRIPT_DIR/Y01_QC_REPORT_PREP.sh \
 	$SAMTOOLS_DIR \
 	$DATAMASH_DIR \
@@ -1492,8 +1502,9 @@ done
 	# I think that i will have to make this a look to handle multiple projects...maybe not
 	# but again, today is not that day.
 
-		awk 'BEGIN {FS=","} NR>1 {print $8}' \
-		$SAMPLE_SHEET \
+		awk 1 $SAMPLE_SHEET \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d; /^,/d' \
+			| awk 'BEGIN {FS=","; OFS="\t"} NR>1 {print $1,$8}' \
 			| awk '{split($1,sm_tag,/[@-]/)} {print sm_tag[2]}' \
 			| sort -k 1,1 \
 			| uniq \
@@ -1512,10 +1523,17 @@ done
 					"-M","cidr_sequencing_notifications@lists.johnshopkins.edu",\
 				"-N" , "Y01-Y01-END_PROJECT_TASKS_" "'$PREFIX'",\
 					"-o","'$CORE_PATH'" "/" "'$PROJECT_MS'" "/LOGS/Y01-Y01-" "'$PREFIX'" ".END_PROJECT_TASKS.log",\
-				"-hold_jid" , "Y_"$1,\
+				"-hold_jid" , "Y_" $1 ",A02-LAB_PREP_METRICS_" "'$PROJECT_MS'",\
 				"'$SCRIPT_DIR'" "/Y01-Y01_END_PROJECT_TASKS.sh",\
 					"'$CORE_PATH'",\
 					"'$DATAMASH_DIR'",\
 					"'$PROJECT_MS'",\
 					"'$PREFIX'",\
 					"'$SAMPLE_SHEET'" "\n" "sleep 0.1s"}'		
+
+# email when finished submitting
+
+printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`" \
+	| mail -s "CMG.VQSR_SUBMITTER.sh submitted" \
+		-r khetric1@jhmi.edu \
+		cidr_sequencing_notifications@lists.johnshopkins.edu
