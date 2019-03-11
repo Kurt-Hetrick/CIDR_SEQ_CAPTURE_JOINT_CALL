@@ -339,7 +339,7 @@ echo
 ##### PCT_A,PCT_C,PCT_G,PCT_T,PCT_N #######################
 ###########################################################
 
-	sed '/^$/d' $CORE_PATH/$PROJECT/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/$SM_TAG".base_distribution_by_cycle_metrics.txt" \
+	sed '/^$/d' $CORE_PATH/$PROJECT_SAMPLE/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/$SM_TAG".base_distribution_by_cycle_metrics.txt" \
 		| awk 'NR>6' \
 		| $DATAMASH_DIR/datamash \
 			mean 3 \
@@ -348,7 +348,7 @@ echo
 			mean 6 \
 			mean 7 \
 		| $DATAMASH_DIR/datamash transpose \
-	>> $CORE_PATH/$PROJECT/TEMP/$SM_TAG".QC_REPORT_TEMP.txt"
+	>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
 
 ############################################
 ##### BASE SUBSTITUTION RATE ###############
@@ -358,9 +358,9 @@ echo
 ##### PCT_C_to_A,PCT_C_to_G,PCT_C_to_T #####
 ############################################
 
-	sed '/^$/d' $CORE_PATH/$PROJECT/REPORTS/ERROR_SUMMARY/$SM_TAG".error_summary_metrics.txt" \
+	sed '/^$/d' $CORE_PATH/$PROJECT_SAMPLE/REPORTS/ERROR_SUMMARY/$SM_TAG".error_summary_metrics.txt" \
 		| awk 'NR>6 {print $6*100}' \
-	>> $CORE_PATH/$PROJECT/TEMP/$SM_TAG".QC_REPORT_TEMP.txt"
+	>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
 
 ###############################################################
 ##### GENERATE COUNT PCT,IN DBSNP FOR ON BAIT SNVS ############
