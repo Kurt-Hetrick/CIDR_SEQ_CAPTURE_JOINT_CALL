@@ -95,6 +95,7 @@
 	DATAMASH_DIR="/mnt/research/tools/LINUX/DATAMASH/datamash-1.0.6"
 	TABIX_DIR="/mnt/research/tools/LINUX/TABIX/tabix-0.2.6"
 	R_DIRECTORY="/mnt/linuxtools/R/R-3.1.1/bin"
+	GATK_DIR_4011="/mnt/linuxtools/GATK/gatk-4.0.11.0"
 
 ##################
 # PIPELINE FILES #
@@ -142,7 +143,7 @@
 	mkdir -p $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE
 	mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/{ANNOVAR,LAB_PREP_REPORTS_MS,QC_REPORTS,QC_REPORT_PREP_$PREFIX}
 	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX
-	mkdir -p $CORE_PATH/$PROJECT_MS/LOGS/{A01_COMBINE_GVCF,B01_GENOTYPE_GVCF,C01_VARIANT_ANNOTATOR}
+	mkdir -p $CORE_PATH/$PROJECT_MS/LOGS/{A01_COMBINE_GVCF,B01_GENOTYPE_GVCF,C01_VARIANT_ANNOTATOR,H01_SELECT_RARE,H01A01_ANNOTATE_RARE}
 
 ##################################################
 ### FUNCTIONS FOR JOINT CALLING PROJECT SET-UP ###
@@ -163,7 +164,7 @@
 
 			REF_GENOME=${PROJECT_INFO_ARRAY[0]} # field 12 from the sample sheet
 			PROJECT_DBSNP=${PROJECT_INFO_ARRAY[1]} # field 18 from the sample sheet
-			# PROJECT_BAIT_BED=${PROJECT_INFO_ARRAY[2]} # field 16 from the sample sheet (NOT NECESSARY. MIGHT BE MORE THAN ONE)
+			PROJECT_BAIT_BED=${PROJECT_INFO_ARRAY[2]} # field 16 from the sample sheet (NOT NECESSARY. MIGHT BE MORE THAN ONE)
 		}
 
 		# Keep this in here to reference...I'll probably going to use this somewhere.
@@ -592,53 +593,6 @@ done
 ##### ANNOTATE RARE VARIANTS WITH SAMPLE IDS #####
 ##################################################
 
-	SELECT_RARE_BIALLELIC ()
-	{
-		echo \
-		qsub \
-			-S /bin/bash \
-			-cwd \
-			-V \
-			-q $QUEUE_LIST \
-			-p $PRIORITY \
-			-j y \
-		-N H01_SELECT_RARE_BIALLELIC_$PROJECT_MS \
-			-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_H01_SELECT_RARE_BIALLELIC.log' \
-		-hold_jid G01_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
-		$SCRIPT_DIR/H01_SELECT_RARE_BIALLELIC.sh \
-			$JAVA_1_8 \
-			$GATK_DIR \
-			$REF_GENOME \
-			$CORE_PATH \
-			$PROJECT_MS \
-			$PREFIX
-	}
-
-		# consider doing this a per chr scatter/gather
-		# can scatter if absolutely needed
-
-		ANNOTATE_SELECT_RARE_BIALLELIC ()
-		{
-			echo \
-			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-				-j y \
-			-N H01A01_ANNOTATE_SELECT_RARE_BIALLELIC_$PROJECT_MS \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_H01A01_ANNOTATE_SELECT_RARE_BIALLELIC.log' \
-			-hold_jid H01_SELECT_RARE_BIALLELIC_$PROJECT_MS \
-			$SCRIPT_DIR/H01A01_ANNOTATE_SELECT_RARE_BIALLELIC.sh \
-				$JAVA_1_8 \
-				$GATK_DIR \
-				$REF_GENOME \
-				$CORE_PATH \
-				$PROJECT_MS \
-				$PREFIX
-		}
-
 	SELECT_COMMON_BIALLELIC ()
 	{
 		echo \
@@ -683,6 +637,104 @@ done
 			$PREFIX
 	}
 
+	MS_VCF_METRICS ()
+	{
+		echo \
+		qsub \
+			-S /bin/bash \
+			-cwd \
+			-V \
+			-q $QUEUE_LIST \
+			-p $PRIORITY \
+			-j y \
+		-N H04_MS_VCF_METRICS_$PROJECT_MS \
+			-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_H04_MS_VCF_METRICS.log' \
+		-hold_jid G01_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
+		$SCRIPT_DIR/H04_MS_VCF_METRICS.sh \
+			$JAVA_1_8 \
+			$GATK_DIR_4011 \
+			$CORE_PATH \
+			$PROJECT_MS \
+			$PREFIX \
+			$DBSNP_138_VCF \
+			$REF_DICT
+	}
+
+# make calls
+
+	SELECT_COMMON_BIALLELIC
+	echo sleep 0.1s
+	SELECT_MULTIALLELIC
+	echo sleep 0.1s
+	MS_VCF_METRICS
+	echo sleep 0.1s
+
+# scatter the rare variants by bed file interval
+
+	SELECT_RARE_BIALLELIC ()
+	{
+		echo \
+		qsub \
+			-S /bin/bash \
+			-cwd \
+			-V \
+			-q $QUEUE_LIST \
+			-p $PRIORITY \
+			-j y \
+		-N H01_SELECT_RARE_BIALLELIC_$PROJECT_MS"_"$BED_FILE_NAME \
+			-o $CORE_PATH/$PROJECT_MS/LOGS/H01_SELECT_RARE/$PREFIX"_H01_SELECT_RARE_BIALLELIC_"$BED_FILE_NAME".log" \
+		-hold_jid G01_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
+		$SCRIPT_DIR/H01_SELECT_RARE_BIALLELIC.sh \
+			$JAVA_1_8 \
+			$GATK_DIR \
+			$REF_GENOME \
+			$CORE_PATH \
+			$PROJECT_MS \
+			$PREFIX \
+			$BED_FILE_NAME
+	}
+
+	# consider doing this a per chr scatter/gather
+	# can scatter if absolutely needed
+
+	ANNOTATE_SELECT_RARE_BIALLELIC ()
+	{
+		echo \
+		qsub \
+			-S /bin/bash \
+			-cwd \
+			-V \
+			-q $QUEUE_LIST \
+			-p $PRIORITY \
+			-j y \
+		-N I$HACK"_"$BED_FILE_NAME \
+			-o $CORE_PATH/$PROJECT_MS/LOGS/H01A01_ANNOTATE_RARE/$PREFIX"_H01A01_ANNOTATE_RARE_BIALLELIC_"$BED_FILE_NAME".log" \
+		-hold_jid H01_SELECT_RARE_BIALLELIC_$PROJECT_MS"_"$BED_FILE_NAME \
+		$SCRIPT_DIR/H01A01_ANNOTATE_SELECT_RARE_BIALLELIC.sh \
+			$JAVA_1_8 \
+			$GATK_DIR \
+			$REF_GENOME \
+			$CORE_PATH \
+			$PROJECT_MS \
+			$PREFIX \
+			$BED_FILE_NAME
+	}
+
+	GENERATE_COMBINE_VARIANTS_HOLD_ID ()
+	{
+		COMBINE_VARIANTS_HOLD_ID=$COMBINE_VARIANTS_HOLD_ID'I'$HACK'_'$BED_FILE_NAME','
+	}
+
+for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed);
+	do
+		BED_FILE_NAME=$(basename $BED_FILE .bed)
+		SELECT_RARE_BIALLELIC
+		echo sleep 0.1s
+		ANNOTATE_SELECT_RARE_BIALLELIC
+		echo sleep 0.1s
+		GENERATE_COMBINE_VARIANTS_HOLD_ID
+done
+
 	COMBINE_VARIANTS_VCF ()
 	{
 		echo \
@@ -695,7 +747,7 @@ done
 			-j y \
 		-N I01_COMBINE_VARIANTS_VCF_$PROJECT_MS \
 			-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_I01_COMBINE_VARIANTS_VCF.log' \
-		-hold_jid H03_SELECT_MULTIALLELIC_$PROJECT_MS','H02_SELECT_COMMON_BIALLELIC_$PROJECT_MS','H01A01_ANNOTATE_SELECT_RARE_BIALLELIC_$PROJECT_MS \
+		-hold_jid H03_SELECT_MULTIALLELIC_$PROJECT_MS','H02_SELECT_COMMON_BIALLELIC_$PROJECT_MS','$COMBINE_VARIANTS_HOLD_ID \
 		$SCRIPT_DIR/I01_COMBINE_VARIANTS_VCF.sh \
 			$JAVA_1_8 \
 			$GATK_DIR \
@@ -707,14 +759,6 @@ done
 
 	# make calls
 
-		SELECT_RARE_BIALLELIC
-		echo sleep 0.1s
-		ANNOTATE_SELECT_RARE_BIALLELIC
-		echo sleep 0.1s
-		SELECT_COMMON_BIALLELIC
-		echo sleep 0.1s
-		SELECT_MULTIALLELIC
-		echo sleep 0.1s
 		COMBINE_VARIANTS_VCF
 		echo sleep 0.1s
 
