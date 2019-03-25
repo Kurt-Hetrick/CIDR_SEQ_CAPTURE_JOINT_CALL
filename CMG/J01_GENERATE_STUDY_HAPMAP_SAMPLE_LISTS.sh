@@ -47,7 +47,7 @@
 		| sed 's/\t/\n/g' \
 		| awk 'NR>9 {print $0}' \
 		| egrep '^NA|^HG' \
-	>| $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/$PREFIX'_hapmap_samples.list'
+	>| $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/$PREFIX'_hapmap_samples.args'
 
 # TAKE HEADER IN THE VCF THAT CONTAINS THE SAMPLE NAMES
 # CONVERT INTO ROWS
@@ -58,4 +58,4 @@
 		| sed 's/\t/\n/g' \
 		| awk 'NR>9 {print $0}' \
 		| egrep -v '^NA|^HG' \
-	>| $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/$PREFIX'_study_samples.list'
+	>| $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/$PREFIX'_study_samples.args'
