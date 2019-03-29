@@ -26,22 +26,22 @@
 ##### END QSUB PARAMETER SETTINGS #####
 #######################################
 
-# export all variables, useful to find out what compute node the program was executed on
-set
+	# export all variables, useful to find out what compute node the program was executed on
+	set
 
-# create a blank lane b/w the output variables and the program logging output
-echo
+	# create a blank lane b/w the output variables and the program logging output
+	echo
 
 # INPUT VARIABLES
 
-JAVA_1_8=$1
-GATK_DIR=$2
-REF_GENOME=$3
+	JAVA_1_8=$1
+	GATK_DIR_4011=$2
+	REF_GENOME=$3
 
-CORE_PATH=$4
-PROJECT_MS=$5
-PREFIX=$6
-HAPMAP_SAMPLE_LIST=$7
+	CORE_PATH=$4
+	PROJECT_MS=$5
+	PREFIX=$6
+	HAPMAP_SAMPLE_LIST=$7
 
 START_STUDY_INDELS_PASS=`date '+%s'`
 
@@ -49,20 +49,20 @@ START_STUDY_INDELS_PASS=`date '+%s'`
 # select passing INDEL,MIXED,MNP,SYMBOLIC sites that are only polymorphic in the hapmap samples
 # REALLY WE ARE GOING FOR NON-SNP SITES HERE
 
-CMD=$JAVA_1_8'/java -jar'
-CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
-CMD=$CMD' -T SelectVariants'
-CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
-CMD=$CMD' -R '$REF_GENOME
-CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf'
-CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'.BEDsuperset.VQSR.INDEL.STUDY.SAMPLES.PASS.vcf'
-CMD=$CMD' -selectType INDEL'
-CMD=$CMD' -selectType MIXED'
-CMD=$CMD' -selectType MNP'
-CMD=$CMD' -selectType SYMBOLIC'
-CMD=$CMD' -env'
-CMD=$CMD' -ef'
-CMD=$CMD' --exclude_sample_file '$HAPMAP_SAMPLE_LIST
+	CMD=$JAVA_1_8'/java -jar'
+	CMD=$CMD' '$GATK_DIR_4011'/gatk-package-4.0.11.0-local.jar'
+	CMD=$CMD' SelectVariants'
+	CMD=$CMD' --reference '$REF_GENOME
+	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf'
+	CMD=$CMD' --output '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'.BEDsuperset.VQSR.INDEL.STUDY.SAMPLES.PASS.vcf'
+	CMD=$CMD' --select-type-to-include INDEL'
+	CMD=$CMD' --select-type-to-include MIXED'
+	CMD=$CMD' --select-type-to-include MNP'
+	CMD=$CMD' --select-type-to-include SYMBOLIC'
+	CMD=$CMD' --exclude-non-variants'
+	CMD=$CMD' --exclude-filtered'
+	CMD=$CMD' --remove-unused-alternates'
+	CMD=$CMD' --exclude-sample-name '$HAPMAP_SAMPLE_LIST
 
 echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
 echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"

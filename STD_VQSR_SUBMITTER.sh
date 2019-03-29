@@ -81,6 +81,7 @@
 	DATAMASH_DIR="/mnt/research/tools/LINUX/DATAMASH/datamash-1.0.6"
 	TABIX_DIR="/mnt/research/tools/LINUX/TABIX/tabix-0.2.6"
 	R_DIRECTORY="/mnt/linuxtools/R/R-3.1.1/bin"
+	GATK_DIR_4011="/mnt/linuxtools/GATK/gatk-4.0.11.0"
 
 ##################
 # PIPELINE FILES #
@@ -735,9 +736,9 @@ done
 		# generate list files by parsing the header of the final ms vcf file
 			GENERATE_STUDY_HAPMAP_SAMPLE_LISTS ()
 			{
-				HAP_MAP_SAMPLE_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'_hapmap_samples.list'`)
+				HAP_MAP_SAMPLE_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'_hapmap_samples.args'`)
 
-				MENDEL_SAMPLE_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'_study_samples.list'`)
+				MENDEL_SAMPLE_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'_study_samples.args'`)
 
 				# technically don't have to wait on the gather to happen to do this, but for simplicity sake...
 				# if performance becomes an issue then can revisit
@@ -775,7 +776,7 @@ done
 				 -hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 				$SCRIPT_DIR/K02A01_SELECT_ALL_SAMPLES_SNP.sh \
 				 	$JAVA_1_8 \
-				 	$GATK_DIR \
+					$GATK_DIR_4011 \
 				 	$REF_GENOME \
 				 	$CORE_PATH \
 				 	$PROJECT_MS \
@@ -798,7 +799,7 @@ done
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 				$SCRIPT_DIR/K02A02_SELECT_PASS_STUDY_ONLY_SNP.sh \
 					$JAVA_1_8 \
-					$GATK_DIR \
+					$GATK_DIR_4011 \
 					$REF_GENOME \
 				 	$CORE_PATH \
 				 	$PROJECT_MS \
@@ -822,7 +823,7 @@ done
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 				$SCRIPT_DIR/K02A03_SELECT_PASS_HAPMAP_ONLY_SNP.sh \
 					$JAVA_1_8 \
-					$GATK_DIR \
+					$GATK_DIR_4011 \
 					$REF_GENOME \
 				 	$CORE_PATH \
 				 	$PROJECT_MS \
@@ -846,7 +847,7 @@ done
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 				$SCRIPT_DIR/K02A04_SELECT_ALL_SAMPLES_INDELS.sh \
 					$JAVA_1_8 \
-					$GATK_DIR \
+					$GATK_DIR_4011 \
 					$REF_GENOME \
 				 	$CORE_PATH \
 				 	$PROJECT_MS \
@@ -869,7 +870,7 @@ done
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 				$SCRIPT_DIR/K02A05_SELECT_PASS_STUDY_ONLY_INDEL.sh \
 					$JAVA_1_8 \
-					$GATK_DIR \
+					$GATK_DIR_4011 \
 					$REF_GENOME \
 				 	$CORE_PATH \
 				 	$PROJECT_MS \
@@ -893,7 +894,7 @@ done
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 				$SCRIPT_DIR/K02A06_SELECT_PASS_HAPMAP_ONLY_INDEL.sh \
 					$JAVA_1_8 \
-					$GATK_DIR \
+					$GATK_DIR_4011 \
 					$REF_GENOME \
 				 	$CORE_PATH \
 				 	$PROJECT_MS \
@@ -917,7 +918,7 @@ done
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 				$SCRIPT_DIR/K02A07_SELECT_ALL_SAMPLES_SNP_PASS.sh \
 					$JAVA_1_8 \
-					$GATK_DIR \
+					$GATK_DIR_4011 \
 					$REF_GENOME \
 					$CORE_PATH \
 					$PROJECT_MS \
@@ -940,7 +941,7 @@ done
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_$PROJECT_MS \
 				$SCRIPT_DIR/K02A08_SELECT_ALL_SAMPLES_INDEL_PASS.sh \
 					$JAVA_1_8 \
-					$GATK_DIR \
+					$GATK_DIR_4011 \
 					$REF_GENOME \
 					$CORE_PATH \
 					$PROJECT_MS \

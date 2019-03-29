@@ -26,39 +26,39 @@
 ##### END QSUB PARAMETER SETTINGS #####
 #######################################
 
-# export all variables, useful to find out what compute node the program was executed on
-set
+	# export all variables, useful to find out what compute node the program was executed on
+	set
 
-# create a blank lane b/w the output variables and the program logging output
-echo
+	# create a blank lane b/w the output variables and the program logging output
+	echo
 
 # INPUT VARIABLES
 
-JAVA_1_8=$1
-GATK_DIR=$2
-REF_GENOME=$3
+	JAVA_1_8=$1
+	GATK_DIR=$2
+	REF_GENOME=$3
 
-CORE_PATH=$4
-PROJECT_MS=$5
-PREFIX=$6
-STUDY_SAMPLE_LIST=$7
+	CORE_PATH=$4
+	PROJECT_MS=$5
+	PREFIX=$6
+	STUDY_SAMPLE_LIST=$7
 
 START_HAPMAP_SNP_PASS=`date '+%s'`
 
 # for the hapmap samples...via excluding the study samples
 # select passing SNP sites that are only polymorphic in the hapmap samples
 
-CMD=$JAVA_1_8'/java -jar'
-CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
-CMD=$CMD' -T SelectVariants'
-CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
-CMD=$CMD' -R '$REF_GENOME
-CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf'
-CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'.BEDsuperset.VQSR.SNP.HAPMAP.SAMPLES.PASS.vcf'
-CMD=$CMD' -selectType SNP'
-CMD=$CMD' -env'
-CMD=$CMD' -ef'
-CMD=$CMD' --exclude_sample_file '$STUDY_SAMPLE_LIST
+	CMD=$JAVA_1_8'/java -jar'
+	CMD=$CMD' '$GATK_DIR_4011'/gatk-package-4.0.11.0-local.jar'
+	CMD=$CMD' SelectVariants'
+	CMD=$CMD' --reference '$REF_GENOME
+	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf'
+	CMD=$CMD' --output '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'.BEDsuperset.VQSR.SNP.HAPMAP.SAMPLES.PASS.vcf'
+	CMD=$CMD' --select-type-to-include SNP'
+	CMD=$CMD' --exclude-non-variants'
+	CMD=$CMD' --exclude-filtered'
+	CMD=$CMD' --remove-unused-alternates'
+	CMD=$CMD' --exclude-sample-name '$STUDY_SAMPLE_LIST
 
 echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
 echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
