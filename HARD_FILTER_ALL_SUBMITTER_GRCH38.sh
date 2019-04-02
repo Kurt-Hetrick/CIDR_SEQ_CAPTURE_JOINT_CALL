@@ -117,7 +117,8 @@
 		# md5 37eb87348fc917fb5f916db20621155f
 	REF_DICT="/mnt/shared_resources/public_resources/GRCh38DH/GRCh38_full_analysis_set_plus_decoy_hla.dict"
 	P3_1KG=""
-	ExAC=""
+	ExAC="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/ExAC.r0.3.sites.vep.hg38.liftover.vcf.gz"
+		# md5 1c890a91e3a123e7bd617e97d1289216
 	HG19_REF="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/hg19/ucsc.hg19.fasta"
 	HG38_TO_HG19_CHAIN="/mnt/shared_resources/public_resources/liftOver_chain/hg38ToHg19.over.chain"
 	HG19_DICT="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/hg19/ucsc.hg19.dict"
@@ -444,11 +445,11 @@ for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed);
 		GENERATE_CAT_VARIANTS_HOLD_ID
 done
 
-###############################
-###############################
-##### VCF Gather and VQSR #####
-###############################
-###############################
+#######################################
+#######################################
+##### VCF Gather and Hard Filters #####
+#######################################
+#######################################
 
 	# use cat variants to gather up all of the vcf files above into one big file
 	# MIGHT WANT TO LOOK INTO GatherVcfs (Picard) here
@@ -456,278 +457,164 @@ done
 	# The way that CatVariants is constructed, I think would cause a upper limit to the scatter operation.
 
 		CAT_VARIANTS ()
-		{
-			echo \
-			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-				-j y \
-			-N D01_CAT_VARIANTS_$PROJECT_MS \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/D01_CAT_VARIANTS.log \
-				-hold_jid $CAT_VARIANTS_HOLD_ID \
-			$SCRIPT_DIR/D01_CAT_VARIANTS.sh \
-				$JAVA_1_8 \
-				$GATK_DIR \
-				$REF_GENOME \
-				$CORE_PATH \
-				$PROJECT_MS \
-				$PREFIX
-		}
+			{
+				echo \
+				qsub \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+					-j y \
+				-N D01_CAT_VARIANTS_$PROJECT_MS \
+					-o $CORE_PATH/$PROJECT_MS/LOGS/D01_CAT_VARIANTS.log \
+					-hold_jid $CAT_VARIANTS_HOLD_ID \
+				$SCRIPT_DIR/D01_CAT_VARIANTS.sh \
+					$JAVA_1_8 \
+					$GATK_DIR \
+					$REF_GENOME \
+					$CORE_PATH \
+					$PROJECT_MS \
+					$PREFIX
+			}
 
-	# run the snp vqsr model
-	# to do: find a better to push out an R version to build the plots
-	# right now, it's buried inside the shell script itself {grrrr}
+	# Breakout the snps
 
-		VARIANT_RECALIBRATOR_SNV ()
-		{
-			echo \
-			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-				-j y \
-			-N E01_VARIANT_RECALIBRATOR_SNV_$PROJECT_MS \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/E01_VARIANT_RECALIBRATOR_SNV.log \
-				-hold_jid D01_CAT_VARIANTS_$PROJECT_MS \
-			$SCRIPT_DIR/E01_VARIANT_RECALIBRATOR_SNV.sh \
-				$JAVA_1_8 \
-				$GATK_DIR \
-				$REF_GENOME \
-				$HAPMAP_VCF \
-				$OMNI_VCF \
-				$ONEKG_SNPS_VCF \
-				$DBSNP_138_VCF \
-				$CORE_PATH \
-				$PROJECT_MS \
-				$PREFIX \
-				$R_DIRECTORY
-		}
+		EXTRACT_SNV ()
+			{
+				echo \
+				qsub \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+					-j y \
+				-N E01_EXTRACT_SNV_$PROJECT_MS \
+					-o $CORE_PATH/$PROJECT_MS/LOGS/E01_EXTRACT_SNV.log \
+					-hold_jid D01_CAT_VARIANTS_$PROJECT_MS \
+				$SCRIPT_DIR/E01_EXTRACT_SNV.sh \
+					$JAVA_1_8 \
+					$GATK_DIR \
+					$REF_GENOME \
+					$CORE_PATH \
+					$PROJECT_MS \
+					$PREFIX
+			}
 
-	# run the indel vqsr model (concurrently done with the snp model above)
-	# to do: find a better to push out an R version to build the plots
-	# right now, it's buried inside the shell script itself {grrrr}
+		# APPLY HARD FILTERS TO SNPS
 
-		VARIANT_RECALIBRATOR_INDEL ()
-		{
-			echo \
-			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-				-j y \
-			-N E02_VARIANT_RECALIBRATOR_INDEL_$PROJECT_MS \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/E02_VARIANT_RECALIBRATOR_INDEL.log \
-				-hold_jid D01_CAT_VARIANTS_$PROJECT_MS \
-			$SCRIPT_DIR/E02_VARIANT_RECALIBRATOR_INDEL.sh \
-				$JAVA_1_8 \
-				$GATK_DIR \
-				$REF_GENOME \
-				$ONEKG_INDELS_VCF \
-				$CORE_PATH \
-				$PROJECT_MS \
-				$PREFIX \
-				$R_DIRECTORY
-		}
+			HARD_FILTER_SNV ()
+				{
+					echo \
+					qsub \
+						-S /bin/bash \
+						-cwd \
+						-V \
+						-q $QUEUE_LIST \
+						-p $PRIORITY \
+						-j y \
+					-N E01-A01_HARD_FILTER_SNV_$PROJECT_MS \
+						-o $CORE_PATH/$PROJECT_MS/LOGS/E01-A01_HARD_FILTER_SNV.log \
+						-hold_jid E01_EXTRACT_SNV_$PROJECT_MS \
+					$SCRIPT_DIR/E01-A01_HARD_FILTER_SNV.sh \
+						$JAVA_1_8 \
+						$GATK_DIR \
+						$REF_GENOME \
+						$CORE_PATH \
+						$PROJECT_MS \
+						$PREFIX
+				}
 
-	# apply the snp vqsr model to the full vcf
-	# this wait for both the snp and indel models to be done generating before running.
+	# Breakout the non-snps
 
-		APPLY_RECALIBRATION_SNV ()
-		{
-			echo \
-			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-				-j y \
-			-N F01_APPLY_RECALIBRATION_SNV_$PROJECT_MS \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/F01_APPLY_RECALIBRATION_SNV.log \
-				-hold_jid E01_VARIANT_RECALIBRATOR_SNV_$PROJECT_MS \
-			$SCRIPT_DIR/F01_APPLY_RECALIBRATION_SNV.sh \
-				$JAVA_1_8 \
-				$GATK_DIR \
-				$REF_GENOME \
-				$CORE_PATH \
-				$PROJECT_MS \
-				$PREFIX
-		}
+		EXTRACT_INDEL_AND_MIXED ()
+			{
+				echo \
+					qsub \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+					-j y \
+				-N E02_EXTRACT_INDELS_AND_MIXED_$PROJECT_MS \
+					-o $CORE_PATH/$PROJECT_MS/LOGS/E02_EXTRACT_INDELS_AND_MIXED.log \
+					-hold_jid D01_CAT_VARIANTS_$PROJECT_MS \
+				$SCRIPT_DIR/E02_EXTRACT_INDELS_AND_MIXED.sh \
+					$JAVA_1_8 \
+					$GATK_DIR \
+					$REF_GENOME \
+					$CORE_PATH \
+					$PROJECT_MS \
+					$PREFIX
+			}
 
-	# now apply the indel vqsr model to the full vcf file
-	# honestly can do vqsr indel+vqsr snp, apply vqsr indel after vqsr indel done. vqsr snp waits for apply vqsr indel and vqsr snp...a little more efficient.
+		# Apply Hard Filters to Indels and Mixed
 
-		APPLY_RECALIBRATION_INDEL ()
-		{
-			echo \
-			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-				-j y \
-			-N G01_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/G01_APPLY_RECALIBRATION_INDEL.log \
-				-hold_jid F01_APPLY_RECALIBRATION_SNV_$PROJECT_MS,E02_VARIANT_RECALIBRATOR_INDEL_$PROJECT_MS \
-			$SCRIPT_DIR/G01_APPLY_RECALIBRATION_INDEL.sh \
-				$JAVA_1_8 \
-				$GATK_DIR \
-				$REF_GENOME \
-				$CORE_PATH \
-				$PROJECT_MS \
-				$PREFIX
-		}
+			HARD_FILTER_INDEL_AND_MIXED ()
+				{
+					echo \
+					qsub \
+						-S /bin/bash \
+						-cwd \
+						-V \
+						-q $QUEUE_LIST \
+						-p $PRIORITY \
+						-j y \
+					-N E02-A01_HARD_FILTER_INDEL_AND_MIXED_$PROJECT_MS \
+						-o $CORE_PATH/$PROJECT_MS/LOGS/E02-A01_HARD_FILTER_INDEL_AND_MIXED.log \
+						-hold_jid E02_EXTRACT_INDELS_AND_MIXED_$PROJECT_MS \
+					$SCRIPT_DIR/E01-A02_HARD_FILTER_SNV.sh \
+						$JAVA_1_8 \
+						$GATK_DIR \
+						$REF_GENOME \
+						$CORE_PATH \
+						$PROJECT_MS \
+						$PREFIX
+				}
 
-# call cat variants and vqsr
+	# COMBINE_VARIANTS
+
+		COMBINE_SNV_INDEL_VARIANTS ()
+			{
+				echo \
+				qsub \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+					-j y \
+				-N F01_COMBINE_VARIANTS_$PROJECT_MS \
+					-o $CORE_PATH/$PROJECT/LOGS/F06_COMBINE_SNV_INDEL_VARIANTS_.log \
+					-hold_jid E01-A01_HARD_FILTER_SNV_$PROJECT_MS,E02-A01_HARD_FILTER_INDEL_AND_MIXED_$PROJECT_MS \
+				$SCRIPT_DIR/F01_COMBINE_VARIANTS.sh \
+						$JAVA_1_8 \
+						$GATK_DIR \
+						$REF_GENOME \
+						$CORE_PATH \
+						$PROJECT_MS \
+						$PREFIX
+			}
+
+
+# call cat variants and hard filter variants
 
 	CAT_VARIANTS
 	echo sleep 0.1s
-	VARIANT_RECALIBRATOR_SNV
+	EXTRACT_SNV
 	echo sleep 0.1s
-	VARIANT_RECALIBRATOR_INDEL
+	EXTRACT_INDEL_AND_MIXED
 	echo sleep 0.1s
-	APPLY_RECALIBRATION_SNV
+	HARD_FILTER_SNV
 	echo sleep 0.1s
-	APPLY_RECALIBRATION_INDEL
+	HARD_FILTER_INDEL_AND_MIXED
+	echo sleep 0.1s
+	COMBINE_SNV_INDEL_VARIANTS
 	echo sleep 0.1s
 
-##################################################
-##### ANNOTATE RARE VARIANTS WITH SAMPLE IDS #####
-##################################################
 
-	SELECT_RARE_BIALLELIC ()
-	{
-		echo \
-		qsub \
-			-S /bin/bash \
-			-cwd \
-			-V \
-			-q $QUEUE_LIST \
-			-p $PRIORITY \
-			-j y \
-		-N H01_SELECT_RARE_BIALLELIC_$PROJECT_MS \
-			-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_H01_SELECT_RARE_BIALLELIC.log' \
-		-hold_jid G01_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
-		$SCRIPT_DIR/H01_SELECT_RARE_BIALLELIC.sh \
-			$JAVA_1_8 \
-			$GATK_DIR \
-			$REF_GENOME \
-			$CORE_PATH \
-			$PROJECT_MS \
-			$PREFIX
-	}
-
-		# consider doing this a per chr scatter/gather
-		# can scatter if absolutely needed
-
-		ANNOTATE_SELECT_RARE_BIALLELIC ()
-		{
-			echo \
-			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-				-j y \
-			-N H01A01_ANNOTATE_SELECT_RARE_BIALLELIC_$PROJECT_MS \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_H01A01_ANNOTATE_SELECT_RARE_BIALLELIC.log' \
-			-hold_jid H01_SELECT_RARE_BIALLELIC_$PROJECT_MS \
-			$SCRIPT_DIR/H01A01_ANNOTATE_SELECT_RARE_BIALLELIC.sh \
-				$JAVA_1_8 \
-				$GATK_DIR \
-				$REF_GENOME \
-				$CORE_PATH \
-				$PROJECT_MS \
-				$PREFIX
-		}
-
-	SELECT_COMMON_BIALLELIC ()
-	{
-		echo \
-		qsub \
-			-S /bin/bash \
-			-cwd \
-			-V \
-			-q $QUEUE_LIST \
-			-p $PRIORITY \
-			-j y \
-		-N H02_SELECT_COMMON_BIALLELIC_$PROJECT_MS \
-			-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_H02_SELECT_COMMON_BIALLELIC.log' \
-		-hold_jid G01_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
-		$SCRIPT_DIR/H02_SELECT_COMMON_BIALLELIC.sh \
-			$JAVA_1_8 \
-			$GATK_DIR \
-			$REF_GENOME \
-			$CORE_PATH \
-			$PROJECT_MS \
-			$PREFIX
-	}
-
-	SELECT_MULTIALLELIC ()
-	{
-		echo \
-		qsub \
-			-S /bin/bash \
-			-cwd \
-			-V \
-			-q $QUEUE_LIST \
-			-p $PRIORITY \
-			-j y \
-		-N H03_SELECT_MULTIALLELIC_$PROJECT_MS \
-			-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_H03_SELECT_MULTIALLELIC.log' \
-		-hold_jid G01_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
-		$SCRIPT_DIR/H03_SELECT_MULTIALLELIC.sh \
-			$JAVA_1_8 \
-			$GATK_DIR \
-			$REF_GENOME \
-			$CORE_PATH \
-			$PROJECT_MS \
-			$PREFIX
-	}
-
-	COMBINE_VARIANTS_VCF ()
-	{
-		echo \
-		qsub \
-			-S /bin/bash \
-			-cwd \
-			-V \
-			-q $QUEUE_LIST \
-			-p $PRIORITY \
-			-j y \
-		-N I01_COMBINE_VARIANTS_VCF_$PROJECT_MS \
-			-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_I01_COMBINE_VARIANTS_VCF.log' \
-		-hold_jid H03_SELECT_MULTIALLELIC_$PROJECT_MS','H02_SELECT_COMMON_BIALLELIC_$PROJECT_MS','H01A01_ANNOTATE_SELECT_RARE_BIALLELIC_$PROJECT_MS \
-		$SCRIPT_DIR/I01_COMBINE_VARIANTS_VCF.sh \
-			$JAVA_1_8 \
-			$GATK_DIR \
-			$REF_GENOME \
-			$CORE_PATH \
-			$PROJECT_MS \
-			$PREFIX
-	}
-
-	# make calls
-
-		SELECT_RARE_BIALLELIC
-		echo sleep 0.1s
-		ANNOTATE_SELECT_RARE_BIALLELIC
-		echo sleep 0.1s
-		SELECT_COMMON_BIALLELIC
-		echo sleep 0.1s
-		SELECT_MULTIALLELIC
-		echo sleep 0.1s
-		COMBINE_VARIANTS_VCF
-		echo sleep 0.1s
 
 #########################################################
 #########################################################
@@ -743,9 +630,9 @@ done
 		# generate list files by parsing the header of the final ms vcf file
 			GENERATE_STUDY_HAPMAP_SAMPLE_LISTS ()
 			{
-				HAP_MAP_SAMPLE_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'_hapmap_samples.list'`)
+				HAP_MAP_SAMPLE_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'_hapmap_samples.args'`)
 
-				MENDEL_SAMPLE_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'_study_samples.list'`)
+				MENDEL_SAMPLE_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'_study_samples.args'`)
 
 				# technically don't have to wait on the gather to happen to do this, but for simplicity sake...
 				# if performance becomes an issue then can revisit
