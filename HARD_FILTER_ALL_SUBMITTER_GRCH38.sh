@@ -116,6 +116,8 @@
 		# FOR REANALYSIS OF CUTTING'S PHASE AND PHASE 2 PROJECTS.
 		# md5 37eb87348fc917fb5f916db20621155f
 	REF_DICT="/mnt/shared_resources/public_resources/GRCh38DH/GRCh38_full_analysis_set_plus_decoy_hla.dict"
+	P3_1KG=""
+	ExAC=""
 	HG19_REF="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/hg19/ucsc.hg19.fasta"
 	HG38_TO_HG19_CHAIN="/mnt/shared_resources/public_resources/liftOver_chain/hg38ToHg19.over.chain"
 	HG19_DICT="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/hg19/ucsc.hg19.dict"
@@ -138,9 +140,9 @@
 			rm -rf $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT
 	fi
 
-	if [ -d $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS ]
+	if [ -d $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST ]
 		then
-			rm -rf $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS
+			rm -rf $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST
 	fi
 
 ############################################################################################
@@ -148,7 +150,7 @@
 ############################################################################################
 
 	mkdir -p $CORE_PATH/$PROJECT_MS/{LOGS,COMMAND_LINES}
-	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/{BED_FILE_SPLIT,AGGREGATE,QC_REPORT_PREP_$PREFIX,SPLIT_SS}
+	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/{BED_FILE_SPLIT,AGGREGATE,QC_REPORT_PREP_$PREFIX,SPLIT_LIST}
 	mkdir -p $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/
 	mkdir -p $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE
 	mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/{ANNOVAR,LAB_PREP_REPORTS_MS,QC_REPORTS,QC_REPORT_PREP_$PREFIX}
@@ -174,21 +176,22 @@
 
 			REF_GENOME=${PROJECT_INFO_ARRAY[0]} # field 12 from the sample sheet
 			PROJECT_DBSNP=${PROJECT_INFO_ARRAY[1]} # field 18 from the sample sheet
+			PROJECT_BAIT_BED=${PROJECT_INFO_ARRAY[2]} # field 16 from the sample sheet
 		}
 
 		# Keep this in here to reference...I'll probably going to use this somewhere.
 		# generates a chrosome list from a bait bed file at the project level. so I only have to make one iteration per project instead of one per sample
 
-			CREATE_CHROMOSOME_LIST ()
-			{
-				REF_CHROM_SET=$(sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' $MERGED_MENDEL_BED_FILE \
-					| sed -r 's/[[:space:]]+/\t/g' \
-					| cut -f 1 \
-					| sort \
-					| uniq \
-					| $DATAMASH_DIR/datamash collapse 1 \
-					| sed 's/,/ /g')
-			}
+			# CREATE_CHROMOSOME_LIST ()
+			# {
+			# 	REF_CHROM_SET=$(sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' $MERGED_MENDEL_BED_FILE \
+			# 		| sed -r 's/[[:space:]]+/\t/g' \
+			# 		| cut -f 1 \
+			# 		| sort \
+			# 		| uniq \
+			# 		| $DATAMASH_DIR/datamash collapse 1 \
+			# 		| sed 's/,/ /g')
+			# }
 
 	# get the full path of the last gvcf list file.
 	# take the sample sheet and create a gvcf list from that
@@ -198,25 +201,22 @@
 		CREATE_GVCF_LIST ()
 		{
 
-			OLD_GVCF_LIST=$(ls -tr $CORE_PATH/$PROJECT_MS/*.list | tail -n 1)
-
-			TOTAL_SAMPLES=(`(cat $OLD_GVCF_LIST ; awk 'BEGIN{FS=","} NR>1 {print $1,$8}' $SAMPLE_SHEET \
-				| sort \
-				| uniq \
-				| awk 'BEGIN {OFS="/"} {print "'$CORE_PATH'" , $1 , "GVCF" , $2 ".g.vcf.gz"}') \
+			# count how many unique sample id's (with project) are in the sample sheet.
+			TOTAL_SAMPLES=(`awk 'BEGIN{FS=","} NR>1{print $1,$8}' $SAMPLE_SHEET \
 				| sort \
 				| uniq \
 				| wc -l`)
 
-			(cat $OLD_GVCF_LIST ; awk 'BEGIN{FS=","} NR>1 {print $1,$8}' $SAMPLE_SHEET \
-				| sort \
-				| uniq \
-				| awk 'BEGIN {OFS="/"} {print "'$CORE_PATH'" , $1 , "GVCF" , $2 ".g.vcf.gz"}') \
-				| sort \
-				| uniq \
-			>| $CORE_PATH'/'$PROJECT_MS'/'$PROJECT_MS'-'$TOTAL_SAMPLES'.samples.list'
+			# find all of the gvcf files write all of the full paths to a *samples.gvcf.list file.
+			awk 'BEGIN{FS=","} NR>1{print $1,$8}' $SAMPLE_SHEET \
+			 | sort \
+			 | uniq \
+			 | awk 'BEGIN{OFS="/"}{print "ls " "'$CORE_PATH'",$1,"GVCF",$2".g.vcf*"}' \
+			 | bash \
+			 | egrep -v "idx|tbi" \
+			>| $CORE_PATH'/'$PROJECT_MS'/'$TOTAL_SAMPLES'.samples.gvcf.list'
 
-			GVCF_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/'$PROJECT_MS'-'$TOTAL_SAMPLES'.samples.list'`)
+			GVCF_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/'$PROJECT_MS'-'$TOTAL_SAMPLES'.samples.gvcf.list'`)
 
 			# Take the list above and split it into groups of 300
 				split -l 300 -a 4 -d $GVCF_LIST \
@@ -239,16 +239,16 @@
 				# remove CHR PREFIXES (THIS IS FOR GRCH37)
 				# CONVERT VARIABLE LENGTH WHITESPACE FIELD DELIMETERS TO SINGLE TAB.
 
-					awk 1 $MERGED_MENDEL_BED_FILE \
+					awk 1 $PROJECT_BAIT_BED \
 						| sed -r 's/\r//g ; s/chr//g ; s/[[:space:]]+/\t/g' \
 					>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed
 
-				# SORT TO GRCH37 ORDER
+				# SORT TO REF ORDER
 
-					(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n ; \
-					 	awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
-					 	awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
-					 	awk '$1=="MT"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) \
+					(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n | awk '{print "chr"$0}' ; \
+						awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n | awk '{print "chr"$0}' ; \
+						awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n | awk '{print "chr"$0}' ; \
+						awk '$1=="MT"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n | awk '{print "chr"$0}') \
 					>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed
 
 				# get a line count for the number of for the bed file above
@@ -1507,7 +1507,7 @@ done
 		awk 1 $SAMPLE_SHEET \
 			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d; /^,/d' \
 			| awk 'BEGIN {FS=","; OFS="\t"} NR>1 {print $1,$8}' \
-			| awk '{split($1,sm_tag,/[@-]/)} {print sm_tag[2]}' \
+			| awk '{split($2,sm_tag,/[@-]/)} {print sm_tag[2]}' \
 			| sort -k 1,1 \
 			| uniq \
 			| $DATAMASH_DIR/datamash \
@@ -1535,7 +1535,7 @@ done
 
 # email when finished submitting
 
-printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`" \
+printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`\nby `whoami`" \
 	| mail -s "CMG.VQSR_SUBMITTER.sh submitted" \
 		-r khetric1@jhmi.edu \
 		cidr_sequencing_notifications@lists.johnshopkins.edu
