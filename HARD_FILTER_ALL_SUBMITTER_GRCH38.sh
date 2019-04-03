@@ -156,7 +156,7 @@
 	mkdir -p $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE
 	mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/{ANNOVAR,LAB_PREP_REPORTS_MS,QC_REPORTS,QC_REPORT_PREP_$PREFIX}
 	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX
-	mkdir -p $CORE_PATH/$PROJECT_MS/LOGS/{A01_COMBINE_GVCF,B01_GENOTYPE_GVCF,C01_VARIANT_ANNOTATOR}
+	mkdir -p $CORE_PATH/$PROJECT_MS/LOGS/{A01_COMBINE_GVCF,B01_GENOTYPE_GVCF,C01_VARIANT_ANNOTATOR,H01_CALCULATE_GENOTYPE_POSTERIORS,I01_VARIANT_ANNOTATOR_REFINED}
 
 ##################################################
 ### FUNCTIONS FOR JOINT CALLING PROJECT SET-UP ###
@@ -587,7 +587,7 @@ done
 					-p $PRIORITY \
 					-j y \
 				-N F01_COMBINE_VARIANTS_$PROJECT_MS \
-					-o $CORE_PATH/$PROJECT/LOGS/F06_COMBINE_SNV_INDEL_VARIANTS_.log \
+					-o $CORE_PATH/$PROJECT/LOGS/F06_COMBINE_VARIANTS_.log \
 					-hold_jid E01-A01_HARD_FILTER_SNV_$PROJECT_MS,E02-A01_HARD_FILTER_INDEL_AND_MIXED_$PROJECT_MS \
 				$SCRIPT_DIR/F01_COMBINE_VARIANTS.sh \
 						$JAVA_1_8 \
@@ -614,7 +614,178 @@ done
 	COMBINE_SNV_INDEL_VARIANTS
 	echo sleep 0.1s
 
+##################################################
+##################################################
+##### SCATTER FOR GENOTYPE REFINEMENT ############
+##################################################
+##################################################
 
+	# do a scatter of genotype refinement using the same chunked bed files use to the g.vcf aggregation
+	# external priors used are the final 1kg genomes dataset, exac v0.3, no family priors used (no ped file)
+
+		CALCULATE_GENOTYPE_POSTERIORS ()
+		{
+			echo \
+			qsub \
+				-S /bin/bash \
+				-cwd \
+				-V \
+				-q $QUEUE_LIST \
+				-p $PRIORITY \
+				-j y \
+			-N H01_CALCULATE_GENOTYPE_POSTERIORS_$PROJECT_MS"_"$BED_FILE_NAME \
+				-o $CORE_PATH/$PROJECT_MS/LOGS/G01_CALCULATE_GENOTYPE_POSTERIORS/H01_CALCULATE_GENOTYPE_POSTERIORS_$BED_FILE_NAME".log" \
+			-hold_jid F01_COMBINE_VARIANTS_$PROJECT_MS \
+			$SCRIPT_DIR/H01_CALCULATE_GENOTYPE_POSTERIORS.sh \
+				$JAVA_1_8 \
+				$GATK_DIR \
+				$REF_GENOME \
+				$P3_1KG \
+				$ExAC \
+				$CORE_PATH \
+				$PROJECT_MS \
+				$PREFIX \
+				$BED_FILE_NAME
+		}
+
+	# recalculate the genotype summaries for the now refined genotypes for each vcf chunk
+
+		VARIANT_ANNOTATOR_REFINED ()
+		{
+			echo \
+			qsub \
+				-S /bin/bash \
+				-cwd \
+				-V \
+				-q $QUEUE_LIST \
+				-p $PRIORITY \
+				-j y \
+			-N I$HACK"_"$BED_FILE_NAME \
+				-o $CORE_PATH/$PROJECT_MS/LOGS/I01_VARIANT_ANNOTATOR_REFINED/I01_VARIANT_ANNOTATOR_REFINED_$BED_FILE_NAME".log" \
+			-hold_jid H01_CALCULATE_GENOTYPE_POSTERIORS_$PROJECT_MS"_"$BED_FILE_NAME \
+			$SCRIPT_DIR/I01_VARIANT_ANNOTATOR_REFINED.sh \
+				$JAVA_1_8 \
+				$GATK_DIR \
+				$REF_GENOME \
+				$PROJECT_DBSNP \
+				$CORE_PATH \
+				$PROJECT_MS \
+				$PREFIX \
+				$BED_FILE_NAME
+		}
+
+	# build a string of job names (comma delim) from the variant annotator scatter to store as variable to use as
+	# hold_jid for the cat variants gather (it's used in the next section after the for loop below)
+
+		GENERATE_CAT_REFINED_VARIANTS_HOLD_ID ()
+		{
+			CAT_REFINED_VARIANTS_HOLD_ID=$CAT_REFINED_VARIANTS_HOLD_ID'I'$HACK'_'$BED_FILE_NAME','
+		}
+
+	# for each chunk of the original bed file, do calculate_genotype_posteriors, then variant annotator
+	# then generate a string of all the variant annotator job names submitted
+
+for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*);
+do
+	BED_FILE_NAME=$(basename $BED_FILE .bed)
+	CALCULATE_GENOTYPE_POSTERIORS
+	echo sleep 0.1s
+	VARIANT_ANNOTATOR_REFINED
+	echo sleep 0.1s
+	GENERATE_CAT_REFINED_VARIANTS_HOLD_ID
+done
+
+#########################################################
+#########################################################
+##### GT Refined VCF Gather #############################
+##### Multi-Sample VCF ANNOVAR ##########################
+##### VARIANT SUMMARY STATS VCF BREAKOUTS ###############
+#########################################################
+#########################################################
+
+	# use cat variants to gather up all of the gt refined, reannotated vcf files above into one big file
+
+		CAT_REFINED_VARIANTS ()
+		{
+			echo \
+			qsub \
+				-S /bin/bash \
+				-cwd \
+				-V \
+				-q $QUEUE_LIST \
+				-p $PRIORITY \
+				-j y \
+			-N J01_CAT_REFINED_VARIANTS_$PROJECT_MS \
+				-o $CORE_PATH/$PROJECT_MS/LOGS/J01_CAT_REFINED_VARIANTS.log \
+			-hold_jid $CAT_REFINED_VARIANTS_HOLD_ID \
+			$SCRIPT_DIR/J01_CAT_REFINED_VARIANTS.sh \
+				$JAVA_1_8 \
+				$GATK_DIR \
+				$REF_GENOME \
+				$CORE_PATH \
+				$PROJECT_MS \
+				$PREFIX
+		}
+
+	# bgzip and index genotype refined vcf
+
+		BGZIP_INDEX_REFINED_VARIANTS ()
+		{
+			echo \
+			qsub \
+				-S /bin/bash \
+				-cwd \
+				-V \
+				-q $QUEUE_LIST \
+				-p $PRIORITY \
+				-j y \
+			-N J01A01_BGZIP_INDEX_$PROJECT_MS \
+				-o $CORE_PATH/$PROJECT_MS/LOGS/J01A01_BGZIP_INDEX_VARIANTS.log \
+			-hold_jid J01_CAT_REFINED_VARIANTS_$PROJECT_MS \
+			$SCRIPT_DIR/J01A01_BGZIP_INDEX_VARIANTS.sh \
+				$TABIX_DIR \
+				$CORE_PATH \
+				$PROJECT_MS \
+				$PREFIX
+		}
+
+	# there is no grch38 annovar
+
+	# # run annovar on the final gt refined vcf file
+
+	# 	RUN_ANNOVAR ()
+	# 	{
+	# 		echo \
+	# 		qsub \
+	# 			-S /bin/bash \
+	# 			-cwd \
+	# 			-V \
+	# 			-q $QUEUE_LIST",bigmem.q" \
+	# 			-p $PRIORITY \
+	# 			-j y \
+	# 			-pe slots 5 \
+	# 			-R y \
+	# 			-l mem_free=300G \
+	# 		-N K01_ANNOVAR_$PROJECT_MS \
+	# 			-o $CORE_PATH/$PROJECT_MS/LOGS/K01_ANNOVAR.log \
+	# 			-hold_jid J01_CAT_REFINED_VARIANTS_$PROJECT_MS \
+	# 		$SCRIPT_DIR/K01_ANNOVAR.sh \
+	# 			$CIDRSEQSUITE_ANNOVAR_JAVA \
+	# 			$CIDRSEQSUITE_DIR_4_0 \
+	# 			$CIDRSEQSUITE_PROPS_DIR \
+	# 			$CORE_PATH \
+	# 			$PROJECT_MS \
+	# 			$PREFIX
+	# 	}
+
+# cat refined variants, annovar
+
+	CAT_REFINED_VARIANTS
+	echo sleep 0.1s
+	# RUN_ANNOVAR
+	# echo sleep 0.1s
+	BGZIP_INDEX_REFINED_VARIANTS
+	echo sleep 0.1s
 
 #########################################################
 #########################################################
