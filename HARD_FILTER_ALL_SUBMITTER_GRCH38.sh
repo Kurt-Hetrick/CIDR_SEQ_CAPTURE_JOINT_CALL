@@ -112,7 +112,7 @@
 	VERACODE_CSV="/mnt/linuxtools/CIDRSEQSUITE/Veracode_hg18_hg19.csv"
 	MERGED_MENDEL_BED_FILE="/mnt/research/active/M_Valle_MD_SeqWholeExome_120417_1_GRCh38/BED_Files/BAITS_Merged_S03723314_S06588914.lift.hg38.collapsed.bed"
 		# md5 4aa700700812d52c19f97c584eaca918
-	MEREGED_CUTTING_BED_FILE="/mnt/research/active/H_Cutting_CFTR_WGHum-SeqCustom_1_Reanalysis/BED_Files_hg38/H_Cutting_phase_1plus2_super_file.bed.lift.hg38.bed"
+	MERGED_CUTTING_BED_FILE="/mnt/research/active/H_Cutting_CFTR_WGHum-SeqCustom_1_Reanalysis/BED_Files_hg38/H_Cutting_phase_1plus2_super_file.bed.lift.hg38.bed"
 		# FOR REANALYSIS OF CUTTING'S PHASE AND PHASE 2 PROJECTS.
 		# md5 37eb87348fc917fb5f916db20621155f
 	REF_DICT="/mnt/shared_resources/public_resources/GRCh38DH/GRCh38_full_analysis_set_plus_decoy_hla.dict"
@@ -178,6 +178,13 @@
 			REF_GENOME=${PROJECT_INFO_ARRAY[0]} # field 12 from the sample sheet
 			PROJECT_DBSNP=${PROJECT_INFO_ARRAY[1]} # field 18 from the sample sheet
 			PROJECT_BAIT_BED=${PROJECT_INFO_ARRAY[2]} # field 16 from the sample sheet
+
+				if [[ $PROJECT = "H_Cutting"* ]];
+					then
+						PROJECT_BAIT_BED=${MERGED_CUTTING_BED_FILE}
+					else
+						PROJECT_BAIT_BED=${PROJECT_BAIT_BED}
+				fi
 		}
 
 		# Keep this in here to reference...I'll probably going to use this somewhere.
