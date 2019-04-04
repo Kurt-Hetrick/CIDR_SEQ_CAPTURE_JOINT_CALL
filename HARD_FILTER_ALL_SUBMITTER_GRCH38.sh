@@ -116,7 +116,9 @@
 		# FOR REANALYSIS OF CUTTING'S PHASE AND PHASE 2 PROJECTS.
 		# md5 37eb87348fc917fb5f916db20621155f
 	REF_DICT="/mnt/shared_resources/public_resources/GRCh38DH/GRCh38_full_analysis_set_plus_decoy_hla.dict"
-	P3_1KG=""
+	P3_1KG="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/ALL.wgs.shapeit2_integrated_v1a.GRCh38.20181129.sites.vcf.gz"
+		 # wget -r ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000_genomes_project/release/20181203_biallelic_SNV/
+		 # md5 5f39cbcf0b623bf4107be7946d901d28
 	ExAC="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/ExAC.r0.3.sites.vep.hg38.liftover.vcf.gz"
 		# md5 1c890a91e3a123e7bd617e97d1289216
 	HG19_REF="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/hg19/ucsc.hg19.fasta"
