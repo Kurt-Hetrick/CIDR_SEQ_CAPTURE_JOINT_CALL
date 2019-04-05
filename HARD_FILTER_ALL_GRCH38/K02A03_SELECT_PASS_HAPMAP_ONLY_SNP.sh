@@ -35,36 +35,43 @@
 # INPUT VARIABLES
 
 	JAVA_1_8=$1
-	GATK_DIR=$2
+	GATK_DIR_4011=$2
 	REF_GENOME=$3
 
 	CORE_PATH=$4
 	PROJECT_MS=$5
 	PREFIX=$6
+	STUDY_SAMPLE_LIST=$7
 
-START_ALL_SNP=`date '+%s'`
+START_HAPMAP_SNP_PASS=`date '+%s'`
+
+# for the hapmap samples...via excluding the study samples
+# select passing SNP sites that are only polymorphic in the hapmap samples
 
 	CMD=$JAVA_1_8'/java -jar'
-	CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
-	CMD=$CMD' -T SelectVariants'
-	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
-	CMD=$CMD' -R '$REF_GENOME
-	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.BEDsuperset.VQSR.vcf.gz'
-	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'.BEDsuperset.VQSR.SNP.ALL.SAMPLES.vcf'
-	CMD=$CMD' -selectType SNP'
+	CMD=$CMD' '$GATK_DIR_4011'/gatk-package-4.0.11.0-local.jar'
+	CMD=$CMD' SelectVariants'
+	CMD=$CMD' --reference '$REF_GENOME
+	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HF.1KG.ExAC3.REFINED.vcf'
+	CMD=$CMD' --output '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'.BEDsuperset.VQSR.SNP.HAPMAP.SAMPLES.PASS.vcf'
+	CMD=$CMD' --select-type-to-include SNP'
+	CMD=$CMD' --exclude-non-variants'
+	CMD=$CMD' --exclude-filtered'
+	CMD=$CMD' --remove-unused-alternates'
+	CMD=$CMD' --exclude-sample-name '$STUDY_SAMPLE_LIST
 
 echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
 echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
 echo $CMD | bash
 
-END_ALL_SNP=`date '+%s'`
+END_HAPMAP_SNP_PASS=`date '+%s'`
 
 HOSTNAME=`hostname`
 
-echo $PROJECT_MS",J01,ALL_SNP,"$HOSTNAME","$START_ALL_SNP","$END_ALL_SNP \
+echo $PROJECT_MS",J01,HAPMAP_SNP_PASS,"$HOSTNAME","$START_HAPMAP_SNP_PASS","$END_HAPMAP_SNP_PASS \
 >> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"
 
 # check to see if the index is generated which should send an non-zero exit signal if not.
 # eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
 
-ls $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/$PREFIX".BEDsuperset.VQSR.SNP.ALL.SAMPLES.vcf.idx"
+ls $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/$PREFIX".HF.1KG.ExAC3.REFINED.vcf.idx"

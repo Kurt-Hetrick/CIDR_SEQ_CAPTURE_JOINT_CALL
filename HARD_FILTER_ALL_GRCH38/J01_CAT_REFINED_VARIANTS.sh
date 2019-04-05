@@ -26,52 +26,57 @@
 ##### END QSUB PARAMETER SETTINGS #####
 #######################################
 
-	# export all variables, useful to find out what compute node the program was executed on
-	set
+# export all variables, useful to find out what compute node the program was executed on
+set
 
-	# create a blank lane b/w the output variables and the program logging output
-	echo
+# create a blank lane b/w the output variables and the program logging output
+echo
 
-# INPUT VARIABLES
+# INPUT PARAMETERS
 
 	JAVA_1_8=$1
-	GATK_DIR=$2
-	REF_GENOME=$3
+	shift
+	GATK_DIR=$1
+	shift
+	REF_GENOME=$1
+	shift
+	CORE_PATH=$1
+	shift
+	PROJECT_MS=$1
+	shift
+	PREFIX=$1
+	shift
 
-	CORE_PATH=$4
-	PROJECT_MS=$5
-	PREFIX=$6
-	STUDY_SAMPLE_LIST=$7
+START_CAT_VARIANTS=`date '+%s'`
 
-START_HAPMAP_SNP_PASS=`date '+%s'`
+# Will want to check GATK 4 to see if this a full featured walker or not
+# As is right now, I would imagine that this limits your scatter count...
 
-# for the hapmap samples...via excluding the study samples
-# select passing SNP sites that are only polymorphic in the hapmap samples
-
-	CMD=$JAVA_1_8'/java -jar'
-	CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
-	CMD=$CMD' -T SelectVariants'
-	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
+	CMD=$JAVA_1_8'/java'
+	CMD=$CMD' -cp '$GATK_DIR'/GenomeAnalysisTK.jar'
+	CMD=$CMD' org.broadinstitute.gatk.tools.CatVariants'
 	CMD=$CMD' -R '$REF_GENOME
-	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.BEDsuperset.VQSR.vcf.gz'
-	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'.BEDsuperset.VQSR.SNP.HAPMAP.SAMPLES.PASS.vcf'
-	CMD=$CMD' -selectType SNP'
-	CMD=$CMD' -env'
-	CMD=$CMD' -ef'
-	CMD=$CMD' --exclude_sample_file '$STUDY_SAMPLE_LIST
+	CMD=$CMD' -assumeSorted'
+
+for VCF in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BF*.r.vcf.gz)
+	do
+	  CMD=$CMD' --variant '$VCF
+	done
+
+CMD=$CMD' -out '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.HF.1KG.ExAC3.REFINED.vcf'
 
 echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
 echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
 echo $CMD | bash
 
-END_HAPMAP_SNP_PASS=`date '+%s'`
+END_CAT_VARIANTS=`date '+%s'`
 
 HOSTNAME=`hostname`
 
-echo $PROJECT_MS",J01,HAPMAP_SNP_PASS,"$HOSTNAME","$START_HAPMAP_SNP_PASS","$END_HAPMAP_SNP_PASS \
+echo $PROJECT_MS",J01,CAT_REFINED_VARIANTS,"$HOSTNAME","$START_CAT_VARIANTS","$END_CAT_VARIANTS \
 >> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"
 
 # check to see if the index is generated which should send an non-zero exit signal if not.
 # eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
 
-ls $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/$PREFIX".BEDsuperset.VQSR.SNP.HAPMAP.SAMPLES.PASS.vcf.idx"
+ls $CORE_PATH/$PROJECT_MS/TEMP/$PREFIX".HF.1KG.ExAC3.REFINED.vcf.idx"

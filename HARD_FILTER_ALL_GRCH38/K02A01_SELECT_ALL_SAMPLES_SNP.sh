@@ -32,39 +32,38 @@
 	# create a blank lane b/w the output variables and the program logging output
 	echo
 
-# INPUT PARAMETERS
+# INPUT VARIABLES
 
 	JAVA_1_8=$1
-	GATK_DIR=$2
+	GATK_DIR_4011=$2
 	REF_GENOME=$3
+
 	CORE_PATH=$4
-	
 	PROJECT_MS=$5
 	PREFIX=$6
 
-START_COMBINE_VARIANTS=`date '+%s'`
+START_ALL_SNP=`date '+%s'`
 
-	CMD=$JAVA_1_8'/java'
-	CMD=$CMD' -jar '$GATK_DIR'/GenomeAnalysisTK.jar'
-	CMD=$CMD' -T CombineVariants'
-	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'	
-	CMD=$CMD' -R '$REF_GENOME
-	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.SNP.INDEL.VQSR.RARE.BIALLELIC.ANNOTATED.vcf.gz'
-	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.SNP.INDEL.VQSR.COMMON.BIALLELIC.vcf.gz'
-	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.SNP.INDEL.VQSR.MULTIALLELIC.vcf.gz'
-	CMD=$CMD' --genotypemergeoption UNSORTED'
-	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.BEDsuperset.VQSR.vcf.gz'
+	CMD=$JAVA_1_8'/java -jar'
+	CMD=$CMD' '$GATK_DIR_4011'/gatk-package-4.0.11.0-local.jar'
+	CMD=$CMD' SelectVariants'
+	CMD=$CMD' --reference '$REF_GENOME
+	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HF.1KG.ExAC3.REFINED.vcf'
+	CMD=$CMD' --output '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'.BEDsuperset.VQSR.SNP.ALL.SAMPLES.vcf'
+	CMD=$CMD' --select-type-to-include SNP'
 
-	echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-	echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-	echo $CMD | bash
+echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+echo $CMD | bash
 
-END_COMBINE_VARIANTS=`date '+%s'`
+END_ALL_SNP=`date '+%s'`
 
-echo $PROJECT_MS",J01,COMBINE_VARIANTS,"$HOSTNAME","$START_COMBINE_VARIANTS","$END_COMBINE_VARIANTS \
+HOSTNAME=`hostname`
+
+echo $PROJECT_MS",J01,ALL_SNP,"$HOSTNAME","$START_ALL_SNP","$END_ALL_SNP \
 >> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"
 
 # check to see if the index is generated which should send an non-zero exit signal if not.
 # eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
 
-ls $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".BEDsuperset.VQSR.vcf.gz.tbi"
+ls $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/$PREFIX".HF.1KG.ExAC3.REFINED.vcf.idx"
