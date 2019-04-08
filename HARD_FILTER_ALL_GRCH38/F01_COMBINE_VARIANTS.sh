@@ -66,4 +66,4 @@ echo $PROJECT_MS",G01,COMBINE_VARIANTS,"$HOSTNAME","$START_COMBINE_VARIANTS","$E
 # check to see if the index is generated which should send an non-zero exit signal if not.
 # eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
 
-ls $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".raw.HC.HardFiltered.SNP.INDEL.vcf.gz.tbi"
+ls $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".HC.HardFiltered.SNP.INDEL.vcf.gz.tbi"

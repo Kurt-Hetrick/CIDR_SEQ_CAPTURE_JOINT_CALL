@@ -43,7 +43,7 @@
 # REMOVE THE STANDARD VCF COLUMNS
 # KEEP ONLY THOSE SAMPLE NAMES THAT START WITH "NA" OR "HG"
 
-	zegrep -m 1 '^#CHROM' $CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HF.1KG.ExAC3.REFINED.vcf' \
+	zegrep -m 1 '^#CHROM' $CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.HF.1KG.ExAC3.REFINED.vcf' \
 		| sed 's/\t/\n/g' \
 		| awk 'NR>9 {print $0}' \
 		| egrep '^NA|^HG' \
@@ -54,7 +54,7 @@
 # REMOVE THE STANDARD VCF COLUMNS
 # KEEP ONLY THOSE SAMPLE NAMES THAT DO NOT START WITH "NA" OR "HG"
 
-	zegrep -m 1 '^#CHROM' $CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HF.1KG.ExAC3.REFINED.vcf' \
+	zegrep -m 1 '^#CHROM' $CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.HF.1KG.ExAC3.REFINED.vcf' \
 		| sed 's/\t/\n/g' \
 		| awk 'NR>9 {print $0}' \
 		| egrep -v '^NA|^HG' \
