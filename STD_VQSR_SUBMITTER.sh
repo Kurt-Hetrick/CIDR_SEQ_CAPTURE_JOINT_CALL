@@ -20,7 +20,7 @@
 ###########################
 
 	# gcc is so that it can be pushed out to the compute nodes via qsub (-V)
-	module load gcc/5.1.0
+	module load gcc/7.2.0
 
 	# CHANGE SCRIPT DIR TO WHERE YOU HAVE HAVE THE SCRIPTS BEING SUBMITTED
 	SCRIPT_DIR="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/STD_VQSR"
@@ -30,13 +30,13 @@
 
 	# Generate a list of active queue and remove the ones that I don't want to use
 	QUEUE_LIST=`qstat -f -s r \
-	 | egrep -v "^[0-9]|^-|^queue" \
-	 | cut -d @ -f 1 \
-	 | sort \
-	 | uniq \
-	 | egrep -v "bigmem.q|all.q|cgc.q|programmers.q|rhel7.q|qtest.q|c6420.q" \
-	 | datamash collapse 1 \
-	 | awk '{print $1}'`
+		| egrep -v "^[0-9]|^-|^queue" \
+		| cut -d @ -f 1 \
+		| sort \
+		| uniq \
+		| egrep -v "bigmem.q|all.q|cgc.q|programmers.q|rhel7.q|qtest.q|c6420.q" \
+		| datamash collapse 1 \
+		| awk '{print $1}'`
 
 	 # | awk '{print $1,"-l \x27hostname=!DellR730-03\x27"}'`
 
@@ -50,6 +50,10 @@
 	# generate a random number b/w "0 - 32767" to be used for the job name for variant annotator both pre and post refinement
 	# this is to help cut down on the job name length so I can increase the scatter count
 	HACK=(`echo $RANDOM`)
+
+	# explicitly setting this b/c not everybody has had the $HOME directory transferred and I'm not going to through
+	# and figure out who does and does not have this set correctly
+	umask 0007
 
 	# TIMESTAMP=`date '+%F.%H-%M-%S'`
 
@@ -74,8 +78,8 @@
 	CIDRSEQSUITE_7_5_0_DIR="/mnt/research/tools/LINUX/CIDRSEQSUITE/7.5.0"
 	LAB_QC_DIR="/mnt/linuxtools/CUSTOM_CIDR/EnhancedSequencingQCReport/0.0.6"
 		# Copied from /mnt/research/tools/LINUX/CIDRSEQSUITE/pipeline_dependencies/QC_REPORT/EnhancedSequencingQCReport.jar
-	SAMTOOLS_DIR="/isilon/sequencing/Kurt/Programs/PYTHON/Anaconda2-5.0.0.1/bin/"
-		# This is samtools version 1.5
+	SAMTOOLS_DIR="/mnt/linuxtools/ANACONDA/anaconda2-5.0.0.1/bin"
+		# This is samtools version 1.7
 		# I have no idea why other users other than me cannot index a cram file with a version of samtools that I built from the source
 		# Apparently the version that I built with Anaconda works for other users, but it performs REF_CACHE first...
 	DATAMASH_DIR="/mnt/research/tools/LINUX/DATAMASH/datamash-1.0.6"
@@ -108,13 +112,13 @@
 	# If so, remove them to not interfere with current run
 
 	if [ -d $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT ]
-	then
-		rm -rf $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT
+		then
+			rm -rf $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT
 	fi
 
-	if [ -d $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS ]
-	then
-		rm -rf $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS
+	if [ -d $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST ]
+		then
+			rm -rf $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST
 	fi
 
 ############################################################################################
@@ -122,7 +126,7 @@
 ############################################################################################
 
 	mkdir -p $CORE_PATH/$PROJECT_MS/{LOGS,COMMAND_LINES}
-	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/{BED_FILE_SPLIT,AGGREGATE,QC_REPORT_PREP_$PREFIX,SPLIT_SS}
+	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/{BED_FILE_SPLIT,AGGREGATE,QC_REPORT_PREP_$PREFIX,SPLIT_LIST}
 	mkdir -p $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/
 	mkdir -p $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE
 	mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/{ANNOVAR,LAB_PREP_REPORTS_MS,QC_REPORTS,QC_REPORT_PREP_$PREFIX}
@@ -162,88 +166,99 @@
 		# | sort \
 		# | uniq \
 		# | $DATAMASH_DIR/datamash collapse 1 | sed 's/,/ /g')
-	# }	
+		# }
 
 	# GET RID OF ALL THE COMMON BED FILE EFF-UPS,
 
 		FORMAT_AND_SCATTER_BAIT_BED ()
 		{
-		BED_FILE_PREFIX=(`echo BF`)
+			BED_FILE_PREFIX=(`echo BF`)
 
-			# make sure that there is EOF
-			# remove CARRIAGE RETURNS
-			# remove CHR PREFIXES (THIS IS FOR GRCH37)
-			# CONVERT VARIABLE LENGTH WHITESPACE FIELD DELIMETERS TO SINGLE TAB.
+				# make sure that there is EOF
+				# remove CARRIAGE RETURNS
+				# remove CHR PREFIXES (THIS IS FOR GRCH37)
+				# CONVERT VARIABLE LENGTH WHITESPACE FIELD DELIMETERS TO SINGLE TAB.
 
-				awk 1 $PROJECT_BAIT_BED | sed -r 's/\r//g ; s/chr//g ; s/[[:space:]]+/\t/g' \
-				>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed
+					awk 1 $PROJECT_BAIT_BED | sed -r 's/\r//g ; s/chr//g ; s/[[:space:]]+/\t/g' \
+					>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed
 
-				# SORT TO GRCH37 ORDER
-				(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n ; \
-				 	awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
-				 	awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
-				 	awk '$1=="MT"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) \
-				>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed
+					# SORT TO GRCH37 ORDER
+					# DO NOT ADD MT
+						(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n ; \
+							awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
+							awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) \
+						>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed
 
-			# Determining how many records will be in each mini-bed file.
-			# The +1 at the end is to round up the number of records per mini-bed file to ensure all records are captured.
-			# So the last mini-bed file will be smaller.
-			# IIRC. this statement isn't really true, but I don't feel like figuring it out right now. KNH
+				# Determining how many records will be in each mini-bed file.
+				# The +1 at the end is to round up the number of records per mini-bed file to ensure all records are captured.
+				# So the last mini-bed file will be smaller.
+				# IIRC. this statement isn't really true, but I don't feel like figuring it out right now. KNH
 
-				INTERVALS_DIVIDED=`wc -l $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
-					| awk '{print $1"/""'$NUMBER_OF_BED_FILES'"}' \
-					| bc \
-					| awk '{print $0+1}'`
+					INTERVALS_DIVIDED=`wc -l $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
+						| awk '{print $1"/""'$NUMBER_OF_BED_FILES'"}' \
+						| bc \
+						| awk '{print $0+1}'`
 
-				split -l $INTERVALS_DIVIDED -a 4 -d \
+					split -l $INTERVALS_DIVIDED \
+						-a 4 \
+						-d \
 					$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed \
 					$CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX
 
-			# ADD A .bed suffix to all of the now splitted files
+				# ADD A .bed suffix to all of the now splitted files
 
-				ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX* | awk '{print "mv",$0,$0".bed"}' | bash
-				}
+					ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/$BED_FILE_PREFIX* \
+						| awk '{print "mv",$0,$0".bed"}' \
+						| bash
+		}
 
-	# UNIQUE THE SAMPLE INTO SAMPLE/PROJECT COMBOS AND CREATE A SAMPLE SHEET INTO 300 SAMPLE CHUNKS.
+
+	##########################################################################################################
+	##### UNIQUE THE SAMPLE INTO SAMPLE/PROJECT COMBOS AND CREATE A SAMPLE SHEET INTO 300 SAMPLE CHUNKS. #####
+	##########################################################################################################
+	### god, i was really tired and under a lot of pressure when I did this...i've done it more sensibly in ##
+	### other pipelines since then, but if this still works I'm not going to rework it to match what I did ###
+	### in the other pipelines ###
+	##############################
 
 		awk 'BEGIN {FS=",";OFS="\t"} NR>1 {print $1,$8}' \
 		$SAMPLE_SHEET \
 			| sort -k 1,1 -k 2,2 \
 			| uniq \
 			| split -l 300 -a 4 -d - \
-			$CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS/
+			$CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST/
 
 		# # Use the chunked up sample sheets to create gvcf list chunks
 
-			for PROJECT_SAMPLE_LISTS in $(ls $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS/*)
+			for PROJECT_SAMPLE_LISTS in $(ls $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST/*)
 				do
 					awk 'BEGIN {OFS="/"} {print "'$CORE_PATH'",$1,"GVCF",$2".g.vcf.gz"}' \
 						$PROJECT_SAMPLE_LISTS \
 						>| $PROJECT_SAMPLE_LISTS.list
 			done
 
-	# take all of the project/sample combos in the sample sheet and write a g.vcf file path to a *list file
-	# At this point this is just for record keeping...it is being scatterred above
-		CREATE_GVCF_LIST ()
-		{
-			# count how many unique sample id's (with project) are in the sample sheet.
-			TOTAL_SAMPLES=(`awk 'BEGIN{FS=","} NR>1{print $1,$8}' $SAMPLE_SHEET \
-				| sort \
-				| uniq \
-				| wc -l`)
+		# take all of the project/sample combos in the sample sheet and write a g.vcf file path to a *list file
+		# At this point this is just for record keeping...it is being scatterred above
+			CREATE_GVCF_LIST ()
+			{
+				# count how many unique sample id's (with project) are in the sample sheet.
+				TOTAL_SAMPLES=(`awk 'BEGIN{FS=","} NR>1{print $1,$8}' $SAMPLE_SHEET \
+					| sort \
+					| uniq \
+					| wc -l`)
 
-			# find all of the gvcf files write all of the full paths to a *samples.gvcf.list file.
-			awk 'BEGIN{FS=","} NR>1{print $1,$8}' $SAMPLE_SHEET \
-			 | sort \
-			 | uniq \
-			 | awk 'BEGIN{OFS="/"}{print "ls " "'$CORE_PATH'",$1,"GVCF",$2".g.vcf*"}' \
-			 | bash \
-			 | egrep -v "idx|tbi" \
-			>| $CORE_PATH'/'$PROJECT_MS'/'$TOTAL_SAMPLES'.samples.gvcf.list'
+				# find all of the gvcf files write all of the full paths to a *samples.gvcf.list file.
+				awk 'BEGIN{FS=","} NR>1{print $1,$8}' $SAMPLE_SHEET \
+				 | sort \
+				 | uniq \
+				 | awk 'BEGIN{OFS="/"}{print "ls " "'$CORE_PATH'",$1,"GVCF",$2".g.vcf*"}' \
+				 | bash \
+				 | egrep -v "idx|tbi" \
+				>| $CORE_PATH'/'$PROJECT_MS'/'$TOTAL_SAMPLES'.samples.gvcf.list'
 
-			# STORE THE GVCF LIST FILE PATH AS A VARIABLE
-			GVCF_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/'$TOTAL_SAMPLES'.samples.gvcf.list'`)
-		}
+				# STORE THE GVCF LIST FILE PATH AS A VARIABLE
+				GVCF_LIST=(`echo $CORE_PATH'/'$PROJECT_MS'/'$TOTAL_SAMPLES'.samples.gvcf.list'`)
+			}
 
 	# Run Ben's EnhancedSequencingQCReport which;
 	# Generates a QC report for lab specific metrics including Physique Report, Samples Table, Sequencer XML data, Pca and Phoenix.
@@ -314,7 +329,7 @@
 for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed);
 do
 	BED_FILE_NAME=$(basename $BED_FILE .bed)
-		for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS/*list)
+		for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST/*list)
 			do
 				PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
 				COMBINE_GVCF
@@ -353,7 +368,7 @@ done
 				-j y \
 			-N B01_GENOTYPE_GVCF_$PROJECT_MS'_'$BED_FILE_NAME \
 				-o $CORE_PATH/$PROJECT_MS/LOGS/B01_GENOTYPE_GVCF/B01_GENOTYPE_GVCF_$BED_FILE_NAME.log \
-				$GENOTYPE_GVCF_HOLD_ID \
+			$GENOTYPE_GVCF_HOLD_ID \
 			$SCRIPT_DIR/B01_GENOTYPE_GVCF.sh \
 				$JAVA_1_8 \
 				$GATK_DIR \
@@ -710,7 +725,7 @@ done
 				-S /bin/bash \
 				-cwd \
 				-V \
-				-q $QUEUE_LIST",bigmem.q" \
+				-q $QUEUE_LIST \
 				-p $PRIORITY \
 				-j y \
 				-pe slots 5 \
@@ -720,7 +735,7 @@ done
 				-o $CORE_PATH/$PROJECT_MS/LOGS/K01_ANNOVAR.log \
 				-hold_jid J01_CAT_REFINED_VARIANTS_$PROJECT_MS \
 			$SCRIPT_DIR/K01_ANNOVAR.sh \
-				$CIDRSEQSUITE_ANNOVAR_JAVA \
+				$JAVA_1_8 \
 				$CIDRSEQSUITE_DIR_4_0 \
 				$CIDRSEQSUITE_PROPS_DIR \
 				$CORE_PATH \
@@ -952,8 +967,8 @@ done
 
 	CAT_REFINED_VARIANTS
 	echo sleep 0.1s
-	# RUN_ANNOVAR
-	# echo sleep 0.1s
+	RUN_ANNOVAR
+	echo sleep 0.1s
 	BGZIP_INDEX_REFINED_VARIANTS
 	echo sleep 0.1s
 	GENERATE_STUDY_HAPMAP_SAMPLE_LISTS
@@ -1531,3 +1546,16 @@ done
 					"'$PROJECT_MS'",\
 					"'$PREFIX'",\
 					"'$SAMPLE_SHEET'" "\n" "sleep 0.1s"}'	
+
+# email when finished submitting
+
+	SCATTER_COUNT=`ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed | wc -l`
+
+	STUDY_COUNT=`awk '{print "basename",$1,".g.vcf.gz"}' $GVCF_LIST | bash | grep ^[0-9] | wc -l`
+
+	HAPMAP_COUNT=`awk '{print "basename",$1,".g.vcf.gz"}' $GVCF_LIST | bash | grep -v ^[0-9] | wc -l`
+
+	printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`\nby `whoami`\nMULTI-SAMPLE VCF OUTPUT PROJECT IS:\n$PROJECT_MS\nVCF PREFIX IS:\n$PREFIX\nSCATTER IS $SCATTER_COUNT\n$TOTAL_SAMPLES samples called together\n$STUDY_COUNT study samples\n$HAPMAP_COUNT HapMap samples" \
+		| mail -s "STD_VQSR_SUBMITTER.sh submitted" \
+			-r khetric1@jhmi.edu \
+			cidr_sequencing_notifications@lists.johnshopkins.edu
