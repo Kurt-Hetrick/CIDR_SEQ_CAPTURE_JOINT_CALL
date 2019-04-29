@@ -253,7 +253,7 @@
 				 | uniq \
 				 | awk 'BEGIN{OFS="/"}{print "ls " "'$CORE_PATH'",$1,"GVCF",$2".g.vcf*"}' \
 				 | bash \
-				 | egrep -v "idx|tbi" \
+				 | egrep -v "idx|tbi|md5" \
 				>| $CORE_PATH'/'$PROJECT_MS'/'$TOTAL_SAMPLES'.samples.gvcf.list'
 
 				# STORE THE GVCF LIST FILE PATH AS A VARIABLE
@@ -346,7 +346,7 @@ done
 		do
 			GENOTYPE_GVCF_HOLD_ID="-hold_jid "
 
-				for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_A/TEMP/SPLIT_SS/*list)
+				for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_A/TEMP/SPLIT_LIST/*list)
 					do
 						PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
 						GENOTYPE_GVCF_HOLD_ID=$GENOTYPE_GVCF_HOLD_ID'A01_COMBINE_GVCF_'$PROJECT_A'_'$PGVCF_LIST_NAME'_'$BED_FILE_NAME','
