@@ -1569,7 +1569,19 @@ done
 
 # email when finished submitting
 
-# printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`" \
-# 	| mail -s "CMG.VQSR_SUBMITTER.sh submitted" \
-# 		-r khetric1@jhmi.edu \
-# 		cidr_sequencing_notifications@lists.johnshopkins.edu
+	SUBMITTER_ID=`whoami`
+
+	SCATTER_COUNT=`ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed | wc -l`
+
+	STUDY_COUNT=`awk '{print "basename",$1,".g.vcf.gz"}' $GVCF_LIST | bash | grep ^[0-9] | wc -l`
+
+	HAPMAP_COUNT=`awk '{print "basename",$1,".g.vcf.gz"}' $GVCF_LIST | bash | grep -v ^[0-9] | wc -l`
+
+	BATCH_STUDY_COUNT=`cut -d "," -f 8 $SAMPLE_SHEET | sort | uniq |  grep ^[0-9] | wc -l`
+
+	BATCH_HAPMAP_COUNT=`cut -d "," -f 8 $SAMPLE_SHEET | sort | uniq |  grep -v ^[0-9] | wc -l`
+
+	printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`\nby `whoami`\nMULTI-SAMPLE VCF OUTPUT PROJECT IS:\n$PROJECT_MS\nVCF PREFIX IS:\n$PREFIX\nSCATTER IS $SCATTER_COUNT\n$TOTAL_SAMPLES samples called together\n$STUDY_COUNT study samples\n$HAPMAP_COUNT HapMap samples\n$BATCH_STUDY_COUNT study samples for this release\n$BATCH_HAPMAP_COUNT hapmap samples for this release" \
+		| mail -s "CMG_VQSR_SUBMITTER.sh submitted" \
+			-r $SUBMITTER_ID@jhmi.edu \
+			cidr_sequencing_notifications@lists.johnshopkins.edu
