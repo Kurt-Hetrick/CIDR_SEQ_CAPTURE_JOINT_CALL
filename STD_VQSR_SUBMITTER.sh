@@ -1048,14 +1048,13 @@ done
 			-hold_jid J01A01_BGZIP_INDEX_$PROJECT_MS \
 			$SCRIPT_DIR/K03_SELECT_VARIANTS_FOR_SAMPLE.sh \
 				$JAVA_1_8 \
-				$GATK_DIR \
+				$GATK_DIR_4011 \
 				$SAMPLE_REF_GENOME \
 				$CORE_PATH \
 				$PROJECT_SAMPLE \
 				$PROJECT_MS \
 				$SM_TAG \
-				$PREFIX \
-				$TABIX_DIR
+				$PREFIX
 		}
 
 		# used for very big projects.

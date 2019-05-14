@@ -85,6 +85,7 @@
 	DATAMASH_DIR="/mnt/research/tools/LINUX/DATAMASH/datamash-1.0.6"
 	TABIX_DIR="/mnt/research/tools/LINUX/TABIX/tabix-0.2.6"
 	R_DIRECTORY="/mnt/linuxtools/R/R-3.1.1/bin"
+	GATK_DIR_4011="/mnt/linuxtools/GATK/gatk-4.0.11.0"
 
 ##################
 # PIPELINE FILES #
@@ -1040,14 +1041,13 @@ done
 			-hold_jid J01A01_BGZIP_INDEX_$PROJECT_MS \
 			$SCRIPT_DIR/K03_SELECT_VARIANTS_FOR_SAMPLE.sh \
 				$JAVA_1_8 \
-				$GATK_DIR \
+				$GATK_DIR_4011 \
 				$SAMPLE_REF_GENOME \
 				$CORE_PATH \
 				$PROJECT_SAMPLE \
 				$PROJECT_MS \
 				$SM_TAG \
-				$PREFIX \
-				$TABIX_DIR
+				$PREFIX
 		}
 
 		# grab only the passing variants that fall with the target bed file

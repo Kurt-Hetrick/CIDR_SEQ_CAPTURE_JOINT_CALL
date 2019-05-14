@@ -1105,14 +1105,13 @@ done
 			-hold_jid J01_CAT_REFINED_VARIANTS_$PROJECT_MS \
 			$SCRIPT_DIR/K01_SELECT_VARIANTS_FOR_SAMPLE.sh \
 				$JAVA_1_8 \
-				$GATK_DIR \
+				$GATK_DIR_4011 \
 				$SAMPLE_REF_GENOME \
 				$CORE_PATH \
 				$PROJECT_SAMPLE \
 				$PROJECT_MS \
 				$SM_TAG \
-				$PREFIX \
-				$TABIX_DIR
+				$PREFIX
 		}
 
 
