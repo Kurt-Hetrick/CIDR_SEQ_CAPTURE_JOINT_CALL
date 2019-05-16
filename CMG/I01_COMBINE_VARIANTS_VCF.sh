@@ -57,7 +57,6 @@ START_COMBINE_VARIANTS=`date '+%s'`
 	  CMD=$CMD' --variant '$VCF
 	done
 
-
 	CMD=$CMD' --genotypemergeoption UNSORTED'
 	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.BEDsuperset.VQSR.vcf.gz'
 

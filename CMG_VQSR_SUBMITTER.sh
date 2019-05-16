@@ -111,7 +111,8 @@
 	KNOWN_SNPS="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/b37/dbsnp_138.b37.excluding_sites_after_129.vcf"
 	VERACODE_CSV="/mnt/linuxtools/CIDRSEQSUITE/Veracode_hg18_hg19.csv"
 	# THIS IS A UNION BED FILE B/W VERSION 4 AND VERSION 5/CLINICAL
-	MERGED_MENDEL_BED_FILE="/mnt/research/active/M_Valle_MD_SeqWholeExome_120417_1/BED_Files/BAITS_Merged_S03723314_S06588914.bed"
+	MERGED_MENDEL_BED_FILE="/mnt/research/active/M_Valle_MD_SeqWholeExome_120417_1/BED_Files/BAITS_Merged_S03723314_S06588914_TwistCUEXmito.bed"
+	REF_DICT="/mnt/research/tools/PIPELINE_FILES/bwa_mem_0.7.5a_ref/human_g1k_v37_decoy.dict"
 
 ##################################################
 ##################################################
@@ -237,8 +238,7 @@
 
 					(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n ; \
 					 	awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
-					 	awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
-					 	awk '$1=="MT"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) \
+						awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) \
 					>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed
 
 				# get a line count for the number of for the bed file above
@@ -334,14 +334,14 @@
 		}
 
 for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed);
-do
-	BED_FILE_NAME=$(basename $BED_FILE .bed)
-		for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST/*list)
-			do
-				PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
-				COMBINE_GVCF
-				echo sleep 0.1s
-		done
+	do
+		BED_FILE_NAME=$(basename $BED_FILE .bed)
+			for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST/*list)
+				do
+					PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
+					COMBINE_GVCF
+					echo sleep 0.1s
+			done
 done
 
 #####################################################################
@@ -350,14 +350,14 @@ done
 	{
 		for PROJECT_A in $PROJECT_MS;
 		# yeah, so uh, this looks bad, but I just needed a way to set a new project variable that equals the multi-sample project variable.
-		do
-			GENOTYPE_GVCF_HOLD_ID="-hold_jid "
+			do
+				GENOTYPE_GVCF_HOLD_ID="-hold_jid "
 
-				for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_A/TEMP/SPLIT_LIST/*list)
-					do
-						PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
-						GENOTYPE_GVCF_HOLD_ID=$GENOTYPE_GVCF_HOLD_ID'A01_COMBINE_GVCF_'$PROJECT_A'_'$PGVCF_LIST_NAME'_'$BED_FILE_NAME','
-				done
+					for PGVCF_LIST in $(ls $CORE_PATH/$PROJECT_A/TEMP/SPLIT_LIST/*list)
+						do
+							PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
+							GENOTYPE_GVCF_HOLD_ID=$GENOTYPE_GVCF_HOLD_ID'A01_COMBINE_GVCF_'$PROJECT_A'_'$PGVCF_LIST_NAME'_'$BED_FILE_NAME','
+					done
 		done
 	}
 
@@ -424,14 +424,14 @@ done
 	# then generate a string of all the variant annotator job names submitted
 
 for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed);
-do
-	BED_FILE_NAME=$(basename $BED_FILE .bed)
-	BUILD_HOLD_ID_GENOTYPE_GVCF
-	GENOTYPE_GVCF
-	echo sleep 0.1s
-	VARIANT_ANNOTATOR
-	echo sleep 0.1s
-	GENERATE_CAT_VARIANTS_HOLD_ID
+	do
+		BED_FILE_NAME=$(basename $BED_FILE .bed)
+		BUILD_HOLD_ID_GENOTYPE_GVCF
+		GENOTYPE_GVCF
+		echo sleep 0.1s
+		VARIANT_ANNOTATOR
+		echo sleep 0.1s
+		GENERATE_CAT_VARIANTS_HOLD_ID
 done
 
 ###############################
@@ -1566,6 +1566,8 @@ done
 					"'$PROJECT_MS'",\
 					"'$PREFIX'",\
 					"'$SAMPLE_SHEET'" "\n" "sleep 0.1s"}'		
+
+# email when finished submitting
 
 # email when finished submitting
 

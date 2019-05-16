@@ -34,7 +34,7 @@
 		| cut -d @ -f 1 \
 		| sort \
 		| uniq \
-		| egrep -v "bigmem.q|all.q|cgc.q|programmers.q|rhel7.q|qtest.q|c6420.q" \
+		| egrep c6420.q \
 		| datamash collapse 1 \
 		| awk '{print $1}'`
 
@@ -111,7 +111,7 @@
 	KNOWN_SNPS="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/dbsnp_138.hg38.liftover.excluding_sites_after_129.vcf.gz"
 		# md5 85f3e9f0d5f30de2a046594b4ab4de86
 	VERACODE_CSV="/mnt/linuxtools/CIDRSEQSUITE/Veracode_hg18_hg19.csv"
-	MERGED_MENDEL_BED_FILE="/mnt/research/active/M_Valle_MD_SeqWholeExome_120417_1_GRCh38/BED_Files/BAITS_Merged_S03723314_S06588914.lift.hg38.collapsed.bed"
+	MERGED_MENDEL_BED_FILE="/mnt/research/active/M_Valle_MD_SeqWholeExome_120417_1_GRCh38/BED_Files/BAITS_Merged_S03723314_S06588914_TwistCUEXmito.lift.hg38.merge.clean.bed"
 		# 4aa700700812d52c19f97c584eaca918
 	REF_DICT="/mnt/shared_resources/public_resources/GRCh38DH/GRCh38_full_analysis_set_plus_decoy_hla.dict"
 	HG19_REF="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/hg19/ucsc.hg19.fasta"
@@ -136,9 +136,9 @@
 			rm -rf $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT
 	fi
 
-	if [ -d $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS ]
+	if [ -d $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST ]
 		then
-			rm -rf $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_SS
+			rm -rf $CORE_PATH/$PROJECT_MS/TEMP/SPLIT_LIST
 	fi
 
 ############################################################################################
@@ -146,12 +146,12 @@
 ############################################################################################
 
 	mkdir -p $CORE_PATH/$PROJECT_MS/{LOGS,COMMAND_LINES}
-	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/{BED_FILE_SPLIT,AGGREGATE,QC_REPORT_PREP_$PREFIX,SPLIT_SS}
+	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/{BED_FILE_SPLIT,AGGREGATE,QC_REPORT_PREP_$PREFIX,SPLIT_LIST}
 	mkdir -p $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/
 	mkdir -p $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE
 	mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/{ANNOVAR,LAB_PREP_REPORTS_MS,QC_REPORTS,QC_REPORT_PREP_$PREFIX}
 	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX
-	mkdir -p $CORE_PATH/$PROJECT_MS/LOGS/{A01_COMBINE_GVCF,B01_GENOTYPE_GVCF,C01_VARIANT_ANNOTATOR}
+	mkdir -p $CORE_PATH/$PROJECT_MS/LOGS/{A01_COMBINE_GVCF,B01_GENOTYPE_GVCF,C01_VARIANT_ANNOTATOR,H01_SELECT_RARE,H01A01_ANNOTATE_RARE}
 
 ##################################################
 ### FUNCTIONS FOR JOINT CALLING PROJECT SET-UP ###
@@ -172,21 +172,22 @@
 
 			REF_GENOME=${PROJECT_INFO_ARRAY[0]} # field 12 from the sample sheet
 			PROJECT_DBSNP=${PROJECT_INFO_ARRAY[1]} # field 18 from the sample sheet
+			PROJECT_BAIT_BED=${PROJECT_INFO_ARRAY[2]} # field 16 from the sample sheet (NOT NECESSARY. MIGHT BE MORE THAN ONE)
 		}
 
 		# Keep this in here to reference...I'll probably going to use this somewhere.
 		# generates a chrosome list from a bait bed file at the project level. so I only have to make one iteration per project instead of one per sample
 
-			CREATE_CHROMOSOME_LIST ()
-			{
-				REF_CHROM_SET=$(sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' $MERGED_MENDEL_BED_FILE \
-					| sed -r 's/[[:space:]]+/\t/g' \
-					| cut -f 1 \
-					| sort \
-					| uniq \
-					| $DATAMASH_DIR/datamash collapse 1 \
-					| sed 's/,/ /g')
-			}
+			# CREATE_CHROMOSOME_LIST ()
+			# {
+			# 	REF_CHROM_SET=$(sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' $MERGED_MENDEL_BED_FILE \
+			# 		| sed -r 's/[[:space:]]+/\t/g' \
+			# 		| cut -f 1 \
+			# 		| sort \
+			# 		| uniq \
+			# 		| $DATAMASH_DIR/datamash collapse 1 \
+			# 		| sed 's/,/ /g')
+			# }
 
 	# get the full path of the last gvcf list file.
 	# take the sample sheet and create a gvcf list from that
@@ -245,8 +246,7 @@
 
 					(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n ; \
 					 	awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
-					 	awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
-					 	awk '$1=="MT"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) \
+						awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) \
 					>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed
 
 				# get a line count for the number of for the bed file above
@@ -601,53 +601,6 @@ done
 ##### ANNOTATE RARE VARIANTS WITH SAMPLE IDS #####
 ##################################################
 
-	SELECT_RARE_BIALLELIC ()
-	{
-		echo \
-		qsub \
-			-S /bin/bash \
-			-cwd \
-			-V \
-			-q $QUEUE_LIST \
-			-p $PRIORITY \
-			-j y \
-		-N H01_SELECT_RARE_BIALLELIC_$PROJECT_MS \
-			-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_H01_SELECT_RARE_BIALLELIC.log' \
-		-hold_jid G01_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
-		$SCRIPT_DIR/H01_SELECT_RARE_BIALLELIC.sh \
-			$JAVA_1_8 \
-			$GATK_DIR \
-			$REF_GENOME \
-			$CORE_PATH \
-			$PROJECT_MS \
-			$PREFIX
-	}
-
-		# consider doing this a per chr scatter/gather
-		# can scatter if absolutely needed
-
-		ANNOTATE_SELECT_RARE_BIALLELIC ()
-		{
-			echo \
-			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-				-j y \
-			-N H01A01_ANNOTATE_SELECT_RARE_BIALLELIC_$PROJECT_MS \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_H01A01_ANNOTATE_SELECT_RARE_BIALLELIC.log' \
-			-hold_jid H01_SELECT_RARE_BIALLELIC_$PROJECT_MS \
-			$SCRIPT_DIR/H01A01_ANNOTATE_SELECT_RARE_BIALLELIC.sh \
-				$JAVA_1_8 \
-				$GATK_DIR \
-				$REF_GENOME \
-				$CORE_PATH \
-				$PROJECT_MS \
-				$PREFIX
-		}
-
 	SELECT_COMMON_BIALLELIC ()
 	{
 		echo \
@@ -669,6 +622,7 @@ done
 			$PROJECT_MS \
 			$PREFIX
 	}
+
 
 	SELECT_MULTIALLELIC ()
 	{
@@ -692,6 +646,130 @@ done
 			$PREFIX
 	}
 
+	MS_VCF_METRICS ()
+	{
+		echo \
+		qsub \
+			-S /bin/bash \
+			-cwd \
+			-V \
+			-q $QUEUE_LIST \
+			-p $PRIORITY \
+			-j y \
+		-N H04_MS_VCF_METRICS_$PROJECT_MS \
+			-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_H04_MS_VCF_METRICS.log' \
+		-hold_jid G01_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
+		$SCRIPT_DIR/H04_MS_VCF_METRICS.sh \
+			$JAVA_1_8 \
+			$GATK_DIR_4011 \
+			$CORE_PATH \
+			$PROJECT_MS \
+			$PREFIX \
+			$DBSNP_138_VCF \
+			$REF_DICT
+	}
+
+
+
+	SELECT_RARE_BIALLELIC ()
+	{
+		echo \
+		qsub \
+			-S /bin/bash \
+			-cwd \
+			-V \
+			-q $QUEUE_LIST \
+			-p $PRIORITY \
+			-j y \
+		-N H01_SELECT_RARE_BIALLELIC_$PROJECT_MS \
+			-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_H01_SELECT_RARE_BIALLELIC.log' \
+		-hold_jid G01_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
+		$SCRIPT_DIR/H01_SELECT_RARE_BIALLELIC.sh \
+			$JAVA_1_8 \
+			$GATK_DIR \
+			$REF_GENOME \
+			$CORE_PATH \
+			$PROJECT_MS \
+			$PREFIX
+	}
+
+# make calls
+
+	SELECT_COMMON_BIALLELIC
+	echo sleep 0.1s
+	SELECT_MULTIALLELIC
+	echo sleep 0.1s
+	MS_VCF_METRICS
+	echo sleep 0.1s
+
+# scatter the rare variants by bed file interval
+
+	SELECT_RARE_BIALLELIC ()
+	{
+		echo \
+		qsub \
+			-S /bin/bash \
+			-cwd \
+			-V \
+			-q $QUEUE_LIST \
+			-p $PRIORITY \
+			-j y \
+		-N H01_SELECT_RARE_BIALLELIC_$PROJECT_MS"_"$BED_FILE_NAME \
+			-o $CORE_PATH/$PROJECT_MS/LOGS/H01_SELECT_RARE/$PREFIX"_H01_SELECT_RARE_BIALLELIC_"$BED_FILE_NAME".log" \
+		-hold_jid G01_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
+		$SCRIPT_DIR/H01_SELECT_RARE_BIALLELIC.sh \
+			$JAVA_1_8 \
+			$GATK_DIR \
+			$REF_GENOME \
+			$CORE_PATH \
+			$PROJECT_MS \
+			$PREFIX \
+			$BED_FILE_NAME
+	}
+
+	# consider doing this a per chr scatter/gather
+	# can scatter if absolutely needed
+
+	ANNOTATE_SELECT_RARE_BIALLELIC ()
+	{
+		echo \
+		qsub \
+			-S /bin/bash \
+			-cwd \
+			-V \
+			-q $QUEUE_LIST \
+			-p $PRIORITY \
+			-j y \
+		-N I$HACK"_"$BED_FILE_NAME \
+			-o $CORE_PATH/$PROJECT_MS/LOGS/H01A01_ANNOTATE_RARE/$PREFIX"_H01A01_ANNOTATE_RARE_BIALLELIC_"$BED_FILE_NAME".log" \
+		-hold_jid H01_SELECT_RARE_BIALLELIC_$PROJECT_MS"_"$BED_FILE_NAME \
+		$SCRIPT_DIR/H01A01_ANNOTATE_SELECT_RARE_BIALLELIC.sh \
+			$JAVA_1_8 \
+			$GATK_DIR \
+			$REF_GENOME \
+			$CORE_PATH \
+			$PROJECT_MS \
+			$PREFIX \
+			$BED_FILE_NAME
+	}
+
+	GENERATE_COMBINE_VARIANTS_HOLD_ID ()
+	{
+		COMBINE_VARIANTS_HOLD_ID=$COMBINE_VARIANTS_HOLD_ID'I'$HACK'_'$BED_FILE_NAME','
+	}
+
+for BED_FILE in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed);
+	do
+		BED_FILE_NAME=$(basename $BED_FILE .bed)
+		SELECT_RARE_BIALLELIC
+		echo sleep 0.1s
+		ANNOTATE_SELECT_RARE_BIALLELIC
+		echo sleep 0.1s
+		GENERATE_COMBINE_VARIANTS_HOLD_ID
+done
+
+#################################
+
 	COMBINE_VARIANTS_VCF ()
 	{
 		echo \
@@ -704,7 +782,7 @@ done
 			-j y \
 		-N I01_COMBINE_VARIANTS_VCF_$PROJECT_MS \
 			-o $CORE_PATH/$PROJECT_MS/LOGS/$PREFIX'_I01_COMBINE_VARIANTS_VCF.log' \
-		-hold_jid H03_SELECT_MULTIALLELIC_$PROJECT_MS','H02_SELECT_COMMON_BIALLELIC_$PROJECT_MS','H01A01_ANNOTATE_SELECT_RARE_BIALLELIC_$PROJECT_MS \
+		-hold_jid H03_SELECT_MULTIALLELIC_$PROJECT_MS','H02_SELECT_COMMON_BIALLELIC_$PROJECT_MS','$COMBINE_VARIANTS_HOLD_ID \
 		$SCRIPT_DIR/I01_COMBINE_VARIANTS_VCF.sh \
 			$JAVA_1_8 \
 			$GATK_DIR \
@@ -716,14 +794,6 @@ done
 
 	# make calls
 
-		SELECT_RARE_BIALLELIC
-		echo sleep 0.1s
-		ANNOTATE_SELECT_RARE_BIALLELIC
-		echo sleep 0.1s
-		SELECT_COMMON_BIALLELIC
-		echo sleep 0.1s
-		SELECT_MULTIALLELIC
-		echo sleep 0.1s
 		COMBINE_VARIANTS_VCF
 		echo sleep 0.1s
 
@@ -1532,7 +1602,19 @@ done
 
 # email when finished submitting
 
-printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`" \
-	| mail -s "CMG.VQSR_SUBMITTER.sh submitted" \
-		-r khetric1@jhmi.edu \
-		cidr_sequencing_notifications@lists.johnshopkins.edu
+	SUBMITTER_ID=`whoami`
+
+	SCATTER_COUNT=`ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed | wc -l`
+
+	STUDY_COUNT=`awk '{print "basename",$1,".g.vcf.gz"}' $GVCF_LIST | bash | grep ^[0-9] | wc -l`
+
+	HAPMAP_COUNT=`awk '{print "basename",$1,".g.vcf.gz"}' $GVCF_LIST | bash | grep -v ^[0-9] | wc -l`
+
+	BATCH_STUDY_COUNT=`cut -d "," -f 8 $SAMPLE_SHEET | sort | uniq |  grep ^[0-9] | wc -l`
+
+	BATCH_HAPMAP_COUNT=`cut -d "," -f 8 $SAMPLE_SHEET | sort | uniq |  grep -v ^[0-9] | wc -l`
+
+	printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`\nby `whoami`\nMULTI-SAMPLE VCF OUTPUT PROJECT IS:\n$PROJECT_MS\nVCF PREFIX IS:\n$PREFIX\nSCATTER IS $SCATTER_COUNT\n$TOTAL_SAMPLES samples called together\n$STUDY_COUNT study samples\n$HAPMAP_COUNT HapMap samples\n$BATCH_STUDY_COUNT study samples for this release\n$BATCH_HAPMAP_COUNT hapmap samples for this release" \
+		| mail -s "CMG_VQSR_SUBMITTER_GRCH38.sh submitted" \
+			-r $SUBMITTER_ID@jhmi.edu \
+			cidr_sequencing_notifications@lists.johnshopkins.edu
