@@ -35,7 +35,7 @@
 # INPUT VARIABLES
 
 	JAVA_1_8=$1
-	GATK_DIR=$2
+	GATK_DIR_4011=$2
 	REF_GENOME=$3
 
 	CORE_PATH=$4
@@ -45,13 +45,12 @@
 START_ALL_SNP=`date '+%s'`
 
 	CMD=$JAVA_1_8'/java -jar'
-	CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
-	CMD=$CMD' -T SelectVariants'
-	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
-	CMD=$CMD' -R '$REF_GENOME
+	CMD=$CMD' '$GATK_DIR_4011'/gatk-package-4.0.11.0-local.jar'
+	CMD=$CMD' SelectVariants'
+	CMD=$CMD' --reference '$REF_GENOME
 	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.BEDsuperset.VQSR.vcf.gz'
-	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'.BEDsuperset.VQSR.SNP.ALL.SAMPLES.vcf'
-	CMD=$CMD' -selectType SNP'
+	CMD=$CMD' --output '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'.BEDsuperset.VQSR.SNP.ALL.SAMPLES.vcf'
+	CMD=$CMD' --select-type-to-include SNP'
 
 echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
 echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
