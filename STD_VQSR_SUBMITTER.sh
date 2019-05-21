@@ -1548,6 +1548,8 @@ done
 
 # email when finished submitting
 
+	SUBMITTER_ID=`whoami`
+
 	SCATTER_COUNT=`ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed | wc -l`
 
 	STUDY_COUNT=`awk '{print "basename",$1,".g.vcf.gz"}' $GVCF_LIST | bash | grep ^[0-9] | wc -l`
@@ -1556,5 +1558,5 @@ done
 
 	printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`\nby `whoami`\nMULTI-SAMPLE VCF OUTPUT PROJECT IS:\n$PROJECT_MS\nVCF PREFIX IS:\n$PREFIX\nSCATTER IS $SCATTER_COUNT\n$TOTAL_SAMPLES samples called together\n$STUDY_COUNT study samples\n$HAPMAP_COUNT HapMap samples" \
 		| mail -s "STD_VQSR_SUBMITTER.sh submitted" \
-			-r khetric1@jhmi.edu \
+			-r SUBMITTER_ID@jhmi.edu \
 			cidr_sequencing_notifications@lists.johnshopkins.edu

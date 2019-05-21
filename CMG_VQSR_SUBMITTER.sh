@@ -237,7 +237,7 @@
 				# SORT TO GRCH37 ORDER
 
 					(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n ; \
-					 	awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
+						awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
 						awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) \
 					>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed
 
@@ -1581,7 +1581,7 @@ done
 
 	BATCH_STUDY_COUNT=`cut -d "," -f 8 $SAMPLE_SHEET | sort | uniq |  grep ^[0-9] | wc -l`
 
-	BATCH_HAPMAP_COUNT=`cut -d "," -f 8 $SAMPLE_SHEET | sort | uniq |  grep -v ^[0-9] | wc -l`
+	BATCH_HAPMAP_COUNT=`cut -d "," -f 8 $SAMPLE_SHEET | awk 'NR>1' | sort | uniq |  grep -v ^[0-9] | wc -l`
 
 	printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`\nby `whoami`\nMULTI-SAMPLE VCF OUTPUT PROJECT IS:\n$PROJECT_MS\nVCF PREFIX IS:\n$PREFIX\nSCATTER IS $SCATTER_COUNT\n$TOTAL_SAMPLES samples called together\n$STUDY_COUNT study samples\n$HAPMAP_COUNT HapMap samples\n$BATCH_STUDY_COUNT study samples for this release\n$BATCH_HAPMAP_COUNT hapmap samples for this release" \
 		| mail -s "CMG_VQSR_SUBMITTER.sh submitted" \
