@@ -23,7 +23,7 @@
 	module load gcc/7.2.0
 
 	# CHANGE SCRIPT DIR TO WHERE YOU HAVE HAVE THE SCRIPTS BEING SUBMITTED
-	SCRIPT_DIR="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/HARD_FILTER_ALL_GRCH38"
+	SCRIPT_DIR="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/HARD_FILTER_ALL"
 
 	# Directory where sequencing projects are located
 	CORE_PATH="/mnt/research/active"
@@ -52,7 +52,7 @@
 
 	# EVENTUALLY I WANT THIS SET UP AS AN OPTION WITH A DEFAULT OF X
 
-	PRIORITY="-750"
+	PRIORITY="-40"
 
 	# eventually, i want to push this out to something...maybe in the vcf file header.
 	PIPELINE_VERSION=`git --git-dir=$SCRIPT_DIR/../.git --work-tree=$SCRIPT_DIR/.. log --pretty=format:'%h' -n 1`
@@ -741,8 +741,6 @@ done
 				$PREFIX
 		}
 
-	# there is no grch38 annovar
-
 		# # run annovar on the final gt refined vcf file
 
 			# 	RUN_ANNOVAR ()
@@ -1062,11 +1060,11 @@ done
 			mkdir -p \
 			$CORE_PATH/$PROJECT_SAMPLE/{TEMP,LOGS,COMMAND_LINES} \
 			$CORE_PATH/$PROJECT_SAMPLE/INDEL/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET} \
-			$CORE_PATH/$PROJECT_SAMPLE/SNV/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET,FILTERED_ON_TARGET_HG19} \
+			$CORE_PATH/$PROJECT_SAMPLE/SNV/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET} \
 			$CORE_PATH/$PROJECT_SAMPLE/MIXED/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET} \
-			$CORE_PATH/$PROJECT_SAMPLE/VCF/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET,FILTERED_ON_BAIT_HG19} \
-			$CORE_PATH/$PROJECT_SAMPLE/REPORTS/{TI_TV_MS,CONCORDANCE_MS,ANNOVAR_HG19,ANNOVAR} \
-			$CORE_PATH/$PROJECT_SAMPLE/TEMP/{$SM_TAG"_MS_CONCORDANCE",$SM_TAG"_ANNOVAR",$SM_TAG,$SM_TAG"_ANNOVAR_HG19"} \
+			$CORE_PATH/$PROJECT_SAMPLE/VCF/RELEASE/{FILTERED_ON_BAIT,FILTERED_ON_TARGET} \
+			$CORE_PATH/$PROJECT_SAMPLE/REPORTS/{TI_TV_MS,CONCORDANCE_MS,ANNOVAR} \
+			$CORE_PATH/$PROJECT_SAMPLE/TEMP/{$SM_TAG"_MS_CONCORDANCE",$SM_TAG"_ANNOVAR",$SM_TAG} \
 			$CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG
 		}
 
@@ -1170,60 +1168,30 @@ done
 					$TARGET_BED
 			}
 
-			# liftover from hg38 to hg19 the vcf file for concordance
-
-				LIFTOVER_TARGET_PASS_SNV ()
-				{
-					echo \
-					qsub \
-						-S /bin/bash \
-						-cwd \
-						-V \
-						-q $QUEUE_LIST \
-						-p $PRIORITY \
-						-j y \
-					-N K01A03A01_SNV_TARGET_LIFTOVER_HG19"_"$UNIQUE_ID_SM_TAG \
-						-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K01A03A01_SNV_TARGET_LIFTOVER_$SAMPLE.log \
-					-hold_jid K01A03_PASSING_SNVS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
-					$SCRIPT_DIR/K01A03A01_SNV_TARGET_LIFTOVER_HG19.sh \
-						$JAVA_1_8 \
-						$PICARD_DIR \
-						$CORE_PATH \
-						$PROJECT_SAMPLE \
-						$SM_TAG \
-						$HG19_REF \
-						$HG38_TO_HG19_CHAIN
-				}
-
-					# for each sample use the passing on target snvs to calculate concordance and het sensitivity to array genotypes.
-					# reconfigure using the new concordance tool.
-						CONCORDANCE_ON_TARGET_PER_SAMPLE ()
-						{
-							echo \
-							qsub \
-								-S /bin/bash \
-								-cwd \
-								-V \
-								-q $QUEUE_LIST \
-								-p $PRIORITY \
-								-j y \
-							-N K01A03A01A01_CONCORDANCE_ON_TARGET_PER_SAMPLE_$UNIQUE_ID_SM_TAG \
-								-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K01A03A01A02_CONCORDANCE_ON_TARGET_$SAMPLE.log \
-							-hold_jid K01A03A01_SNV_TARGET_LIFTOVER_HG19"_"$UNIQUE_ID_SM_TAG \
-							$SCRIPT_DIR/K01A03A01A01_SNV_TARGET_PASS_CONCORDANCE.sh \
-								$JAVA_1_8 \
-								$CIDRSEQSUITE_7_5_0_DIR \
-								$VERACODE_CSV \
-								$CORE_PATH \
-								$PROJECT_SAMPLE \
-								$SM_TAG \
-								$TARGET_BED \
-								$SAMPLE_REF_GENOME \
-								$PICARD_DIR \
-								$HG19_DICT \
-								$HG38_TO_HG19_CHAIN \
-								$BEDTOOLS_DIR
-						}
+				# for each sample use the passing on target snvs to calculate concordance and het sensitivity to array genotypes.
+				# reconfigure using the new concordance tool.
+					CONCORDANCE_ON_TARGET_PER_SAMPLE ()
+					{
+						echo \
+						qsub \
+							-S /bin/bash \
+							-cwd \
+							-V \
+							-q $QUEUE_LIST \
+							-p $PRIORITY \
+							-j y \
+						-N K01A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$UNIQUE_ID_SM_TAG \
+							-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K01A03-1_CONCORDANCE_ON_TARGET_$SAMPLE.log \
+						-hold_jid K01A03_PASSING_SNVS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
+						$SCRIPT_DIR/K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE.sh \
+							$JAVA_1_8 \
+							$CIDRSEQSUITE_7_5_0_DIR \
+							$VERACODE_CSV \
+							$CORE_PATH \
+							$PROJECT_SAMPLE \
+							$SM_TAG \
+							$TARGET_BED
+					}
 
 	##########################################################################
 	### grabbing per sample indel only vcf files for on bait and on target ###
@@ -1499,7 +1467,7 @@ done
 				-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/$SM_TAG"-QC_REPORT_PREP_QC.log" \
 			-hold_jid K01A01_PASSING_VARIANTS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
 K01A02_PASSING_SNVS_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
-K01A03A01A01_CONCORDANCE_ON_TARGET_PER_SAMPLE_$UNIQUE_ID_SM_TAG,\
+K01A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$UNIQUE_ID_SM_TAG,\
 K01A04_PASSING_INDELS_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
 K01A05_PASSING_INDELS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
 K01A06-1_TITV_ALL_$UNIQUE_ID_SM_TAG,\
@@ -1523,15 +1491,11 @@ do
 	MAKE_PROJ_DIR_TREE
 	SELECT_PASSING_VARIANTS_PER_SAMPLE
 	echo sleep 0.1s
-	# SETUP_AND_RUN_ANNOVAR
-	echo sleep 0.1s
 	PASSING_VARIANTS_ON_TARGET_BY_SAMPLE
 	echo sleep 0.1s
 	PASSING_SNVS_ON_BAIT_BY_SAMPLE
 	echo sleep 0.1s
 	PASSING_SNVS_ON_TARGET_BY_SAMPLE
-	echo sleep 0.1s
-	LIFTOVER_TARGET_PASS_SNV
 	echo sleep 0.1s
 	CONCORDANCE_ON_TARGET_PER_SAMPLE
 	echo sleep 0.1s
@@ -1585,7 +1549,7 @@ done
 					"-p" , "'$PRIORITY'",\
 					"-j y",\
 					"-m","e",\
-					"-M","cidr_sequencing_notifications@lists.johnshopkins.edu",\
+					"-M","619e4945.live.johnshopkins.edu@amer.teams.ms,khetric1@jhmi.edu",\
 				"-N" , "Y01-Y01-END_PROJECT_TASKS_" "'$PREFIX'",\
 					"-o","'$CORE_PATH'" "/" "'$PROJECT_MS'" "/LOGS/Y01-Y01-" "'$PREFIX'" ".END_PROJECT_TASKS.log",\
 				"-hold_jid" , "Y_" $1 ",A02-LAB_PREP_METRICS_" "'$PROJECT_MS'",\
@@ -1598,6 +1562,10 @@ done
 
 # email when finished submitting
 
+	SUBMITTER_ID=`whoami`
+
+	PERSON_NAME=`getent passwd | awk 'BEGIN {FS=":"} $1=="'$SUBMITTER_ID'" {print $5}'`
+
 	SCATTER_COUNT=`ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed | wc -l`
 
 	STUDY_COUNT=`awk '{print "basename",$1,".g.vcf.gz"}' $GVCF_LIST | bash | grep ^[0-9] | wc -l`
@@ -1605,6 +1573,6 @@ done
 	HAPMAP_COUNT=`awk '{print "basename",$1,".g.vcf.gz"}' $GVCF_LIST | bash | grep -v ^[0-9] | wc -l`
 
 	printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`\nby `whoami`\nMULTI-SAMPLE VCF OUTPUT PROJECT IS:\n$PROJECT_MS\nVCF PREFIX IS:\n$PREFIX\nSCATTER IS $SCATTER_COUNT\n$TOTAL_SAMPLES samples called together\n$STUDY_COUNT study samples\n$HAPMAP_COUNT HapMap samples" \
-		| mail -s "HARD_FILTER_ALL_SUBMITTER_GRCH38.sh submitted" \
+		| mail -s "$PERSON_NAME has submitted HARD_FILTER_ALL_SUBMITTER.sh" \
 			-r khetric1@jhmi.edu \
-			cidr_sequencing_notifications@lists.johnshopkins.edu
+			khetric1@jhmi.edu,619e4945.live.johnshopkins.edu@amer.teams.ms
