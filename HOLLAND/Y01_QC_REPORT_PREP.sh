@@ -247,7 +247,8 @@ echo
 	if [[ ! -f $CORE_PATH/$PROJECT_SAMPLE/REPORTS/PICARD_DUPLICATES/$SM_TAG"_MARK_DUPLICATES.txt" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
-			| datamash transpose
+			| $DATAMASH_DIR/datamash transpose \
+			>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
 		else
 			MAX_RECORD=(`grep -n "^$" $CORE_PATH/$PROJECT_SAMPLE/REPORTS/PICARD_DUPLICATES/$SM_TAG"_MARK_DUPLICATES.txt" | awk 'BEGIN {FS=":"} NR==2 {print $1}'`)
 
@@ -257,7 +258,7 @@ echo
 				else if ($10~/[0-9]/&&$2=="0") print $5,$8,$9*100,$10,$4,$7,$3,($7/$3),$6,$2,"NaN" ; \
 				else print $5,$8,$9*100,$10,$4,$7,$3,($7/$3),$6,$2,($6/$2)}' \
 			$CORE_PATH/$PROJECT_SAMPLE/REPORTS/PICARD_DUPLICATES/$SM_TAG"_MARK_DUPLICATES.txt" \
-			| datamash sum 1 sum 2 mean 4 sum 5 sum 6 sum 7 sum 9 sum 10 \
+			| $DATAMASH_DIR/datamash sum 1 sum 2 mean 4 sum 5 sum 6 sum 7 sum 9 sum 10 \
 			| awk 'BEGIN {OFS="\t"} \
 				{if ($3!~/[0-9]/) print $1,$2,"NaN","NaN",$4,$5,$6,"NaN",$7,$8,"NaN","NaN" ; \
 				else if ($3~/[0-9]/&&$1=="0") print $1,$2,(($7+($5*2))/($8+($6*2)))*100,$3,$4,$5,$6,($5/$6),$7,$8,"NaN",($2/$6)*100 ; \
