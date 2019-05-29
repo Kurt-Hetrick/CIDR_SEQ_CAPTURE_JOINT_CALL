@@ -235,22 +235,36 @@ echo
 	| $DATAMASH_DIR/datamash transpose \
 	>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
 
-#############################################################################################################
-##### MARK DUPLICATES REPORT ################################################################################
-#############################################################################################################
-##### THIS IS THE HEADER ####################################################################################
-##### "UNMAPPED_READS","READ_PAIR_OPTICAL_DUPLICATES","PERCENT_DUPLICATION","ESTIMATED_LIBRARY_SIZE" ########
-##### "SECONDARY_OR_SUPPLEMENTARY_READS","READ_PAIR_DUPLICATES","READ_PAIRS_EXAMINED","PAIRED_DUP_RATE" #####
-##### "UNPAIRED_READ_DUPLICATES","UNPAIRED_READS_EXAMINED","UNPAIRED_DUP_RATE" ##############################
-#############################################################################################################
+##################################################################################################################
+##### MARK DUPLICATES REPORT #####################################################################################
+##################################################################################################################
+##### THIS IS THE HEADER #########################################################################################
+##### "UNMAPPED_READS","READ_PAIR_OPTICAL_DUPLICATES","PERCENT_DUPLICATION","ESTIMATED_LIBRARY_SIZE" #############
+##### "SECONDARY_OR_SUPPLEMENTARY_READS","READ_PAIR_DUPLICATES","READ_PAIRS_EXAMINED","PAIRED_DUP_RATE" ##########
+##### "UNPAIRED_READ_DUPLICATES","UNPAIRED_READS_EXAMINED","UNPAIRED_DUP_RATE","PERCENT_DUPLICATION_OPTICAL" #####
+##################################################################################################################
 
-	awk 'BEGIN {OFS="\t"} \
-		NR==8 \
-		{if ($9!~/[0-9]/) print $5,$8,"NaN","NaN",$4,$7,$3,"NaN",$6,$2,"NaN" ; \
-		else print $5,$8,$9*100,$10,$4,$7,$3,($7/$3),$6,$2,($6/$2)}' \
-	$CORE_PATH/$PROJECT_SAMPLE/REPORTS/PICARD_DUPLICATES/$SM_TAG"_MARK_DUPLICATES.txt" \
-	| $DATAMASH_DIR/datamash transpose \
-	>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
+	if [[ ! -f $CORE_PATH/$PROJECT_SAMPLE/REPORTS/PICARD_DUPLICATES/$SM_TAG"_MARK_DUPLICATES.txt" ]]
+		then
+			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
+			| datamash transpose
+		else
+			MAX_RECORD=(`grep -n "^$" $CORE_PATH/$PROJECT_SAMPLE/REPORTS/PICARD_DUPLICATES/$SM_TAG"_MARK_DUPLICATES.txt" | awk 'BEGIN {FS=":"} NR==2 {print $1}'`)
+
+			awk 'BEGIN {OFS="\t"} \
+				NR>7&&NR<'$MAX_RECORD' \
+				{if ($10!~/[0-9]/) print $5,$8,"NaN","NaN",$4,$7,$3,"NaN",$6,$2,"NaN" ; \
+				else if ($10~/[0-9]/&&$2=="0") print $5,$8,$9*100,$10,$4,$7,$3,($7/$3),$6,$2,"NaN" ; \
+				else print $5,$8,$9*100,$10,$4,$7,$3,($7/$3),$6,$2,($6/$2)}' \
+			$CORE_PATH/$PROJECT_SAMPLE/REPORTS/PICARD_DUPLICATES/$SM_TAG"_MARK_DUPLICATES.txt" \
+			| datamash sum 1 sum 2 mean 4 sum 5 sum 6 sum 7 sum 9 sum 10 \
+			| awk 'BEGIN {OFS="\t"} \
+				{if ($3!~/[0-9]/) print $1,$2,"NaN","NaN",$4,$5,$6,"NaN",$7,$8,"NaN","NaN" ; \
+				else if ($3~/[0-9]/&&$1=="0") print $1,$2,(($7+($5*2))/($8+($6*2)))*100,$3,$4,$5,$6,($5/$6),$7,$8,"NaN",($2/$6)*100 ; \
+				else print $1,$2,(($7+($5*2))/($8+($6*2)))*100,$3,$4,$5,$6,($5/$6),$7,$8,($7/$8),($2/$6)*100}' \
+			| $DATAMASH_DIR/datamash transpose \
+			>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
+	fi
 
 ##########################################################################################################################################################################
 ##### HYBRIDIZATION SELECTION REPORT #####################################################################################################################################
