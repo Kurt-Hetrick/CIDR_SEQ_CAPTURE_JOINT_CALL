@@ -30,7 +30,7 @@
 
 	# Generate a list of active queue and remove the ones that I don't want to use
 	QUEUE_LIST=`qstat -f -s r \
-		| egrep -v "^[0-9]|^-|^queue" \
+		| egrep -v "^[0-9]|^-|^queue|^ " \
 		| cut -d @ -f 1 \
 		| sort \
 		| uniq \
@@ -40,7 +40,7 @@
 
 	 # Use bigmem.q for ANNOVAR in addition to everything else
 	ANNOVAR_QUEUE_LIST=`qstat -f -s r \
-		| egrep -v "^[0-9]|^-|^queue" \
+		| egrep -v "^[0-9]|^-|^queue|^ " \
 		| cut -d @ -f 1 \
 		| sort \
 		| uniq \
