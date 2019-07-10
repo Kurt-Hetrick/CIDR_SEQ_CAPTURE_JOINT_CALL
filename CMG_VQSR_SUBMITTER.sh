@@ -1534,6 +1534,10 @@ done
 ######################End of Functions####################################
 ##########################################################################
 
+	# grab email addy
+
+		SEND_TO=`cat $SCRIPT_DIR/../email_lists.txt`
+
 	# Maybe I'll make this a function and throw it into a loop, but today is not that day.
 	# I think that i will have to make this a look to handle multiple projects...maybe not
 	# but again, today is not that day.
@@ -1556,7 +1560,7 @@ done
 					"-p" , "'$PRIORITY'",\
 					"-j y",\
 					"-m","e",\
-					"-M","cidr_sequencing_notifications@lists.johnshopkins.edu",\
+					"-M","'$SEND_TO'",\
 				"-N" , "Y01-Y01-END_PROJECT_TASKS_" "'$PREFIX'",\
 					"-o","'$CORE_PATH'" "/" "'$PROJECT_MS'" "/LOGS/Y01-Y01-" "'$PREFIX'" ".END_PROJECT_TASKS.log",\
 				"-hold_jid" , "Y_" $1 ",A02-LAB_PREP_METRICS_" "'$PROJECT_MS'",\
@@ -1566,8 +1570,6 @@ done
 					"'$PROJECT_MS'",\
 					"'$PREFIX'",\
 					"'$SAMPLE_SHEET'" "\n" "sleep 0.1s"}'		
-
-# email when finished submitting
 
 # email when finished submitting
 
@@ -1585,5 +1587,4 @@ done
 
 	printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`\nby `whoami`\nMULTI-SAMPLE VCF OUTPUT PROJECT IS:\n$PROJECT_MS\nVCF PREFIX IS:\n$PREFIX\nSCATTER IS $SCATTER_COUNT\n$TOTAL_SAMPLES samples called together\n$STUDY_COUNT study samples\n$HAPMAP_COUNT HapMap samples\n$BATCH_STUDY_COUNT study samples for this release\n$BATCH_HAPMAP_COUNT hapmap samples for this release" \
 		| mail -s "CMG_VQSR_SUBMITTER.sh submitted" \
-			-r $SUBMITTER_ID@jhmi.edu \
-			cidr_sequencing_notifications@lists.johnshopkins.edu
+			$SEND_TO
