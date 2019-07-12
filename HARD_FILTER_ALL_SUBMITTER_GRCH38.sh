@@ -1621,9 +1621,9 @@ done
 
 # email when finished submitting
 
-# grab email addy
+	SUBMITTER_ID=`whoami`
 
-	SEND_TO=`cat $SCRIPT_DIR/../email_lists.txt`
+	PERSON_NAME=`getent passwd | awk 'BEGIN {FS=":"} $1=="'$SUBMITTER_ID'" {print $5}'`
 
 	SCATTER_COUNT=`ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed | wc -l`
 
@@ -1632,5 +1632,5 @@ done
 	HAPMAP_COUNT=`awk '{print "basename",$1,".g.vcf.gz"}' $GVCF_LIST | bash | grep -v ^[0-9] | wc -l`
 
 	printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`\nby `whoami`\nMULTI-SAMPLE VCF OUTPUT PROJECT IS:\n$PROJECT_MS\nVCF PREFIX IS:\n$PREFIX\nSCATTER IS $SCATTER_COUNT\n$TOTAL_SAMPLES samples called together\n$STUDY_COUNT study samples\n$HAPMAP_COUNT HapMap samples" \
-		| mail -s "HARD_FILTER_ALL_SUBMITTER_GRCH38.sh submitted" \
+		| mail -s "$PERSON_NAME has submitted HARD_FILTER_ALL_SUBMITTER_GRCH38.sh" \
 			$SEND_TO

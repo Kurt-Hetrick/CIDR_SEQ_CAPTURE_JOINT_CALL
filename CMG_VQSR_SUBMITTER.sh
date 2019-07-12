@@ -1575,6 +1575,8 @@ done
 
 	SUBMITTER_ID=`whoami`
 
+	PERSON_NAME=`getent passwd | awk 'BEGIN {FS=":"} $1=="'$SUBMITTER_ID'" {print $5}'`
+
 	SCATTER_COUNT=`ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed | wc -l`
 
 	STUDY_COUNT=`awk '{print "basename",$1,".g.vcf.gz"}' $GVCF_LIST | bash | grep ^[0-9] | wc -l`
@@ -1586,5 +1588,5 @@ done
 	BATCH_HAPMAP_COUNT=`cut -d "," -f 8 $SAMPLE_SHEET | awk 'NR>1' | sort | uniq |  grep -v ^[0-9] | wc -l`
 
 	printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`\nby `whoami`\nMULTI-SAMPLE VCF OUTPUT PROJECT IS:\n$PROJECT_MS\nVCF PREFIX IS:\n$PREFIX\nSCATTER IS $SCATTER_COUNT\n$TOTAL_SAMPLES samples called together\n$STUDY_COUNT study samples\n$HAPMAP_COUNT HapMap samples\n$BATCH_STUDY_COUNT study samples for this release\n$BATCH_HAPMAP_COUNT hapmap samples for this release" \
-		| mail -s "CMG_VQSR_SUBMITTER.sh submitted" \
+		| mail -s "$PERSON_NAME has submitted CMG_VQSR_SUBMITTER.sh" \
 			$SEND_TO
