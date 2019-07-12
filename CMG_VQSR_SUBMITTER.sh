@@ -7,9 +7,15 @@
 	PROJECT_MS=$1 # the project where the multi-sample vcf is being written to
 	SAMPLE_SHEET=$2 # full/relative path to the sample sheet
 	PREFIX=$3 # prefix name that you want to give the multi-sample vcf
-	NUMBER_OF_BED_FILES=$4 # scatter count, if not supplied then the default is what is below.
+	PRIORITY=$4 # default is -12. do not supply this argument unless you want to change from the default. range is -1 to -1023.
 
-		# if there is no 4th argument present then use the number for the scatter count
+		if [[ ! $PRIORITY ]]
+			then
+			PRIORITY="-12"
+		fi
+
+	NUMBER_OF_BED_FILES=$5 # scatter count, if not supplied then the default is what is below. If you want to change this is you have to supply an input for priority as well.
+
 		if [[ ! $NUMBER_OF_BED_FILES ]]
 			then
 			NUMBER_OF_BED_FILES=500
@@ -49,10 +55,6 @@
 		| awk '{print $1}'`
 
 	 # | awk '{print $1,"-l \x27hostname=!DellR730-03\x27"}'`
-
-	# EVENTUALLY I WANT THIS SET UP AS AN OPTION WITH A DEFAULT OF X
-
-	PRIORITY="-7"
 
 	# eventually, i want to push this out to something...maybe in the vcf file header.
 	PIPELINE_VERSION=`git --git-dir=$SCRIPT_DIR/../.git --work-tree=$SCRIPT_DIR/.. log --pretty=format:'%h' -n 1`
