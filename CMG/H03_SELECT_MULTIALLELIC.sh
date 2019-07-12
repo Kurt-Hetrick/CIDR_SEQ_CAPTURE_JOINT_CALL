@@ -65,4 +65,4 @@ echo $PROJECT_MS",H01,SELECT_MULTIALLELIC,"$HOSTNAME","$START_SELECT_MULTIALLELI
 # check to see if the index is generated which should send an non-zero exit signal if not.
 # eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
 
-ls $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".HC.SNP.INDEL.VQSR.MULTIALLELIC.vcf.gz.tbi"
+ls $CORE_PATH/$PROJECT_MS/TEMP/$PREFIX".HC.SNP.INDEL.VQSR.MULTIALLELIC.vcf.gz.tbi"
