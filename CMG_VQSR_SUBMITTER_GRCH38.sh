@@ -77,23 +77,18 @@
 	BEDTOOLS_DIR="/mnt/linuxtools/BEDTOOLS/bedtools-2.22.0/bin"
 	GATK_DIR="/mnt/linuxtools/GATK/GenomeAnalysisTK-3.7"
 	SAMTOOLS_0118_DIR="/mnt/linuxtools/SAMTOOLS/samtools-0.1.18"
-		# Becasue I didn't want to go through compiling this yet for version 1.6...I'm hoping that Keith will eventually do a full OS install of RHEL7 instead of his
-		# typical stripped down installations so I don't have to install multiple libraries again
+		# Becasue I didn't want to go through compiling this yet for version 1.6.
 	TABIX_DIR="/mnt/linuxtools/TABIX/tabix-0.2.6"
 	CIDRSEQSUITE_JAVA_DIR="/mnt/linuxtools/JAVA/jre1.7.0_45/bin"
 	CIDRSEQSUITE_6_1_1_DIR="/mnt/linuxtools/CIDRSEQSUITE/6.1.1"
 	CIDRSEQSUITE_ANNOVAR_JAVA="/mnt/linuxtools/JAVA/jdk1.8.0_73/bin"
 	CIDRSEQSUITE_DIR_4_0="/mnt/research/tools/LINUX/CIDRSEQSUITE/Version_4_0"
-	CIDRSEQSUITE_PROPS_DIR="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/STD_VQSR"
-		# cp -p /u01/home/hling/cidrseqsuite.props.HGMD /mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/STD_VQSR/cidrseqsuite.props
-		# 14 June 2018
+	CIDRSEQSUITE_PROPS_DIR_HG38="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/CMG_GRCH38"
 	CIDRSEQSUITE_7_5_0_DIR="/mnt/research/tools/LINUX/CIDRSEQSUITE/7.5.0"
 	LAB_QC_DIR="/mnt/linuxtools/CUSTOM_CIDR/EnhancedSequencingQCReport/0.0.8"
 		# Copied from /mnt/research/tools/LINUX/CIDRSEQSUITE/pipeline_dependencies/QC_REPORT/EnhancedSequencingQCReport.jar
 	SAMTOOLS_DIR="/mnt/linuxtools/ANACONDA/anaconda2-5.0.0.1/bin"
 		# This is samtools version 1.7
-		# I have no idea why other users other than me cannot index a cram file with a version of samtools that I built from the source
-		# Apparently the version that I built with Anaconda works for other users, but it performs REF_CACHE first...
 	DATAMASH_DIR="/mnt/linuxtools/DATAMASH/datamash-1.0.6"
 	R_DIRECTORY="/mnt/linuxtools/R/R-3.1.1/bin"
 	GATK_DIR_4011="/mnt/linuxtools/GATK/gatk-4.0.11.0"
@@ -530,6 +525,8 @@ done
 				$GATK_DIR \
 				$REF_GENOME \
 				$ONEKG_INDELS_VCF \
+				$AXIOM_VCF \
+				$DBSNP_138_VCF \
 				$CORE_PATH \
 				$PROJECT_MS \
 				$PREFIX \
@@ -670,8 +667,6 @@ done
 			$DBSNP_138_VCF \
 			$REF_DICT
 	}
-
-
 
 	SELECT_RARE_BIALLELIC ()
 	{
@@ -1208,9 +1203,9 @@ done
 					$TARGET_BED
 			}
 
-			# for each sample use the passing on target snvs to calculate concordance and het sensitivity to array genotypes.
-			# reconfigure using the new concordance tool.
-				CONCORDANCE_ON_TARGET_PER_SAMPLE ()
+			# liftover from hg38 to hg19 the vcf file for concordance
+
+				LIFTOVER_TARGET_PASS_SNV ()
 				{
 					echo \
 					qsub \
@@ -1220,18 +1215,48 @@ done
 						-q $QUEUE_LIST \
 						-p $PRIORITY \
 						-j y \
-					-N J02A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$UNIQUE_ID_SM_TAG \
-						-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/J02A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$SAMPLE.log \
+					-N J02A03A01_SNV_TARGET_LIFTOVER_HG19"_"$UNIQUE_ID_SM_TAG \
+						-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/J02A03A01_SNV_TARGET_LIFTOVER_$SAMPLE.log \
 					-hold_jid J02A03_PASSING_SNVS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
-					$SCRIPT_DIR/J02A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE.sh \
+					$SCRIPT_DIR/J02A03A01_SNV_TARGET_LIFTOVER_HG19.sh \
 						$JAVA_1_8 \
-						$CIDRSEQSUITE_7_5_0_DIR \
-						$VERACODE_CSV \
+						$PICARD_DIR \
 						$CORE_PATH \
 						$PROJECT_SAMPLE \
 						$SM_TAG \
-						$TARGET_BED
+						$HG19_REF \
+						$HG38_TO_HG19_CHAIN
 				}
+
+					# for each sample use the passing on target snvs to calculate concordance and het sensitivity to array genotypes.
+					# reconfigure using the new concordance tool.
+						CONCORDANCE_ON_TARGET_PER_SAMPLE ()
+						{
+							echo \
+							qsub \
+								-S /bin/bash \
+								-cwd \
+								-V \
+								-q $QUEUE_LIST \
+								-p $PRIORITY \
+								-j y \
+							-N J02A03A01A01_CONCORDANCE_ON_TARGET_PER_SAMPLE_$UNIQUE_ID_SM_TAG \
+								-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/J02A03A01A02_CONCORDANCE_ON_TARGET_$SAMPLE.log \
+							-hold_jid J02A03A01_SNV_TARGET_LIFTOVER_HG19"_"$UNIQUE_ID_SM_TAG \
+							$SCRIPT_DIR/J02A03A01A01_SNV_TARGET_PASS_CONCORDANCE.sh \
+								$JAVA_1_8 \
+								$CIDRSEQSUITE_7_5_0_DIR \
+								$VERACODE_CSV \
+								$CORE_PATH \
+								$PROJECT_SAMPLE \
+								$SM_TAG \
+								$TARGET_BED \
+								$SAMPLE_REF_GENOME \
+								$PICARD_DIR \
+								$HG19_DICT \
+								$HG38_TO_HG19_CHAIN \
+								$BEDTOOLS_DIR
+						}
 
 	##########################################################################
 	### grabbing per sample indel only vcf files for on bait and on target ###
@@ -1486,6 +1511,60 @@ done
 					$TARGET_BED
 			}
 
+		# liftover from hg38 to hg19 the vcf file
+		# THIS IS NOT A B37 VCF, BUT A HG19 VCF. I DON'T THINK I AM GOING TO MAKE A B37 VCF
+		# Will need this eventually
+
+			LIFTOVER_PHENODB_VCF ()
+			{
+				echo \
+				qsub \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+					-j y \
+				-N J02A12_PHENODB_VCF_LIFTOVER"_"$UNIQUE_ID_SM_TAG \
+					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/J02A12_PHENODB_VCF_LIFTOVER_$SAMPLE.log \
+				-hold_jid J02_SELECT_VARIANTS_FOR_SAMPLE_$UNIQUE_ID_SM_TAG \
+				$SCRIPT_DIR/J02A12_PHENODB_VCF_LIFTOVER_HG19.sh \
+					$JAVA_1_8 \
+					$PICARD_DIR \
+					$CORE_PATH \
+					$PROJECT_SAMPLE \
+					$SM_TAG \
+					$HG19_REF \
+					$HG38_TO_HG19_CHAIN
+			}
+
+					# run annovar on the lifted over vcf.
+					# waiting on things. technically, i should be passing a cidrseqsuite props for this, but since this is a hot mess. i am holding off.
+					# CLEAN UP
+
+						SETUP_AND_RUN_ANNOVAR_HG19 ()
+						{
+							echo \
+							qsub \
+								-S /bin/bash \
+								-cwd \
+								-V \
+								-q $ANNOVAR_QUEUE_LIST \
+								-p $PRIORITY \
+								-j y \
+								-pe slots 5 \
+								-R y \
+							-N J02A12_PHENODB_VCF_LIFTOVER_HG19_$UNIQUE_ID_SM_TAG \
+								-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/J02A12_PHENODB_VCF_LIFTOVER_HG19_$SM_TAG".log" \
+							-hold_jid J02A12_PHENODB_VCF_LIFTOVER"_"$UNIQUE_ID_SM_TAG \
+							$SCRIPT_DIR/J02A12_PHENODB_VCF_LIFTOVER_HG19.sh \
+								$PROJECT_SAMPLE \
+								$SM_TAG \
+								$CIDRSEQSUITE_ANNOVAR_JAVA \
+								$CIDRSEQSUITE_DIR_4_0 \
+								$CORE_PATH
+						}
+
 	# MAKE A QC REPORT FOR EACH SAMPLE
 	# THIS IS CREATING A JOB_ID FOR A SAMPLE WHEN ALL OF THE BREAKOUTs PER SAMPLE IS DONE
 	# THIS IS TO MITIGATE CREATING A HOLD ID THAT IS TOO LONG FOR GENERATING THE QC REPORT.
@@ -1539,6 +1618,8 @@ do
 	echo sleep 0.1s
 	PASSING_SNVS_ON_TARGET_BY_SAMPLE
 	echo sleep 0.1s
+	LIFTOVER_TARGET_PASS_SNV
+	echo sleep 0.1s
 	CONCORDANCE_ON_TARGET_PER_SAMPLE
 	echo sleep 0.1s
 	PASSING_INDELS_ON_BAIT_BY_SAMPLE
@@ -1561,6 +1642,10 @@ do
 	echo sleep 0.1s
 	PASSING_MIXED_ON_TARGET_BY_SAMPLE
 	echo sleep 0.1s
+	LIFTOVER_PHENODB_VCF
+	echo sleep 0.1s
+	# SETUP_AND_RUN_ANNOVAR_HG19
+	# echo sleep 0.1s
 	QC_REPORT_PREP
 	echo sleep 0.1s
 done

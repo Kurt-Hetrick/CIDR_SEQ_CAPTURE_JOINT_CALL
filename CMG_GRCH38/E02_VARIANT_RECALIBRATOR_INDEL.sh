@@ -26,11 +26,11 @@
 ##### END QSUB PARAMETER SETTINGS #####
 #######################################
 
-# export all variables, useful to find out what compute node the program was executed on
-set
+	# export all variables, useful to find out what compute node the program was executed on
+	set
 
-# create a blank lane b/w the output variables and the program logging output
-echo
+	# create a blank lane b/w the output variables and the program logging output
+	echo
 
 # INPUT PARAMETERS
 
@@ -38,11 +38,13 @@ echo
 	GATK_DIR=$2
 	REF_GENOME=$3
 	ONEKG_INDELS_VCF=$4
+	AXIOM_VCF=$5
+	DBSNP_138_VCF=$6
 
-	CORE_PATH=$5
-	PROJECT_MS=$6
-	PREFIX=$7
-	R_DIRECTORY=$8
+	CORE_PATH=$7
+	PROJECT_MS=$8
+	PREFIX=$9
+	R_DIRECTORY=${10}
 		export PATH=.:$R_DIRECTORY:$PATH
 
 START_VQSR_INDEL=`date '+%s'`
@@ -53,11 +55,22 @@ START_VQSR_INDEL=`date '+%s'`
 	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 	CMD=$CMD' -R '$REF_GENOME
 	CMD=$CMD' --input:VCF '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.raw.HC.vcf'
-	CMD=$CMD' -resource:mills,known=true,training=true,truth=true,prior=12.0 '$ONEKG_INDELS_VCF
+	CMD=$CMD' -resource:mills,known=false,training=true,truth=true,prior=12.0 '$ONEKG_INDELS_VCF
+	CMD=$CMD' -resource:axiomPoly,known=false,training=true,truth=false,prior=10.0 '$AXIOM_VCF
+	CMD=$CMD' -resource:dbsnp,known=true,training=false,truth=false,prior=2.0 '$DBSNP_138_VCF
 	CMD=$CMD' -recalFile '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.INDEL.recal'
 	CMD=$CMD' -tranchesFile '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.INDEL.tranches'
 	CMD=$CMD' -rscriptFile '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.INDEL.R'
 	CMD=$CMD' -tranche 100.0'
+	CMD=$CMD' -tranche 99.99'
+	CMD=$CMD' -tranche 99.98'
+	CMD=$CMD' -tranche 99.97'
+	CMD=$CMD' -tranche 99.96'
+	CMD=$CMD' -tranche 99.95'
+	CMD=$CMD' -tranche 99.94'
+	CMD=$CMD' -tranche 99.93'
+	CMD=$CMD' -tranche 99.92'
+	CMD=$CMD' -tranche 99.91'
 	CMD=$CMD' -tranche 99.9'
 	CMD=$CMD' -tranche 99.8'
 	CMD=$CMD' -tranche 99.7'

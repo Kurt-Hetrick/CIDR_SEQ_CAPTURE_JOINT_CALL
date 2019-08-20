@@ -26,21 +26,21 @@
 ##### END QSUB PARAMETER SETTINGS #####
 #######################################
 
-# export all variables, useful to find out what compute node the program was executed on
-set
+	# export all variables, useful to find out what compute node the program was executed on
+	set
 
-# create a blank lane b/w the output variables and the program logging output
-echo
+	# create a blank lane b/w the output variables and the program logging output
+	echo
 
 # INPUT PARAMETERS
 
-JAVA_1_8=$1
-GATK_DIR=$2
-REF_GENOME=$3
-CORE_PATH=$4
+	JAVA_1_8=$1
+	GATK_DIR=$2
+	REF_GENOME=$3
+	CORE_PATH=$4
 
-PROJECT_MS=$5
-PREFIX=$6
+	PROJECT_MS=$5
+	PREFIX=$6
 
 START_APPLY_VQSR_INDEL=`date '+%s'`
 
@@ -61,8 +61,6 @@ echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
 echo $CMD | bash
 
 END_APPLY_VQSR_INDEL=`date '+%s'`
-
-HOSTNAME=`hostname`
 
 echo $PROJECT_MS",G01,APPLY_VQSR_INDEL,"$HOSTNAME","$START_APPLY_VQSR_INDEL","$END_APPLY_VQSR_INDEL \
 >> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"
