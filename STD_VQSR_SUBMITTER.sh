@@ -78,7 +78,7 @@
 		# cp -p /u01/home/hling/cidrseqsuite.props.HGMD /mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/STD_VQSR/cidrseqsuite.props
 		# 14 June 2018
 	CIDRSEQSUITE_7_5_0_DIR="/mnt/research/tools/LINUX/CIDRSEQSUITE/7.5.0"
-	LAB_QC_DIR="/mnt/linuxtools/CUSTOM_CIDR/EnhancedSequencingQCReport/0.0.8"
+	LAB_QC_DIR="/mnt/linuxtools/CUSTOM_CIDR/EnhancedSequencingQCReport/0.0.9"
 		# Copied from /mnt/research/tools/LINUX/CIDRSEQSUITE/pipeline_dependencies/QC_REPORT/EnhancedSequencingQCReport.jar
 	SAMTOOLS_DIR="/mnt/linuxtools/ANACONDA/anaconda2-5.0.0.1/bin"
 		# This is samtools version 1.7
@@ -88,6 +88,7 @@
 	TABIX_DIR="/mnt/research/tools/LINUX/TABIX/tabix-0.2.6"
 	R_DIRECTORY="/mnt/linuxtools/R/R-3.1.1/bin"
 	GATK_DIR_4011="/mnt/linuxtools/GATK/gatk-4.0.11.0"
+	PICARD_DIR="/mnt/linuxtools/PICARD/picard-2.20.6"
 
 ##################
 # PIPELINE FILES #
@@ -102,6 +103,10 @@
 	ExAC="/mnt/research/tools/PIPELINE_FILES/GRCh37_aux_files/ExAC.r0.3.sites.vep.vcf.gz"
 	KNOWN_SNPS="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/b37/dbsnp_138.b37.excluding_sites_after_129.vcf"
 	VERACODE_CSV="/mnt/linuxtools/CIDRSEQSUITE/Veracode_hg18_hg19.csv"
+	B37_TO_HG19_CHAIN="/mnt/shared_resources/public_resources/liftOver_chain/chainFiles_b37/b37tohg19.chain"
+	HG19_REF="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/hg19/ucsc.hg19.fasta"
+	HG19_TO_GRCH38_CHAIN="/mnt/shared_resources/public_resources/liftOver_chain/hg19ToHg38.over.chain"
+	GRCH38_REF="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/Homo_sapiens_assembly38.fasta"
 
 ##################################################
 ##################################################
