@@ -7,7 +7,6 @@
 	PROJECT_MS=$1 # the project where the multi-sample vcf is being written to
 	SAMPLE_SHEET=$2 # full/relative path to the sample sheet
 	PREFIX=$3 # prefix name that you want to give the multi-sample vcf
-	NUMBER_OF_BED_FILES=$4 # scatter count, if not supplied then the default is what is below.
 
 	PRIORITY=$4 # default is -11. do not supply this argument unless you want to change from the default. range is -1 to -1023.
 
