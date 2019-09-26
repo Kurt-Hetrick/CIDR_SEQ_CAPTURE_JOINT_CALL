@@ -86,6 +86,7 @@ START_VQSR_SNV=`date '+%s'`
 	CMD=$CMD' -an ReadPosRankSum'
 	CMD=$CMD' -an SOR'
 	CMD=$CMD' -an FS'
+	CMD=$CMD' --maxGaussians 7'
 
 echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
 echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
