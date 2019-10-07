@@ -26,11 +26,14 @@
 # CORE VARIABLES/SETTINGS #
 ###########################
 
+	# CHANGE SCRIPT DIR TO WHERE YOU HAVE HAVE THE SCRIPTS BEING SUBMITTED
+
+		SUBMITTER_SCRIPT_PATH=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+
+		SCRIPT_DIR="$SUBMITTER_SCRIPT_PATH/HOLLAND"
+
 	# gcc is so that it can be pushed out to the compute nodes via qsub (-V)
 	module load gcc/7.2.0
-
-	# CHANGE SCRIPT DIR TO WHERE YOU HAVE HAVE THE SCRIPTS BEING SUBMITTED
-	SCRIPT_DIR="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/HOLLAND"
 
 	# Directory where sequencing projects are located
 	CORE_PATH="/mnt/research/active"
@@ -59,6 +62,10 @@
 	umask 0007
 
 	# TIMESTAMP=`date '+%F.%H-%M-%S'`
+
+	# grab email addy
+
+		SEND_TO=`cat $SCRIPT_DIR/../email_lists.txt`
 
 #####################
 # PIPELINE PROGRAMS #
@@ -484,7 +491,8 @@ done
 				$CORE_PATH \
 				$PROJECT_MS \
 				$PREFIX \
-				$R_DIRECTORY
+				$R_DIRECTORY \
+				$SEND_TO
 		}
 
 	# run the indel vqsr model (concurrently done with the snp model above)
@@ -1485,10 +1493,6 @@ done
 ##########################################################################
 ######################End of Functions####################################
 ##########################################################################
-
-	# grab email addy
-
-		SEND_TO=`cat $SCRIPT_DIR/../email_lists.txt`
 
 	# Maybe I'll make this a function and throw it into a loop, but today is not that day.
 	# I think that i will have to make this a look to handle multiple projects...maybe not

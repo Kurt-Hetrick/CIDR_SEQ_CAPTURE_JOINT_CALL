@@ -26,11 +26,11 @@
 ##### END QSUB PARAMETER SETTINGS #####
 #######################################
 
-# export all variables, useful to find out what compute node the program was executed on
-set
+	# export all variables, useful to find out what compute node the program was executed on
+	set
 
-# create a blank lane b/w the output variables and the program logging output
-echo
+	# create a blank lane b/w the output variables and the program logging output
+	echo
 
 # INPUT PARAMETERS
 
@@ -47,6 +47,11 @@ echo
 	PREFIX=${10}
 	R_DIRECTORY=${11}
 		export PATH=.:$R_DIRECTORY:$PATH
+	SEND_TO=${12}
+
+	# explicitly state the maximum number of gaussians to start of with
+
+		MAX_GAUSSIANS="8"
 
 START_VQSR_SNV=`date '+%s'`
 
@@ -86,16 +91,64 @@ START_VQSR_SNV=`date '+%s'`
 	CMD=$CMD' -an ReadPosRankSum'
 	CMD=$CMD' -an SOR'
 	CMD=$CMD' -an FS'
+	CMD=$CMD' --maxGaussians '$MAX_GAUSSIANS
+
+	echo $CMD | bash
+
+	# capture the exit status
+
+		SCRIPT_STATUS=`echo $?`
+
+	# if vqsr fails then retry by decrementing the number of max gaussians by 1 until you get to 4
+	# if it still does not work after setting it to four then stop trying
+
+		if [ $SCRIPT_STATUS -ne 0 ]
+			then
+				until [[ $SCRIPT_STATUS -eq 0 || $MAX_GAUSSIANS -le 4 ]]
+					do
+						CMD=$(echo $CMD | sed 's/ --maxGaussians '"$MAX_GAUSSIANS"'//g')
+						MAX_GAUSSIANS=$[$MAX_GAUSSIANS-1]
+						CMD=$CMD' --maxGaussians '$MAX_GAUSSIANS
+						echo $CMD | bash
+						SCRIPT_STATUS=`echo $?`
+				done
+		fi
+
+	# if it fails the first time but ultimately works send a notification saying that the parameter has changed and that the methods document needs to change for release
+	# if it ends up failing altogether send a notification saying that I need to look at it.
+	# will probably have to start with removing the MQ annotation and go from there.
+
+		if [[ $SCRIPT_STATUS -eq 0 && $MAX_GAUSSIANS -ge 4 ]]
+			then
+				printf "The number of max Gaussians has been changed to $MAX_GAUSSIANS for\n \
+				PROJECT:\n \
+				$PROJECT_MS\n \
+				VCF PREFIX:\n \
+				$PREFIX\n \
+				This needs to be reflected in the methods release document." \
+				| mail -s "SNP VariantRecalibrator parameter changed for $PROJECT_MS" \
+				$SEND_TO
+			elif [ $SCRIPT_STATUS -ne 0 ]
+				then
+					printf "This has failed SNP VariantRecalibrator and Kurt needs to look at this for:\n \
+					PROJECT:\n \
+					$PROJECT_MS\n \
+					VCF PREFIX:\n \
+					$PREFIX" \
+					| mail -s "SNP VariantRecalibrator FAILED for $PROJECT_MS" \
+					$SEND_TO
+			else
+			:
+		fi
 
 echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
 echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo $CMD | bash
 
 END_VQSR_SNV=`date '+%s'`
 
 echo $PROJECT_MS",E01,VQSR_SNV,"$HOSTNAME","$START_VQSR_SNV","$END_VQSR_SNV \
 >> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"
 
-# check to see if the index is generated which should send an non-zero exit signal if not.
-# eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
-# this is placeholder here...have to see what is generated. I think I want to check if a *recal.idx is generated or not.
+# exit with the signal from the program
+
+	exit $SCRIPT_STATUS
