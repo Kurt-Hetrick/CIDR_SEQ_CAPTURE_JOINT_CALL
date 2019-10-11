@@ -583,6 +583,56 @@ done
 				$PREFIX
 		}
 
+	# liftover initial final vcf to hg19
+
+		LIFTOVER_INITIAL_GRCH37_VCF_TO_HG19 ()
+		{
+			echo \
+			qsub \
+				-S /bin/bash \
+				-cwd \
+				-V \
+				-q $QUEUE_LIST \
+				-p $PRIORITY \
+				-j y \
+			-N G01A01_LIFTOVER_INITIAL_GRCH37_TO_HG19_$PROJECT_MS \
+				-o $CORE_PATH/$PROJECT_MS/LOGS/G01A01_LIFTOVER_INITIAL_MS_TO_HG19.log \
+				-hold_jid G01_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
+			$SCRIPT_DIR/G01A01_LIFTOVER_INITIAL_GRCH37_TO_HG19.sh \
+				$JAVA_1_8 \
+				$PICARD_DIR \
+				$CORE_PATH \
+				$PROJECT_MS \
+				$PREFIX \
+				$HG19_REF \
+				$B37_TO_HG19_CHAIN
+		}
+
+	# liftover initial hg19 vcf to grch38
+
+		LIFTOVER_INITIAL_HG19_VCF_TO_HG38 ()
+		{
+				echo \
+				qsub \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+					-j y \
+				-N G01A01A01_LIFTOVER_INITIAL_HG19_TO_GRCH38_$PROJECT_MS \
+					-o $CORE_PATH/$PROJECT_MS/LOGS/G01A01A01_LIFTOVER_INITIAL_HG19_TO_HG38.log \
+					-hold_jid G01A01_LIFTOVER_INITIAL_GRCH37_TO_HG19_$PROJECT_MS \
+				$SCRIPT_DIR/G01A01A01_LIFTOVER_INITIAL_HG19_TO_GRCH38.sh \
+					$JAVA_1_8 \
+					$PICARD_DIR \
+					$CORE_PATH \
+					$PROJECT_MS \
+					$PREFIX \
+					$GRCH38_REF \
+					$HG19_TO_GRCH38_CHAIN
+		}
+
 # call cat variants and vqsr
 
 	CAT_VARIANTS
@@ -594,6 +644,10 @@ done
 	APPLY_RECALIBRATION_SNV
 	echo sleep 0.1s
 	APPLY_RECALIBRATION_INDEL
+	echo sleep 0.1s
+	LIFTOVER_INITIAL_GRCH37_VCF_TO_HG19
+	echo sleep 0.1s
+	LIFTOVER_INITIAL_HG19_VCF_TO_HG38
 	echo sleep 0.1s
 
 ##################################################
@@ -730,6 +784,56 @@ done
 				$PROJECT_MS \
 				$PREFIX
 		}
+
+		# liftover refined vcf from grch37 to hg19
+
+			LIFTOVER_REFINED_GRCH37_VCF_TO_HG19 ()
+			{
+				echo \
+				qsub \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+					-j y \
+				-N J01A02_LIFTOVER_REFINED_GRCH37_TO_HG19_$PROJECT_MS \
+					-o $CORE_PATH/$PROJECT_MS/LOGS/J01A02_LIFTOVER_REFINED_MS_TO_HG19.log \
+					-hold_jid J01_CAT_REFINED_VARIANTS_$PROJECT_MS \
+				$SCRIPT_DIR/J01A02_LIFTOVER_REFINED_GRCH37_TO_HG19.sh \
+					$JAVA_1_8 \
+					$PICARD_DIR \
+					$CORE_PATH \
+					$PROJECT_MS \
+					$PREFIX \
+					$HG19_REF \
+					$B37_TO_HG19_CHAIN
+			}
+
+			# liftover refined vcf from grch37 to hg19
+
+				LIFTOVER_REFINED_HG19_VCF_TO_HG38 ()
+				{
+					echo \
+					qsub \
+						-S /bin/bash \
+						-cwd \
+						-V \
+						-q $QUEUE_LIST \
+						-p $PRIORITY \
+						-j y \
+					-N J01A02A01_LIFTOVER_REFINED_HG19_TO_GRCH38_$PROJECT_MS \
+						-o $CORE_PATH/$PROJECT_MS/LOGS/J01A02A01_LIFTOVER_REFINED_HG19_TO_HG38.log \
+						-hold_jid J01A02_LIFTOVER_REFINED_GRCH37_TO_HG19_$PROJECT_MS \
+					$SCRIPT_DIR/J01A02A01_LIFTOVER_REFINED_HG19_TO_GRCH38.sh \
+						$JAVA_1_8 \
+						$PICARD_DIR \
+						$CORE_PATH \
+						$PROJECT_MS \
+						$PREFIX \
+						$GRCH38_REF \
+						$HG19_TO_GRCH38_CHAIN
+				}
 
 	# run annovar on the final gt refined vcf file
 
@@ -981,6 +1085,10 @@ done
 # cat refined variants, annovar, variant summary stat vcf breakouts
 
 	CAT_REFINED_VARIANTS
+	echo sleep 0.1s
+	LIFTOVER_REFINED_GRCH37_VCF_TO_HG19
+	echo sleep 0.1s
+	LIFTOVER_REFINED_HG19_VCF_TO_HG38
 	echo sleep 0.1s
 	RUN_ANNOVAR
 	echo sleep 0.1s
