@@ -56,65 +56,96 @@ echo
 ##### "PROJECT_SAMPLE","SM_TAG","RG_PU","Library_Name" #####
 ############################################################
 
-	# grab field number for SM_TAG
+	if [ -f $CORE_PATH/$PROJECT_SAMPLE/REPORTS/RG_HEADER/$SM_TAG".RG_HEADER.txt" ]
+		then
+			cat $CORE_PATH/$PROJECT_SAMPLE/REPORTS/RG_HEADER/$SM_TAG".RG_HEADER.txt" \
+					| $DATAMASH_DIR/datamash \
+						-s \
+						-g 1,2 \
+						collapse 3 \
+						unique 4 \
+						unique 5 \
+						unique 6 \
+						unique 7 \
+						unique 8 \
+						unique 9 \
+						unique 10 \
+						unique 11 \
+						unique 12 \
+					| sed 's/,/;/g' \
+					| $DATAMASH_DIR/datamash transpose \
+			>| $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
 
-		SM_FIELD=(`$SAMTOOLS_DIR/samtools view -H \
-		$CORE_PATH/$PROJECT_SAMPLE/CRAM/$SM_TAG".cram" \
-			| grep -m 1 ^@RG \
-			| sed 's/\t/\n/g' \
-			| cat -n \
-			| sed 's/^ *//g' \
-			| awk '$2~/^SM:/ {print $1}'`)
+		elif [[ ! -f $CORE_PATH/$PROJECT_SAMPLE/REPORTS/RG_HEADER/$SM_TAG".RG_HEADER.txt" && -f $CORE_PATH/$PROJECT_SAMPLE/CRAM/$SM_TAG".cram" ]];
+			then
 
-	# grab field number for PLATFORM_UNIT_TAG
+				# grab field number for SM_TAG
 
-		PU_FIELD=(`$SAMTOOLS_DIR/samtools view -H \
-		$CORE_PATH/$PROJECT_SAMPLE/CRAM/$SM_TAG".cram" \
-			| grep -m 1 ^@RG \
-			| sed 's/\t/\n/g' \
-			| cat -n \
-			| sed 's/^ *//g' \
-			| awk '$2~/^PU:/ {print $1}'`)
+					SM_FIELD=(`$SAMTOOLS_DIR/samtools view -H \
+					$CORE_PATH/$PROJECT_SAMPLE/CRAM/$SM_TAG".cram" \
+						| grep -m 1 ^@RG \
+						| sed 's/\t/\n/g' \
+						| cat -n \
+						| sed 's/^ *//g' \
+						| awk '$2~/^SM:/ {print $1}'`)
 
-	# grab field number for LIBRARY_TAG
+				# grab field number for PLATFORM_UNIT_TAG
 
-		LB_FIELD=(`$SAMTOOLS_DIR/samtools view -H \
-		$CORE_PATH/$PROJECT_SAMPLE/CRAM/$SM_TAG".cram" \
-			| grep -m 1 ^@RG \
-			| sed 's/\t/\n/g' \
-			| cat -n \
-			| sed 's/^ *//g' \
-			| awk '$2~/^LB:/ {print $1}'`)
+					PU_FIELD=(`$SAMTOOLS_DIR/samtools view -H \
+					$CORE_PATH/$PROJECT_SAMPLE/CRAM/$SM_TAG".cram" \
+						| grep -m 1 ^@RG \
+						| sed 's/\t/\n/g' \
+						| cat -n \
+						| sed 's/^ *//g' \
+						| awk '$2~/^PU:/ {print $1}'`)
 
-	# Now grab the header and format
+				# grab field number for LIBRARY_TAG
 
-		$SAMTOOLS_DIR/samtools view -H \
-		$CORE_PATH/$PROJECT_SAMPLE/CRAM/$SM_TAG".cram" \
-			| grep ^@RG \
-			| awk \
-				-v SM_FIELD="$SM_FIELD" \
-				-v PU_FIELD="$PU_FIELD" \
-				-v LB_FIELD="$LB_FIELD" \
-				'BEGIN {OFS="\t"} {split($SM_FIELD,SMtag,":"); split($PU_FIELD,PU,":"); split($LB_FIELD,Library,":"); split(Library[2],Library_Unit,"_"); \
-				print "'$PROJECT_SAMPLE'",SMtag[2],PU[2],Library[2],Library_Unit[1],Library_Unit[2],substr(Library_Unit[2],1,1),substr(Library_Unit[2],2,2),\
-				Library_Unit[3],Library_Unit[4],substr(Library_Unit[4],1,1),substr(Library_Unit[4],2,2)}' \
-			| awk 'BEGIN { FS = OFS = "\t" } { for(i=1; i<=NF; i++) if($i ~ /^ *$/) $i = "NA" }; 1' \
-			| $DATAMASH_DIR/datamash \
-				-s \
-				-g 1,2 \
-				collapse 3 \
-				unique 4 \
-				unique 5 \
-				unique 6 \
-				unique 7 \
-				unique 8 \
-				unique 9 \
-				unique 10 \
-				unique 11 \
-				unique 12 \
-			| sed 's/,/;/g' \
+					LB_FIELD=(`$SAMTOOLS_DIR/samtools view -H \
+					$CORE_PATH/$PROJECT_SAMPLE/CRAM/$SM_TAG".cram" \
+						| grep -m 1 ^@RG \
+						| sed 's/\t/\n/g' \
+						| cat -n \
+						| sed 's/^ *//g' \
+						| awk '$2~/^LB:/ {print $1}'`)
+
+				# Now grab the header and format
+					# breaking out the library name into its parts is assuming that the format is...
+					# fill in empty fields with NA thing (for loop in awk) is a lifesaver
+					# https://unix.stackexchange.com/questions/53448/replacing-missing-value-blank-space-with-zero
+
+					$SAMTOOLS_DIR/samtools view -H \
+					$CORE_PATH/$PROJECT_SAMPLE/CRAM/$SM_TAG".cram" \
+						| grep ^@RG \
+						| awk \
+							-v SM_FIELD="$SM_FIELD" \
+							-v PU_FIELD="$PU_FIELD" \
+							-v LB_FIELD="$LB_FIELD" \
+							'BEGIN {OFS="\t"} {split($SM_FIELD,SMtag,":"); split($PU_FIELD,PU,":"); split($LB_FIELD,Library,":"); split(Library[2],Library_Unit,"_"); \
+							print "'$PROJECT_SAMPLE'",SMtag[2],PU[2],Library[2],Library_Unit[1],Library_Unit[2],substr(Library_Unit[2],1,1),substr(Library_Unit[2],2,2),\
+							Library_Unit[3],Library_Unit[4],substr(Library_Unit[4],1,1),substr(Library_Unit[4],2,2)}' \
+						| awk 'BEGIN { FS = OFS = "\t" } { for(i=1; i<=NF; i++) if($i ~ /^ *$/) $i = "NA" }; 1' \
+						| $DATAMASH_DIR/datamash \
+							-s \
+							-g 1,2 \
+							collapse 3 \
+							unique 4 \
+							unique 5 \
+							unique 6 \
+							unique 7 \
+							unique 8 \
+							unique 9 \
+							unique 10 \
+							unique 11 \
+							unique 12 \
+						| sed 's/,/;/g' \
+						| $DATAMASH_DIR/datamash transpose \
+					>| $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
+		else
+			echo -e "$PROJECT\t$SM_TAG\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA" \
 			| $DATAMASH_DIR/datamash transpose \
-		>| $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
+			>| $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
+	fi
 
 #################################################
 ##### GENDER CHECK FROM ANEUPLOIDY CHECK ########
