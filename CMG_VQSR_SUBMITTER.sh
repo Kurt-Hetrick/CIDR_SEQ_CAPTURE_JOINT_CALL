@@ -122,6 +122,8 @@
 	# THIS IS A UNION BED FILE B/W VERSION 4 AND VERSION 5/CLINICAL
 	MERGED_MENDEL_BED_FILE="/mnt/research/active/M_Valle_MD_SeqWholeExome_120417_1/BED_Files/BAITS_Merged_S03723314_S06588914_TwistCUEXmito.bed"
 	REF_DICT="/mnt/research/tools/PIPELINE_FILES/bwa_mem_0.7.5a_ref/human_g1k_v37_decoy.dict"
+	# what is used in the clinical exome pipeline line...at least at first. basically longest transcript per translated gene
+	REF_SEQ_TRANSCRIPTS="/mnt/research/tools/PIPELINE_FILES/GRCh37_aux_files/RefSeq.Unique.GRCh37.FINAL.19Feb2018.bed"
 
 ##################################################
 ##################################################
@@ -1575,7 +1577,9 @@ done
 					"'$DATAMASH_DIR'",\
 					"'$PROJECT_MS'",\
 					"'$PREFIX'",\
-					"'$SAMPLE_SHEET'" "\n" "sleep 0.1s"}'		
+					"'$SAMPLE_SHEET'",\
+					"'$BEDTOOLS_DIR'",\
+					"'$REF_SEQ_TRANSCRIPTS'" "\n" "sleep 0.1s"}'
 
 # email when finished submitting
 

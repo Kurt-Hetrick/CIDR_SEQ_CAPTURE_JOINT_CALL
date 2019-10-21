@@ -114,6 +114,9 @@
 	HG19_REF="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/hg19/ucsc.hg19.fasta"
 	HG19_TO_GRCH38_CHAIN="/mnt/shared_resources/public_resources/liftOver_chain/hg19ToHg38.over.chain"
 	GRCH38_REF="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/Homo_sapiens_assembly38.fasta"
+	REF_DICT="/mnt/research/tools/PIPELINE_FILES/bwa_mem_0.7.5a_ref/human_g1k_v37_decoy.dict"
+	# what is used in the clinical exome pipeline line...at least at first. basically longest transcript per translated gene
+	REF_SEQ_TRANSCRIPTS="/mnt/research/tools/PIPELINE_FILES/GRCh37_aux_files/RefSeq.Unique.GRCh37.FINAL.19Feb2018.bed"
 
 ##################################################
 ##################################################
@@ -1667,7 +1670,9 @@ done
 					"'$DATAMASH_DIR'",\
 					"'$PROJECT_MS'",\
 					"'$PREFIX'",\
-					"'$SAMPLE_SHEET'" "\n" "sleep 0.1s"}'	
+					"'$SAMPLE_SHEET'",\
+					"'$BEDTOOLS_DIR'",\
+					"'$REF_SEQ_TRANSCRIPTS'" "\n" "sleep 0.1s"}'
 
 # email when finished submitting
 

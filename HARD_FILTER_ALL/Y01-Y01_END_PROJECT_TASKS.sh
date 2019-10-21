@@ -26,11 +26,11 @@
 ##### END QSUB PARAMETER SETTINGS #####
 #######################################
 
-# export all variables, useful to find out what compute node the program was executed on
-set
+	# export all variables, useful to find out what compute node the program was executed on
+	set
 
-# create a blank lane b/w the output variables and the program logging output
-echo
+	# create a blank lane b/w the output variables and the program logging output
+	echo
 
 # INPUT PARAMETERS
 
@@ -41,6 +41,8 @@ echo
 	PREFIX=$4
 
 	SAMPLE_SHEET=$5
+	BEDTOOLS_DIR=$6
+	REF_SEQ_TRANSCRIPTS=$7
 
 ##############################
 ##############################
@@ -216,6 +218,27 @@ echo
 		$CORE_PATH/$PROJECT_MS/REPORTS/LAB_PREP_REPORTS_MS/$SAMPLE_SHEET_NAME".LAB_PREP_METRICS.csv" \
 		>| $CORE_PATH/$PROJECT_MS/REPORTS/QC_REPORTS/$PREFIX".QC_REPORT."$TIMESTAMP".csv"
 
+##########################################
+#### SITES SKIPPED BY GENOTYPE GVCFS #####
+##########################################
+
+	# grab what positions have been skipped due to having more than 50 alleles and put it into a bed file
+
+		grep "50 alleles" $CORE_PATH/$PROJECT_MS/LOGS/B01_GENOTYPE_GVCF/*log \
+		cut -d " " -f 19 | sort | uniq | awk 'BEGIN {FS=":";OFS="\t"} {print $1,$2-1,$2}'| sort -k 1,1 -k 2,2n \
+		>| $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX"_"$SAMPLE_SHEET"_"$TIMESTAMP"_SKIPPED_POSITIONS.bed"
+
+	# take said bed files and intersect with the coding regions used for the clinical exome pipeline
+
+		$BEDTOOLS_DIR/bedtools \
+			intersect \
+			-wo \
+			-a $REF_SEQ_TRANSCRIPTS \
+			-b $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX"_"$SAMPLE_SHEET"_"$TIMESTAMP"_SKIPPED_POSITIONS.bed" \
+		| awk 'BEGIN {print "CODING_CHR","VARIANT_START","CODING_START","CODING_END","REFSEQ_GENE","TRANSCIPT","CODING_EXON_NUMBER","STRAND"} {print $1,$10,$2+1,$3,$4,$5,$6,$7}' \
+		| sed 's/ /\t/g' \
+		>> $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX"_"$SAMPLE_SHEET"_"$TIMESTAMP"_SKIPPED_POSITIONS_CODING.txt"
+
 ######################################################################################################
 ######################################################################################################
 ##### MAKE ANEUPLOIDY AND PER CHROMOSOME VERIFYBAMID REPORTS FOR ALL SAMPLES IN THE SAMPLE SHEET #####
@@ -292,26 +315,3 @@ echo
 		| awk 'BEGIN {print "SAMPLE_GROUP,TASK_GROUP,TASK,HOST,EPOCH_START,EPOCH_END,WC_MIN,TIMESTAMP_START,TIMESTAMP_END"} \
 		{print $0}' \
 	>|$CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.FIXED.csv"
-
-#############################################################
-##### Summarize Wall Clock times ############################
-##### This is probably garbage. I'll look at this later #####
-#############################################################
-
-# sed 's/,/\t/g' $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".WALL.CLOCK.TIMES.csv" \
-# | sort -k 1,1 -k 2,2 -k 3,3 \
-# | awk 'BEGIN {OFS="\t"} {print $0,($6-$5),($6-$5)/60,($6-$5)/3600}' \
-# | $DATAMASH/datamash -s -g 1,2 max 7 max 8 max 9 | tee $CORE_PATH/$PROJECT_MS/TEMP/WALL.CLOCK.TIMES.BY.GROUP.txt \
-# | $DATAMASH/datamash -g 1 sum 3 sum 4 sum 5 \
-# | awk 'BEGIN {print "SAMPLE_PROJECT_MS","WALL_CLOCK_SECONDS","WALL_CLOCK_MINUTES","WALL_CLOCK_HOURS"} {print $0}' \
-# | sed -r 's/[[:space:]]+/,/g' \
-# >| $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".WALL.CLOCK.TIMES.BY_SAMPLE.csv"
-
-# sed 's/\t/,/g' $CORE_PATH/$PROJECT_MS/TEMP/WALL.CLOCK.TIMES.BY.GROUP.txt \
-# | awk 'BEGIN {print "SAMPLE_PROJECT_MS","TASK_GROUP","WALL_CLOCK_SECONDS","WALL_CLOCK_MINUTES","WALL_CLOCK_HOURS"} {print $0}' \
-# | sed -r 's/[[:space:]]+/,/g' \
-# >| $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".WALL.CLOCK.TIMES.BY_SAMPLE_GROUP.csv"
-
-# echo PROJECT_MS finished at `date` >> $CORE_PATH/$PROJECT_MS/REPORTS/PROJECT_MS_START_END_TIMESTAMP.txt
-
-# todo: oxidation report?

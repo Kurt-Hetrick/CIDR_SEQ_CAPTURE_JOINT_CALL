@@ -116,6 +116,9 @@
 	KNOWN_SNPS="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/b37/dbsnp_138.b37.excluding_sites_after_129.vcf"
 	VERACODE_CSV="/mnt/linuxtools/CIDRSEQSUITE/Veracode_hg18_hg19.csv"
 	MERGED_CUTTING_BED_FILE="/mnt/research/active/H_Cutting_CFTR_WGHum-SeqCustom_1_Reanalysis/BED_Files/H_Cutting_phase_1plus2_super_file.bed"
+	REF_DICT="/mnt/research/tools/PIPELINE_FILES/bwa_mem_0.7.5a_ref/human_g1k_v37_decoy.dict"
+	# what is used in the clinical exome pipeline line...at least at first. basically longest transcript per translated gene
+	REF_SEQ_TRANSCRIPTS="/mnt/research/tools/PIPELINE_FILES/GRCh37_aux_files/RefSeq.Unique.GRCh37.FINAL.19Feb2018.bed"
 
 ##################################################
 ##################################################
@@ -1568,7 +1571,9 @@ done
 					"'$DATAMASH_DIR'",\
 					"'$PROJECT_MS'",\
 					"'$PREFIX'",\
-					"'$SAMPLE_SHEET'" "\n" "sleep 0.1s"}'		
+					"'$SAMPLE_SHEET'",\
+					"'$BEDTOOLS_DIR'",\
+					"'$REF_SEQ_TRANSCRIPTS'" "\n" "sleep 0.1s"}'
 
 # email when finished submitting
 

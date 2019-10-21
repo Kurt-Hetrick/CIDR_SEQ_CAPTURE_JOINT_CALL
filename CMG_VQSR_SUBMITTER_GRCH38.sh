@@ -121,9 +121,11 @@
 	HG19_REF="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/hg19/ucsc.hg19.fasta"
 	HG38_TO_HG19_CHAIN="/mnt/shared_resources/public_resources/liftOver_chain/hg38ToHg19.over.chain"
 	HG19_DICT="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/hg19/ucsc.hg19.dict"
-	# not doing this right now. if we start doing MT captures then have to look into hg19 to hg18 to b37...
-		# HG19_TO_B37_CHAIN=""
-		# B37_DICT=""
+	REF_SEQ_TRANSCRIPTS="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/RefSeq.Unique.FINAL.19Feb2018.liftover.hg38.bed"
+		# THIS IS A LIFTOVER FROM THE 1ST VERSION CLINICAL EXOME DEFINITION. WHICH WAS BASICALLY THE LONGEST TRANSCRIPT PER TRANSLATED GENE.
+		# md5 7ea68d65a046934f9f2401b56d5893b8
+			# 107 records did not liftover involving 42 genes
+			# /mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/RefSeq.Unique.FINAL.19Feb2018.liftover.hg38.rejected.bed
 
 ##################################################
 ##################################################
@@ -1693,7 +1695,9 @@ done
 					"'$DATAMASH_DIR'",\
 					"'$PROJECT_MS'",\
 					"'$PREFIX'",\
-					"'$SAMPLE_SHEET'" "\n" "sleep 0.1s"}'		
+					"'$SAMPLE_SHEET'",\
+					"'$BEDTOOLS_DIR'",\
+					"'$REF_SEQ_TRANSCRIPTS'" "\n" "sleep 0.1s"}'
 
 # email when finished submitting
 
