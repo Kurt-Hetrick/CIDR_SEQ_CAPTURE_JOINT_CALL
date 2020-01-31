@@ -239,7 +239,7 @@
 
 				# make sure that there is EOF
 				# remove CARRIAGE RETURNS
-				# remove CHR PREFIXES (THIS IS FOR GRCH37)
+				# remove CHR PREFIXES for sorting and then put it back afterwards
 				# CONVERT VARIABLE LENGTH WHITESPACE FIELD DELIMETERS TO SINGLE TAB.
 
 					awk 1 $PROJECT_BAIT_BED \
@@ -248,9 +248,9 @@
 
 				# SORT TO REF ORDER
 
-					(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n ; \
-						awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n ; \
-						awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) \
+					(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n | awk '{print "chr"$0}' ; \
+						awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n | awk '{print "chr"$0}' ; \
+						awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) | awk '{print "chr"$0}' \
 					>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed
 
 				# get a line count for the number of for the bed file above
@@ -1588,5 +1588,5 @@ done
 	HAPMAP_COUNT=`awk '{print "basename",$1,".g.vcf.gz"}' $GVCF_LIST | bash | grep -v ^[0-9] | wc -l`
 
 	printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`\nby `whoami`\nMULTI-SAMPLE VCF OUTPUT PROJECT IS:\n$PROJECT_MS\nVCF PREFIX IS:\n$PREFIX\nSCATTER IS $SCATTER_COUNT\n$TOTAL_SAMPLES samples called together\n$STUDY_COUNT study samples\n$HAPMAP_COUNT HapMap samples" \
-		| mail -s "$PERSON_NAME has submitted HARD_FILTER_ALL_SUBMITTER.sh" \
+		| mail -s "$PERSON_NAME has submitted HARD_FILTER_ALL_SUBMITTER_HG19.sh" \
 			$SEND_TO
