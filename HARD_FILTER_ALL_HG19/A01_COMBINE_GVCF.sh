@@ -26,11 +26,11 @@
 ##### END QSUB PARAMETER SETTINGS #####
 #######################################
 
-# export all variables, useful to find out what compute node the program was executed on
-set
+	# export all variables, useful to find out what compute node the program was executed on
+		set
 
-# create a blank lane b/w the output variables and the program logging output
-echo
+	# create a blank lane b/w the output variables and the program logging output
+		echo
 
 # INPUT PARAMETERS
 
@@ -44,7 +44,7 @@ echo
 	PREFIX=$7
 	BED_FILE_NAME=$8
 
-PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
+		PGVCF_LIST_NAME=$(basename $PGVCF_LIST .list)
 
 START_COMBINE_GVCF=`date '+%s'`
 
@@ -69,9 +69,9 @@ START_COMBINE_GVCF=`date '+%s'`
 	CMD=$CMD' --annotation AlleleBalanceBySample'
 	CMD=$CMD' --annotation AlleleBalance'
 
-echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo $CMD | bash
+		echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo $CMD | bash
 
 END_COMBINE_GVCF=`date '+%s'`
 

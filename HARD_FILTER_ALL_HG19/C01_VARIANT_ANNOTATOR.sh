@@ -27,10 +27,10 @@
 #######################################
 
 # export all variables, useful to find out what compute node the program was executed on
-set
+	set
 
 # create a blank lane b/w the output variables and the program logging output
-echo
+	echo
 
 # INPUT PARAMETERS
 
@@ -64,13 +64,11 @@ START_VARIANT_ANNOTATOR=`date '+%s'`
 	CMD=$CMD' -A TandemRepeatAnnotator'
 	CMD=$CMD' -A HomopolymerRun'
 
-echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo $CMD | bash
+		echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo $CMD | bash
 
 END_VARIANT_ANNOTATOR=`date '+%s'`
-
-HOSTNAME=`hostname`
 
 echo $PROJECT_MS",C01,VARIANT_ANNOTATOR,"$HOSTNAME","$START_VARIANT_ANNOTATOR","$END_VARIANT_ANNOTATOR \
 >> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"

@@ -26,32 +26,30 @@
 ##### END QSUB PARAMETER SETTINGS #####
 #######################################
 
-# export all variables, useful to find out what compute node the program was executed on
-set
+	# export all variables, useful to find out what compute node the program was executed on
+		set
 
-# create a blank lane b/w the output variables and the program logging output
-echo
+	# create a blank lane b/w the output variables and the program logging output
+		echo
 
 # INPUT VARIABLES
 
-SAMTOOLS_0118_DIR=$1
+	SAMTOOLS_0118_DIR=$1
 
-CORE_PATH=$2
-PROJECT_SAMPLE=$3
-SM_TAG=$4
+	CORE_PATH=$2
+	PROJECT_SAMPLE=$3
+	SM_TAG=$4
 
 START_KNOWN_TITV=`date '+%s'`
 
-CMD=$SAMTOOLS_0118_DIR'/bcftools/vcfutils.pl qstats '$CORE_PATH'/'$PROJECT_SAMPLE'/TEMP/'$SM_TAG'.Release.Known.TiTv.vcf'
-CMD=$CMD' >| '$CORE_PATH'/'$PROJECT_SAMPLE'/REPORTS/TI_TV_MS/'$SM_TAG'_Known_.titv.txt'
+	CMD=$SAMTOOLS_0118_DIR'/bcftools/vcfutils.pl qstats '$CORE_PATH'/'$PROJECT_SAMPLE'/TEMP/'$SM_TAG'.Release.Known.TiTv.vcf'
+	CMD=$CMD' >| '$CORE_PATH'/'$PROJECT_SAMPLE'/REPORTS/TI_TV_MS/'$SM_TAG'_Known_.titv.txt'
 
-echo $CMD >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
-echo >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
-echo $CMD | bash
+		echo $CMD >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
+		echo >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
+		echo $CMD | bash
 
 END_KNOWN_TITV=`date '+%s'`
-
-HOSTNAME=`hostname`
 
 echo $PROJECT_SAMPLE",M01,KNOWN_TITV,"$HOSTNAME","$START_KNOWN_TITV","$END_KNOWN_TITV \
 >> $CORE_PATH/$PROJECT_SAMPLE/REPORTS/$PROJECT_SAMPLE".JOINT.CALL.WALL.CLOCK.TIMES.csv"

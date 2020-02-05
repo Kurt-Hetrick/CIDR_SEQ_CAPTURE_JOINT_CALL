@@ -27,44 +27,42 @@
 #######################################
 
 # export all variables, useful to find out what compute node the program was executed on
-set
+	set
 
 # create a blank lane b/w the output variables and the program logging output
-echo
+	echo
 
 # INPUT PARAMETERS
 
-JAVA_1_8=$1
-LAB_QC_DIR=$2
-CORE_PATH=$3
+	JAVA_1_8=$1
+	LAB_QC_DIR=$2
+	CORE_PATH=$3
 
-PROJECT_MS=$4
-SAMPLE_SHEET=$5
+	PROJECT_MS=$4
+	SAMPLE_SHEET=$5
 
 START_LAB_PREP_METRICS=`date '+%s'`
 
 SAMPLE_SHEET_NAME=`basename $SAMPLE_SHEET .csv`
 
 # Generates a QC report for lab specific metrics including Physique Report, Samples Table, Sequencer XML data, Pca and Phoenix. Does not check if samples are dropped.
-                # [1] path_to_sample_sheet
-                # [2] path_to_seq_proj ($CORE_PATH)
-                # [3] path_to_output_file
+	# [1] path_to_sample_sheet
+	# [2] path_to_seq_proj ($CORE_PATH)
+	# [3] path_to_output_file
 
-$JAVA_1_8/java -jar $LAB_QC_DIR/EnhancedSequencingQCReport.jar \
--lab_qc_metrics \
-$SAMPLE_SHEET \
-$CORE_PATH \
-$CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".LAB_PREP_METRICS.csv"
+		$JAVA_1_8/java -jar $LAB_QC_DIR/EnhancedSequencingQCReport.jar \
+		-lab_qc_metrics \
+		$SAMPLE_SHEET \
+		$CORE_PATH \
+		$CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".LAB_PREP_METRICS.csv"
 
 END_LAB_PREP_METRICS=`date '+s'`
 
-HOSTNAME=`hostname`
-
-(head -n 1 $CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".LAB_PREP_METRICS.csv" \
-	| awk '{print $0 ",EPOCH_TIME"}' ; \
-	awk 'NR>1 {print $0 "," "'$START_LAB_PREP_METRICS'"}' \
-	$CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".LAB_PREP_METRICS.csv" \
-	| sort -k 1,1 ) \
+	(head -n 1 $CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".LAB_PREP_METRICS.csv" \
+		| awk '{print $0 ",EPOCH_TIME"}' ; \
+		awk 'NR>1 {print $0 "," "'$START_LAB_PREP_METRICS'"}' \
+		$CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".LAB_PREP_METRICS.csv" \
+		| sort -k 1,1 ) \
 	>| $CORE_PATH/$PROJECT_MS/REPORTS/LAB_PREP_REPORTS_MS/$SAMPLE_SHEET_NAME".LAB_PREP_METRICS.csv"
 
 echo $PROJECT_MS,X.01,LAB_QC_PREP_METRICS,$HOSTNAME,$START_LAB_PREP_METRICS_METRICS,$END_LAB_PREP_METRICS \

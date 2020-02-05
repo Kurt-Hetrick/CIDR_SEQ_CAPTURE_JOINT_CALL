@@ -63,9 +63,9 @@ START_FILTER_SNV=`date '+%s'`
 	CMD=$CMD' --filterName "ReadPosRankSum"'
 	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.raw.HC.HardFiltered.SNP.vcf.gz'
 
-echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo $CMD | bash
+		echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo $CMD | bash
 
 END_FILTER_SNV=`date '+%s'`
 

@@ -27,10 +27,10 @@
 #######################################
 
 	# export all variables, useful to find out what compute node the program was executed on
-	set
+		set
 
 	# create a blank lane b/w the output variables and the program logging output
-	echo
+		echo
 
 # INPUT VARIABLES
 

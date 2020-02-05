@@ -29,7 +29,10 @@
 	module load gcc/7.2.0
 
 	# CHANGE SCRIPT DIR TO WHERE YOU HAVE HAVE THE SCRIPTS BEING SUBMITTED
-	SCRIPT_DIR="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/HARD_FILTER_ALL_HG19"
+
+		SUBMITTER_SCRIPT_PATH=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+
+		SCRIPT_DIR="$SUBMITTER_SCRIPT_PATH/HARD_FILTER_ALL_HG19"
 
 	# Directory where sequencing projects are located
 	CORE_PATH="/mnt/research/active"
@@ -55,10 +58,6 @@
 		| awk '{print $1}'`
 
 	 # | awk '{print $1,"-l \x27hostname=!DellR730-03\x27"}'`
-
-	# EVENTUALLY I WANT THIS SET UP AS AN OPTION WITH A DEFAULT OF X
-
-	PRIORITY="-40"
 
 	# eventually, i want to push this out to something...maybe in the vcf file header.
 	PIPELINE_VERSION=`git --git-dir=$SCRIPT_DIR/../.git --work-tree=$SCRIPT_DIR/.. log --pretty=format:'%h' -n 1`
@@ -113,7 +112,7 @@
 	ONEKG_INDELS_VCF="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/hg19/Mills_and_1000G_gold_standard.indels.hg19.vcf"
 	P3_1KG="/mnt/research/tools/PIPELINE_FILES/hg19_aux_files/ALL.wgs.phase3_shapeit2_mvncall_integrated_v5.20130502.sites.liftover.hg19.vcf.gz"
 	ExAC="/mnt/research/tools/PIPELINE_FILES/hg19_aux_files/ExAC.r0.3.sites.vep.hg19.liftover.vcf"
-	KNOWN_SNPS="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/hg19/dbsnp_138.b37.excluding_sites_after_129.vcf"
+	KNOWN_SNPS="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/hg19/dbsnp_138.hg19.excluding_sites_after_129.vcf"
 	VERACODE_CSV="/mnt/linuxtools/CIDRSEQSUITE/Veracode_hg18_hg19.csv"
 	MERGED_CUTTING_BED_FILE="/mnt/research/active/H_Cutting_CFTR_WGHum-SeqCustom_1_Reanalysis/BED_Files/H_Cutting_phase_1plus2_super_file.bed"
 	REF_DICT="/mnt/research/tools/PIPELINE_FILES/GATK_resource_bundle/2.8/hg19/ucsc.hg19.dict"
@@ -250,7 +249,7 @@
 
 					(awk '$1~/^[0-9]/' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k1,1n -k2,2n | awk '{print "chr"$0}' ; \
 						awk '$1=="X"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n | awk '{print "chr"$0}' ; \
-						awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n) | awk '{print "chr"$0}' \
+						awk '$1=="Y"' $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_BED_FILE.bed | sort -k 2,2n | awk '{print "chr"$0}') \
 					>| $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/FORMATTED_AND_SORTED_BED_FILE.bed
 
 				# get a line count for the number of for the bed file above

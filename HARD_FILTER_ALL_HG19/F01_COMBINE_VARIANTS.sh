@@ -26,11 +26,11 @@
 ##### END QSUB PARAMETER SETTINGS #####
 #######################################
 
-# export all variables, useful to find out what compute node the program was executed on
-	set
+	# export all variables, useful to find out what compute node the program was executed on
+		set
 
-# create a blank lane b/w the output variables and the program logging output
-	echo
+	# create a blank lane b/w the output variables and the program logging output
+		echo
 
 # INPUT PARAMETERS
 
@@ -54,9 +54,9 @@ START_COMBINE_VARIANTS=`date '+%s'`
 	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.HardFiltered.SNP.INDEL.vcf.gz'
 
-echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo $CMD | bash
+		echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo $CMD | bash
 
 END_COMBINE_VARIANTS=`date '+%s'`
 

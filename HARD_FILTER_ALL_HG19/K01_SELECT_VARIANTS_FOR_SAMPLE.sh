@@ -27,10 +27,10 @@
 #######################################
 
 	# export all variables, useful to find out what compute node the program was executed on
-	set
+		set
 
 	# create a blank lane b/w the output variables and the program logging output
-	echo
+		echo
 
 # INPUT VARIABLES
 
@@ -60,9 +60,9 @@ START_SELECT_ALL_SAMPLE=`date '+%s'`
 	CMD=$CMD' --keep-original-ac'
 	CMD=$CMD' --sample-name '$SM_TAG
 
-echo $CMD >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
-echo >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
-echo $CMD | bash
+		echo $CMD >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
+		echo >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
+		echo $CMD | bash
 
 END_SELECT_ALL_SAMPLE=`date '+%s'`
 

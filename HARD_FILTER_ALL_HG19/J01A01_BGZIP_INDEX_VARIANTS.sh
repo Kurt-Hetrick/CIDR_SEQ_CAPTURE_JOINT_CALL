@@ -26,11 +26,11 @@
 ##### END QSUB PARAMETER SETTINGS #####
 #######################################
 
-# export all variables, useful to find out what compute node the program was executed on
-set
+	# export all variables, useful to find out what compute node the program was executed on
+		set
 
-# create a blank lane b/w the output variables and the program logging output
-echo
+	# create a blank lane b/w the output variables and the program logging output
+		echo
 
 # INPUT PARAMETERS
 

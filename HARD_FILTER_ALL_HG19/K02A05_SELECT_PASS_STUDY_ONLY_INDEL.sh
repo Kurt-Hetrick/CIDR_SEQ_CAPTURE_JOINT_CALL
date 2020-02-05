@@ -27,10 +27,10 @@
 #######################################
 
 	# export all variables, useful to find out what compute node the program was executed on
-	set
+		set
 
 	# create a blank lane b/w the output variables and the program logging output
-	echo
+		echo
 
 # INPUT VARIABLES
 
@@ -45,32 +45,30 @@
 
 START_STUDY_INDELS_PASS=`date '+%s'`
 
-# for the study samples...via excluding the hapmap samples
-# select passing INDEL,MIXED,MNP,SYMBOLIC sites that are only polymorphic in the hapmap samples
-# REALLY WE ARE GOING FOR NON-SNP SITES HERE
+	# for the study samples...via excluding the hapmap samples
+	# select passing INDEL,MIXED,MNP,SYMBOLIC sites that are only polymorphic in the hapmap samples
+	# REALLY WE ARE GOING FOR NON-SNP SITES HERE
 
-	CMD=$JAVA_1_8'/java -jar'
-	CMD=$CMD' '$GATK_DIR_4011'/gatk-package-4.0.11.0-local.jar'
-	CMD=$CMD' SelectVariants'
-	CMD=$CMD' --reference '$REF_GENOME
-	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.HF.1KG.ExAC3.REFINED.vcf'
-	CMD=$CMD' --output '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'.BEDsuperset.VQSR.INDEL.STUDY.SAMPLES.PASS.vcf'
-	CMD=$CMD' --select-type-to-include INDEL'
-	CMD=$CMD' --select-type-to-include MIXED'
-	CMD=$CMD' --select-type-to-include MNP'
-	CMD=$CMD' --select-type-to-include SYMBOLIC'
-	CMD=$CMD' --exclude-non-variants'
-	CMD=$CMD' --exclude-filtered'
-	CMD=$CMD' --remove-unused-alternates'
-	CMD=$CMD' --exclude-sample-name '$HAPMAP_SAMPLE_LIST
+		CMD=$JAVA_1_8'/java -jar'
+		CMD=$CMD' '$GATK_DIR_4011'/gatk-package-4.0.11.0-local.jar'
+		CMD=$CMD' SelectVariants'
+		CMD=$CMD' --reference '$REF_GENOME
+		CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.HF.1KG.ExAC3.REFINED.vcf'
+		CMD=$CMD' --output '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'.BEDsuperset.VQSR.INDEL.STUDY.SAMPLES.PASS.vcf'
+		CMD=$CMD' --select-type-to-include INDEL'
+		CMD=$CMD' --select-type-to-include MIXED'
+		CMD=$CMD' --select-type-to-include MNP'
+		CMD=$CMD' --select-type-to-include SYMBOLIC'
+		CMD=$CMD' --exclude-non-variants'
+		CMD=$CMD' --exclude-filtered'
+		CMD=$CMD' --remove-unused-alternates'
+		CMD=$CMD' --exclude-sample-name '$HAPMAP_SAMPLE_LIST
 
-echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo $CMD | bash
+			echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+			echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+			echo $CMD | bash
 
 END_STUDY_INDELS_PASS=`date '+%s'`
-
-HOSTNAME=`hostname`
 
 echo $PROJECT_MS",J01,STUDY_INDELS_PASS,"$HOSTNAME","$START_STUDY_INDELS_PASS","$END_STUDY_INDELS_PASS \
 >> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"

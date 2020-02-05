@@ -27,10 +27,10 @@
 #######################################
 
 	# export all variables, useful to find out what compute node the program was executed on
-	set
+		set
 
 	# create a blank lane b/w the output variables and the program logging output
-	echo
+		echo
 
 # INPUT VARIABLES
 
@@ -60,13 +60,11 @@ START_STUDY_SNP_PASS=`date '+%s'`
 	CMD=$CMD' --remove-unused-alternates'
 	CMD=$CMD' --exclude-sample-name '$HAPMAP_SAMPLE_LIST
 
-echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo $CMD | bash
+		echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo $CMD | bash
 
 END_STUDY_SNP_PASS=`date '+%s'`
-
-HOSTNAME=`hostname`
 
 echo $PROJECT_MS",J01,STUDY_SNP_PASS,"$HOSTNAME","$START_STUDY_SNP_PASS","$END_STUDY_SNP_PASS \
 >> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"

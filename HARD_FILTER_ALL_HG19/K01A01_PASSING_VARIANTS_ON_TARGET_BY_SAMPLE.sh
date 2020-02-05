@@ -26,11 +26,11 @@
 ##### END QSUB PARAMETER SETTINGS #####
 #######################################
 
-# export all variables, useful to find out what compute node the program was executed on
-set
+	# export all variables, useful to find out what compute node the program was executed on
+		set
 
-# create a blank lane b/w the output variables and the program logging output
-echo
+	# create a blank lane b/w the output variables and the program logging output
+		echo
 
 # INPUT VARIABLES
 
@@ -58,13 +58,11 @@ START_SAMPLE_PASS_TARGET_VARIANT=`date '+%s'`
 	CMD=$CMD' -sn '$SM_TAG
 	CMD=$CMD' -L '$TARGET_BED
 
-echo $CMD >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
-echo >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
-echo $CMD | bash
+		echo $CMD >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
+		echo >> $CORE_PATH/$PROJECT_SAMPLE/COMMAND_LINES/$SM_TAG".COMMAND.LINES.txt"
+		echo $CMD | bash
 
 END_SAMPLE_PASS_TARGET_VARIANT=`date '+%s'`
-
-HOSTNAME=`hostname`
 
 echo $PROJECT_SAMPLE",L01,SAMPLE_PASS_TARGET_VARIANT,"$HOSTNAME","$START_SAMPLE_PASS_TARGET_VARIANT","$END_SAMPLE_PASS_TARGET_VARIANT \
 >> $CORE_PATH/$PROJECT_SAMPLE/REPORTS/$PROJECT_SAMPLE".JOINT.CALL.WALL.CLOCK.TIMES.csv"

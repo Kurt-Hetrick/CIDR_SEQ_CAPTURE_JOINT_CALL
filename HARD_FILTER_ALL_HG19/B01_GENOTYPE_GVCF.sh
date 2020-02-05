@@ -27,10 +27,10 @@
 #######################################
 
 # export all variables, useful to find out what compute node the program was executed on
-set
+	set
 
 # create a blank lane b/w the output variables and the program logging output
-echo
+	echo
 
 # INPUT PARAMETERS
 
@@ -51,9 +51,9 @@ START_GENOTYPE_GVCF=`date '+%s'`
 	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 	CMD=$CMD' -R '$REF_GENOME
 
-for VCF in $(ls $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE/*$PREFIX"."$BED_FILE_NAME.g.vcf)
-	do
-	  CMD=$CMD' --variant '$VCF
+	for VCF in $(ls $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE/*$PREFIX"."$BED_FILE_NAME.g.vcf)
+		do
+		  CMD=$CMD' --variant '$VCF
 	done
 
 	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.'$BED_FILE_NAME'.temp.vcf'
@@ -70,13 +70,11 @@ for VCF in $(ls $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE/*$PREFIX"."$BED_FILE_NAME.
 	CMD=$CMD' --annotation AlleleBalance'
 	CMD=$CMD' --annotateNDA'
 
-echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo $CMD | bash
+		echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo $CMD | bash
 
 END_GENOTYPE_GVCF=`date '+%s'`
-
-HOSTNAME=`hostname`
 
 echo $PROJECT_MS",B01,GENOTYPE_GVCF,"$HOSTNAME","$START_GENOTYPE_GVCF","$END_GENOTYPE_GVCF \
 >> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"

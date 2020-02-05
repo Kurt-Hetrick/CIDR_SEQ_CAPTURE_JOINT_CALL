@@ -26,11 +26,11 @@
 ##### END QSUB PARAMETER SETTINGS #####
 #######################################
 
-# export all variables, useful to find out what compute node the program was executed on
-set
+	# export all variables, useful to find out what compute node the program was executed on
+		set
 
-# create a blank lane b/w the output variables and the program logging output
-echo
+	# create a blank lane b/w the output variables and the program logging output
+		echo
 
 # INPUT PARAMETERS
 
@@ -58,20 +58,18 @@ START_CAT_VARIANTS=`date '+%s'`
 	CMD=$CMD' -R '$REF_GENOME
 	CMD=$CMD' -assumeSorted'
 
-for VCF in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BF*.r.vcf.gz)
-	do
-	  CMD=$CMD' --variant '$VCF
+	for VCF in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BF*.r.vcf.gz)
+		do
+		  CMD=$CMD' --variant '$VCF
 	done
 
-CMD=$CMD' -out '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.HF.1KG.ExAC3.REFINED.vcf'
+	CMD=$CMD' -out '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.HF.1KG.ExAC3.REFINED.vcf'
 
-echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo $CMD | bash
+		echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo $CMD | bash
 
 END_CAT_VARIANTS=`date '+%s'`
-
-HOSTNAME=`hostname`
 
 echo $PROJECT_MS",J01,CAT_REFINED_VARIANTS,"$HOSTNAME","$START_CAT_VARIANTS","$END_CAT_VARIANTS \
 >> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"

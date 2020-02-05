@@ -27,10 +27,10 @@
 #######################################
 
 	# export all variables, useful to find out what compute node the program was executed on
-	set
+		set
 
 	# create a blank lane b/w the output variables and the program logging output
-	echo
+		echo
 
 # INPUT VARIABLES
 
@@ -52,13 +52,11 @@ START_ALL_SNP=`date '+%s'`
 	CMD=$CMD' --output '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/'$PREFIX'.BEDsuperset.VQSR.SNP.ALL.SAMPLES.vcf'
 	CMD=$CMD' --select-type-to-include SNP'
 
-echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo $CMD | bash
+		echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+		echo $CMD | bash
 
 END_ALL_SNP=`date '+%s'`
-
-HOSTNAME=`hostname`
 
 echo $PROJECT_MS",J01,ALL_SNP,"$HOSTNAME","$START_ALL_SNP","$END_ALL_SNP \
 >> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"
