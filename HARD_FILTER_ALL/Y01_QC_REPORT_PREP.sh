@@ -433,11 +433,20 @@
 ##### PCT_A,PCT_C,PCT_G,PCT_T,PCT_N #######################
 ###########################################################
 
+	BASE_DISTIBUTION_BY_CYCLE_ROW_COUNT=(`wc -l $CORE_PATH/$PROJECT_SAMPLE/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/$SM_TAG".base_distribution_by_cycle_metrics.txt"`)
+
 	if [[ ! -f $CORE_PATH/$PROJECT_SAMPLE/REPORTS//BASE_DISTRIBUTION_BY_CYCLE/METRICS/$SM_TAG".base_distribution_by_cycle_metrics.txt" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| $DATAMASH_DIR/datamash transpose \
 			>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
+
+		elif [[ -f $CORE_PATH/$PROJECT_SAMPLE/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/$SM_TAG".base_distribution_by_cycle_metrics.txt" && $BASE_DISTIBUTION_BY_CYCLE_ROW_COUNT -lt 8 ]]
+			then
+				echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
+				| datamash transpose \
+				>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
+
 		else
 			sed '/^$/d' $CORE_PATH/$PROJECT_SAMPLE/REPORTS//BASE_DISTRIBUTION_BY_CYCLE/METRICS/$SM_TAG".base_distribution_by_cycle_metrics.txt" \
 				| awk 'NR>6' \
