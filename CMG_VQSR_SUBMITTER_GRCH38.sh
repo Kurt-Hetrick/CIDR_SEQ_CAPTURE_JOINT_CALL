@@ -100,7 +100,7 @@
 	DATAMASH_DIR="/mnt/linuxtools/DATAMASH/datamash-1.0.6"
 	R_DIRECTORY="/mnt/linuxtools/R/R-3.1.1/bin"
 	GATK_DIR_4011="/mnt/linuxtools/GATK/gatk-4.0.11.0"
-	PICARD_DIR="/mnt/linuxtools/PICARD/picard-2.18.25"
+	PICARD_DIR="/mnt/linuxtools/PICARD/picard-2.22.0"
 
 ##################
 # PIPELINE FILES #
