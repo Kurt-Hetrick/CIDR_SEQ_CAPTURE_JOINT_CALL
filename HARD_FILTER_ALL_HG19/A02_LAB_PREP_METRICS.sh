@@ -27,9 +27,10 @@
 #######################################
 
 # export all variables, useful to find out what compute node the program was executed on
+# redirecting stderr/stdout to file as a log.
+
 	set
 
-# create a blank lane b/w the output variables and the program logging output
 	echo
 
 # INPUT PARAMETERS
@@ -40,10 +41,9 @@
 
 	PROJECT_MS=$4
 	SAMPLE_SHEET=$5
+		SAMPLE_SHEET_NAME=`basename $SAMPLE_SHEET .csv`
 
 START_LAB_PREP_METRICS=`date '+%s'`
-
-SAMPLE_SHEET_NAME=`basename $SAMPLE_SHEET .csv`
 
 # Generates a QC report for lab specific metrics including Physique Report, Samples Table, Sequencer XML data, Pca and Phoenix. Does not check if samples are dropped.
 	# [1] path_to_sample_sheet
@@ -55,6 +55,20 @@ SAMPLE_SHEET_NAME=`basename $SAMPLE_SHEET .csv`
 		$SAMPLE_SHEET \
 		$CORE_PATH \
 		$CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".LAB_PREP_METRICS.csv"
+
+	# check the exit signal at this point.
+
+		SCRIPT_STATUS=`echo $?`
+
+	# if exit does not equal 0 then exit with whatever the exit signal is at the end.
+	# also write to file that this job failed
+
+		if [ "$SCRIPT_STATUS" -ne 0 ]
+		 then
+			echo $PROJECT $HOSTNAME $JOB_NAME $USER $SCRIPT_STATUS $SGE_STDERR_PATH \
+			>> $CORE_PATH/$PROJECT/TEMP/$SAMPLE_SHEET_NAME"_"$SUBMIT_STAMP"_ERRORS.txt"
+			exit $SCRIPT_STATUS
+		fi
 
 END_LAB_PREP_METRICS=`date '+s'`
 
@@ -77,6 +91,6 @@ $CORE_PATH/$PROJECT_MS/TEMP/$SAMPLE_SHEET_NAME".LAB_PREP_METRICS.csv" \
 
 echo $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
 
-# if file is not present exit !=0
+# exit with the signal from the program
 
-# ls $CORE_PATH/$PROJECT_MS/TEMP/$SM_TAG"."$CHROMOSOME".g.vcf.gz.tbi"
+	exit $SCRIPT_STATUS

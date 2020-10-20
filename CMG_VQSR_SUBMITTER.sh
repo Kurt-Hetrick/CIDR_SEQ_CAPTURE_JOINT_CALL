@@ -1047,7 +1047,7 @@ done
 			SAMPLE_REF_GENOME=${SAMPLE_INFO_ARRAY[5]}
 
 			UNIQUE_ID_SM_TAG=$(echo $SM_TAG | sed 's/@/_/g') # If there is an @ in the qsub or holdId name it breaks
-			BARCODE_2D=$(echo $SM_TAG | awk '{split($1,SM_TAG,/[@-]/); print SM_TAG[2]}') # SM_TAG = RIS_ID[@-]BARCODE_2D
+			BARCODE_2D=$(echo $SM_TAG | awk '{n=split($1,SM_TAG,/[@-]/); print SM_TAG[n]}') # SM_TAG = RIS_ID[@-]BARCODE_2D
 		}
 
 	# for each sample make a bunch directories if not already present in the samples defined project directory
@@ -1554,7 +1554,7 @@ done
 		awk 1 $SAMPLE_SHEET \
 			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d; /^,/d' \
 			| awk 'BEGIN {FS=","; OFS="\t"} NR>1 {print $1,$8}' \
-			| awk '{split($2,sm_tag,/[@-]/)} {print sm_tag[2]}' \
+			| awk '{n=split($2,sm_tag,/[@-]/)} {print sm_tag[n]}' \
 			| sort -k 1,1 \
 			| uniq \
 			| $DATAMASH_DIR/datamash \
