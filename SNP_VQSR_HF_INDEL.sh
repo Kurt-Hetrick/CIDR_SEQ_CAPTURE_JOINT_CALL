@@ -29,7 +29,7 @@
 
 		SUBMITTER_SCRIPT_PATH=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
 
-		SCRIPT_DIR="$SUBMITTER_SCRIPT_PATH/STD_VQSR"
+		SCRIPT_DIR="$SUBMITTER_SCRIPT_PATH/SNP_VQSR_HF_INDEL"
 
 	# gcc is so that it can be pushed out to the compute nodes via qsub (-V)
 	module load gcc/7.2.0
@@ -478,9 +478,31 @@ done
 				$PREFIX
 		}
 
+	# Breakout the snps
+
+		EXTRACT_SNV ()
+		{
+			echo \
+			qsub \
+				-S /bin/bash \
+				-cwd \
+				-V \
+				-q $QUEUE_LIST \
+				-p $PRIORITY \
+				-j y \
+			-N E01_EXTRACT_SNV_$PROJECT_MS \
+				-o $CORE_PATH/$PROJECT_MS/LOGS/E01_EXTRACT_SNV.log \
+				-hold_jid D01_CAT_VARIANTS_$PROJECT_MS \
+			$SCRIPT_DIR/E01_EXTRACT_SNV.sh \
+				$JAVA_1_8 \
+				$GATK_DIR \
+				$REF_GENOME \
+				$CORE_PATH \
+				$PROJECT_MS \
+				$PREFIX
+		}
+
 	# run the snp vqsr model
-	# to do: find a better to push out an R version to build the plots
-	# right now, it's buried inside the shell script itself {grrrr}
 
 		VARIANT_RECALIBRATOR_SNV ()
 		{
@@ -492,10 +514,10 @@ done
 				-q $QUEUE_LIST \
 				-p $PRIORITY \
 				-j y \
-			-N E01_VARIANT_RECALIBRATOR_SNV_$PROJECT_MS \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/E01_VARIANT_RECALIBRATOR_SNV.log \
-				-hold_jid D01_CAT_VARIANTS_$PROJECT_MS \
-			$SCRIPT_DIR/E01_VARIANT_RECALIBRATOR_SNV.sh \
+			-N E01-A01-A01_VARIANT_RECALIBRATOR_SNV_$PROJECT_MS \
+				-o $CORE_PATH/$PROJECT_MS/LOGS/E01-A01_VARIANT_RECALIBRATOR_SNV.log \
+				-hold_jid E01-A01_EXTRACT_SNV_$PROJECT_MS \
+			$SCRIPT_DIR/E01-A01-A01_VARIANT_RECALIBRATOR_SNV.sh \
 				$JAVA_1_8 \
 				$GATK_DIR \
 				$REF_GENOME \
@@ -510,36 +532,7 @@ done
 				$SEND_TO
 		}
 
-	# run the indel vqsr model (concurrently done with the snp model above)
-	# to do: find a better to push out an R version to build the plots
-	# right now, it's buried inside the shell script itself {grrrr}
-
-		VARIANT_RECALIBRATOR_INDEL ()
-		{
-			echo \
-			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-				-j y \
-			-N E02_VARIANT_RECALIBRATOR_INDEL_$PROJECT_MS \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/E02_VARIANT_RECALIBRATOR_INDEL.log \
-				-hold_jid D01_CAT_VARIANTS_$PROJECT_MS \
-			$SCRIPT_DIR/E02_VARIANT_RECALIBRATOR_INDEL.sh \
-				$JAVA_1_8 \
-				$GATK_DIR \
-				$REF_GENOME \
-				$ONEKG_INDELS_VCF \
-				$CORE_PATH \
-				$PROJECT_MS \
-				$PREFIX \
-				$R_DIRECTORY
-		}
-
 	# apply the snp vqsr model to the full vcf
-	# this wait for both the snp and indel models to be done generating before running.
 
 		APPLY_RECALIBRATION_SNV ()
 		{
@@ -551,10 +544,10 @@ done
 				-q $QUEUE_LIST \
 				-p $PRIORITY \
 				-j y \
-			-N F01_APPLY_RECALIBRATION_SNV_$PROJECT_MS \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/F01_APPLY_RECALIBRATION_SNV.log \
+			-N E01-A01-A01_APPLY_RECALIBRATION_SNV_$PROJECT_MS \
+				-o $CORE_PATH/$PROJECT_MS/LOGS/E01-A01-A01_APPLY_RECALIBRATION_SNV.log \
 				-hold_jid E01_VARIANT_RECALIBRATOR_SNV_$PROJECT_MS \
-			$SCRIPT_DIR/F01_APPLY_RECALIBRATION_SNV.sh \
+			$SCRIPT_DIR/E01-A01-A01_APPLY_RECALIBRATION_SNV.sh \
 				$JAVA_1_8 \
 				$GATK_DIR \
 				$REF_GENOME \
@@ -563,29 +556,77 @@ done
 				$PREFIX
 		}
 
-	# now apply the indel vqsr model to the full vcf file
+	# Breakout the non-snps
 
-		APPLY_RECALIBRATION_INDEL ()
-		{
-			echo \
-			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-				-j y \
-			-N G01_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/G01_APPLY_RECALIBRATION_INDEL.log \
-				-hold_jid F01_APPLY_RECALIBRATION_SNV_$PROJECT_MS,E02_VARIANT_RECALIBRATOR_INDEL_$PROJECT_MS \
-			$SCRIPT_DIR/G01_APPLY_RECALIBRATION_INDEL.sh \
-				$JAVA_1_8 \
-				$GATK_DIR \
-				$REF_GENOME \
-				$CORE_PATH \
-				$PROJECT_MS \
-				$PREFIX
-		}
+		EXTRACT_INDEL_AND_MIXED ()
+			{
+				echo \
+					qsub \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+					-j y \
+				-N E02_EXTRACT_INDEL_AND_MIXED_$PROJECT_MS \
+					-o $CORE_PATH/$PROJECT_MS/LOGS/E02_EXTRACT_INDEL_AND_MIXED.log \
+					-hold_jid D01_CAT_VARIANTS_$PROJECT_MS \
+				$SCRIPT_DIR/E02_EXTRACT_INDELS_AND_MIXED.sh \
+					$JAVA_1_8 \
+					$GATK_DIR \
+					$REF_GENOME \
+					$CORE_PATH \
+					$PROJECT_MS \
+					$PREFIX
+			}
+
+	# Apply Hard Filters to Indels and Mixed
+
+		HARD_FILTER_INDEL_AND_MIXED ()
+			{
+					echo \
+					qsub \
+						-S /bin/bash \
+						-cwd \
+						-V \
+						-q $QUEUE_LIST \
+						-p $PRIORITY \
+						-j y \
+					-N E02-A01_FILTER_INDEL_AND_MIXED_$PROJECT_MS \
+						-o $CORE_PATH/$PROJECT_MS/LOGS/E02-A01_FILTER_INDEL_AND_MIXED.log \
+						-hold_jid E02_EXTRACT_INDEL_AND_MIXED_$PROJECT_MS \
+					$SCRIPT_DIR/E02-A01_FILTER_INDELS_AND_MIXED.sh \
+						$JAVA_1_8 \
+						$GATK_DIR \
+						$REF_GENOME \
+						$CORE_PATH \
+						$PROJECT_MS \
+						$PREFIX
+			}
+
+	# COMBINE_VARIANTS
+
+		COMBINE_SNV_INDEL_VARIANTS ()
+			{
+				echo \
+				qsub \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+					-j y \
+				-N F01_COMBINE_VARIANTS_$PROJECT_MS \
+					-o $CORE_PATH/$PROJECT_MS/LOGS/F01_COMBINE_VARIANTS.log \
+					-hold_jid E01-A01-A01_APPLY_RECALIBRATION_SNV_$PROJECT_MS,E02-A01_FILTER_INDEL_AND_MIXED_$PROJECT_MS \
+				$SCRIPT_DIR/F01_COMBINE_VARIANTS.sh \
+						$JAVA_1_8 \
+						$GATK_DIR \
+						$REF_GENOME \
+						$CORE_PATH \
+						$PROJECT_MS \
+						$PREFIX
+			}
 
 	# liftover initial final vcf to hg19
 
@@ -599,10 +640,10 @@ done
 				-q $QUEUE_LIST \
 				-p $PRIORITY \
 				-j y \
-			-N G01A01_LIFTOVER_INITIAL_GRCH37_TO_HG19_$PROJECT_MS \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/G01A01_LIFTOVER_INITIAL_MS_TO_HG19.log \
-				-hold_jid G01_APPLY_RECALIBRATION_INDEL_$PROJECT_MS \
-			$SCRIPT_DIR/G01A01_LIFTOVER_INITIAL_GRCH37_TO_HG19.sh \
+			-N G01_LIFTOVER_INITIAL_GRCH37_TO_HG19_$PROJECT_MS \
+				-o $CORE_PATH/$PROJECT_MS/LOGS/G01_LIFTOVER_INITIAL_MS_TO_HG19.log \
+				-hold_jid F01_COMBINE_VARIANTS_$PROJECT_MS \
+			$SCRIPT_DIR/G01_LIFTOVER_INITIAL_GRCH37_TO_HG19.sh \
 				$JAVA_1_8 \
 				$PICARD_DIR \
 				$CORE_PATH \
@@ -627,7 +668,7 @@ done
 				-N G01A01A01_LIFTOVER_INITIAL_HG19_TO_GRCH38_$PROJECT_MS \
 					-o $CORE_PATH/$PROJECT_MS/LOGS/G01A01A01_LIFTOVER_INITIAL_HG19_TO_HG38.log \
 					-hold_jid G01A01_LIFTOVER_INITIAL_GRCH37_TO_HG19_$PROJECT_MS \
-				$SCRIPT_DIR/G01A01A01_LIFTOVER_INITIAL_HG19_TO_GRCH38.sh \
+				$SCRIPT_DIR/G01A01_LIFTOVER_INITIAL_HG19_TO_GRCH38.sh \
 					$JAVA_1_8 \
 					$PICARD_DIR \
 					$CORE_PATH \
@@ -641,13 +682,17 @@ done
 
 	CAT_VARIANTS
 	echo sleep 0.1s
-	VARIANT_RECALIBRATOR_SNV
+	EXTRACT_SNV
 	echo sleep 0.1s
-	VARIANT_RECALIBRATOR_INDEL
+	VARIANT_RECALIBRATOR_SNV
 	echo sleep 0.1s
 	APPLY_RECALIBRATION_SNV
 	echo sleep 0.1s
-	APPLY_RECALIBRATION_INDEL
+	EXTRACT_INDEL_AND_MIXED
+	echo sleep 0.1s
+	HARD_FILTER_INDEL_AND_MIXED
+	echo sleep 0.1s
+	COMBINE_SNV_INDEL_VARIANTS
 	echo sleep 0.1s
 	LIFTOVER_INITIAL_GRCH37_VCF_TO_HG19
 	echo sleep 0.1s
