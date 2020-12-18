@@ -48,7 +48,7 @@ PREFIX=$6
 START_ANNOVAR=`date '+%s'`
 
 cp $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".BEDsuperset.VQSR.SNP.HardFiltered.INDEL.1KG.ExAC3.REFINED.vcf" \
->| $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX/$PREFIX".BEDsuperset.VQSR.SNP.HardFiltered.INDEL.1KG.ExAC3.REFINED.vcf"
+$CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX/$PREFIX".BEDsuperset.VQSR.SNP.HardFiltered.INDEL.1KG.ExAC3.REFINED.vcf"
 
 # fyi after -annovar_directory_annotation the arguments are for
 # 1. path to vcf file directory

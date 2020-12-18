@@ -50,7 +50,7 @@ START_COMBINE_VARIANTS=`date '+%s'`
 	CMD=$CMD' -R '$REF_GENOME
 	CMD=$CMD' --genotypemergeoption UNSORTED'
 	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.SNP.VQSR.vcf.gz'
-	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.raw.HC.HardFiltered.SNP.vcf.gz'
+	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.raw.HC.HardFiltered.INDEL.vcf.gz'
 	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.VQSR.SNP.HardFiltered.INDEL.vcf.gz'
 
