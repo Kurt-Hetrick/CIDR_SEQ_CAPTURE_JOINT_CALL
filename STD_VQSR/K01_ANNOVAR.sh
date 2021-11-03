@@ -47,8 +47,10 @@ PREFIX=$6
 
 START_ANNOVAR=`date '+%s'`
 
-cp $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf" \
->| $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf"
+FINAL_MULTI_SAMPLE_VCF=$(ls ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.BEDsuperset.VQSR.1KG.ExAC3.REFINED{.vcf,.vcf.gz} 2> /dev/null)
+
+zcat -f ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.BEDsuperset.VQSR.1KG.ExAC3.REFINED{.vcf,.vcf.gz} \
+>| ${CORE_PATH}/${PROJECT_MS}/TEMP/ANNOVAR/${PREFIX}/${PREFIX}.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf
 
 # fyi after -annovar_directory_annotation the arguments are for
 # 1. path to vcf file directory
@@ -93,4 +95,4 @@ echo $PROJECT_MS",K01,ANNOVAR,"$HOSTNAME","$START_ANNOVAR","$END_ANNOVAR \
 # check to see if the index is generated which should send an non-zero exit signal if not.
 # eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
 
-ls $CORE_PATH/$PROJECT_MS/REPORTS/ANNOVAR/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.txt"
+ls $CORE_PATH/$PROJECT_MS/REPORTS/ANNOVAR/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED_ANNOVAR_REPORT.txt"

@@ -128,9 +128,9 @@ START_VQSR_SNV=`date '+%s'`
 	# if it ends up failing altogether send a notification saying that I need to look at it.
 	# will probably have to start with removing the MQ annotation and go from there.
 
-		if [[ $SCRIPT_STATUS -eq 0 && $MAX_GAUSSIANS -ge 4 && $MAX_GAUSSIANS -lt 7 ]]
+		if [[ $SCRIPT_STATUS -eq 0 && $MAX_GAUSSIANS -ge 4 && $MAX_GAUSSIANS -lt 8 ]]
 			then
-				printf "The number of max Gaussians has been changed to $MAX_GAUSSIANS for\n \
+				printf "The number of max Gaussians has been changed to $MAX_GAUSSIANS instead of 8 for\n \
 				PROJECT:\n \
 				$PROJECT_MS\n \
 				VCF PREFIX:\n \
