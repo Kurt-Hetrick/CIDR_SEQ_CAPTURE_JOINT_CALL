@@ -480,196 +480,70 @@
 			>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
 	fi
 
-############################################################
-##### GENERATE COUNT PCT,IN DBSNP FOR ON BAIT SNVS #########
-############################################################
-##### THIS IS THE HEADER ###################################
-##### "COUNT_SNV_ON_BAIT","PERCENT_SNV_ON_BAIT_SNP138" #####
-############################################################
+#############################################
+##### VCF METRICS FOR BAIT BED FILE #########
+#############################################
+##### THIS IS THE HEADER ###########################################################################
+##### "BAIT_HET_HOMVAR_RATIO","BAIT_PCT_GQ0_VARIANT","BAIT_TOTAL_GQ0_VARIANT" ######################
+##### "BAIT_TOTAL_HET_DEPTH_SNV","BAIT_TOTAL_SNV","BAIT_NUM_IN_DBSNP_138_SNV","BAIT_NOVEL_SNV" #####
+##### "BAIT_FILTERED_SNV","BAIT_PCT_DBSNP_138_SNV","BAIT_TOTAL_INDEL","BAIT_NOVEL_INDEL" ###########
+##### "BAIT_FILTERED_INDEL","BAIT_PCT_DBSNP_138_INDEL","BAIT_NUM_IN_DBSNP_138_INDEL" ###############
+##### "BAIT_DBSNP_138_INS_DEL_RATIO","BAIT_NOVEL_INS_DEL_RATIO","BAIT_TOTAL_MULTIALLELIC_SNV" ######
+##### "BAIT_NUM_IN_DBSNP_138_MULTIALLELIC_SNV","BAIT_TOTAL_COMPLEX_INDEL" ##########################
+##### "BAIT_NUM_IN_DBSNP_138_COMPLEX_INDEL","BAIT_SNP_REFERENCE_BIAS","BAIT_NUM_SINGLETONS" ########
+####################################################################################################
 
-	if [[ ! -f $CORE_PATH/$PROJECT_SAMPLE/SNV/RELEASE/FILTERED_ON_BAIT/$SM_TAG"_MS_OnBait_SNV.vcf.gz" ]]
-		then
-			echo -e NaN'\t'NaN \
-			| $DATAMASH_DIR/datamash transpose \
-			>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
-		else
+	awk 'BEGIN {OFS="\t"} \
+			$1=="'$SM_TAG'" \
+			{print $2,$3*100,$4,$5,$6,$7,$8,$9,$10*100,$13,$14,$15,$16*100,\
+				$17,$18,$19,$20,$21,$22,$23,$24,$25}' \
+		${CORE_PATH}/${PROJECT_MS}/REPORTS/VCF_METRICS/MULTI_SAMPLE/${PREFIX}_BAIT.variant_calling_detail_metrics.txt \
+		| $DATAMASH_DIR/datamash transpose \
+	>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 
-			zgrep -v "^#" $CORE_PATH/$PROJECT_SAMPLE/SNV/RELEASE/FILTERED_ON_BAIT/$SM_TAG"_MS_OnBait_SNV.vcf.gz" \
-				| awk '{SNV_COUNT++NR} {DBSNP_COUNT+=($3~"rs")} \
-					END {if (SNV_COUNT!="") {print SNV_COUNT,(DBSNP_COUNT/SNV_COUNT)*100} \
-					else {print "0","NaN"}}' \
-				| sed 's/ /\t/g' \
-				| $DATAMASH_DIR/datamash transpose \
-			>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
-	fi
+########################################################################
+##### VCF METRICS FOR TARGET BED FILE ##################################
+########################################################################
+##### THIS IS THE HEADER ################################################################################
+##### "TARGET_HET_HOMVAR_RATIO","TARGET_PCT_GQ0_VARIANT","TARGET_TOTAL_GQ0_VARIANT" #####################
+##### "TARGET_TOTAL_HET_DEPTH_SNV","TARGET_TOTAL_SNV","TARGET_NUM_IN_DBSNP_138_SNV" #####################
+##### "TARGET_NOVEL_SNV","TARGET_FILTERED_SNV","TARGET_PCT_DBSNP_138_SNV","TARGET_TOTAL_INDEL" ##########
+##### "TARGET_NOVEL_INDEL","TARGET_FILTERED_INDEL","TARGET_PCT_DBSNP_138_INDEL" #########################
+##### "TARGET_NUM_IN_DBSNP_138_INDEL","TARGET_DBSNP_138_INS_DEL_RATIO","TARGET_NOVEL_INS_DEL_RATIO" #####
+##### "TARGET_TOTAL_MULTIALLELIC_SNP","TARGET_NUM_IN_DBSNP_138_MULTIALLELIC" ############################
+##### "TARGET_TOTAL_COMPLEX_INDELS,"TARGET_NUM_IN_DBSNP_138_COMPLEX_INDEL" ##############################
+##### "TARGET_SNP_REFERENCE_BIAS","TARGET_NUM_SINGLETONS" ###############################################
+#########################################################################################################
 
-#######################################################################################
-##### GENERATE COUNT PCT,IN DBSNP FOR ON TARGET SNVS ##################################
-#######################################################################################
-##### THIS IS THE HEADER ##############################################################
-##### "COUNT_SNV_ON_TARGET""\t""PERCENT_SNV_ON_TARGET_SNP138""\t""HET:HOM_TARGET" ##### 
-#######################################################################################
+	awk 'BEGIN {OFS="\t"} \
+			$1=="'$SM_TAG'" \
+			{print $2,$3*100,$4,$5,$6,$7,$8,$9,$10*100,$13,$14,$15,$16*100,\
+				$17,$18,$19,$20,$21,$22,$23,$24,$25}' \
+		${CORE_PATH}/${PROJECT_MS}/REPORTS/VCF_METRICS/MULTI_SAMPLE/${PREFIX}_TARGET.variant_calling_detail_metrics.txt \
+		| $DATAMASH_DIR/datamash transpose \
+	>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 
-	if [[ ! -f $CORE_PATH/$PROJECT_SAMPLE/SNV/RELEASE/FILTERED_ON_TARGET/$SM_TAG"_MS_OnTarget_SNV.vcf.gz" ]]
-		then
-			echo -e NaN'\t'NaN'\t'NaN \
-			| $DATAMASH_DIR/datamash transpose \
-			>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
-		else
+#########################################################
+##### VCF METRICS FOR TITV BED FILE #####################
+#########################################################
+##### THIS IS THE HEADER ###################################################################################
+##### "CODING_HET_HOMVAR_RATIO","CODING_PCT_GQ0_VARIANT","CODING_TOTAL_GQ0_VARIANT" ########################
+##### "CODING_TOTAL_HET_DEPTH_SNV","CODING_TOTAL_SNV","CODING_NUM_IN_DBSNP_129_SNV","CODING_NOVEL_SNV" #####
+##### "CODING_FILTERED_SNV","CODING_PCT_DBSNP_129_SNV","CODING_DBSNP_129_TITV" #############################
+##### "CODING_NOVEL_TITV","CODING_TOTAL_INDEL","CODING_NOVEL_INDEL","CODING_FILTERED_INDEL" ################
+##### "CODING_PCT_DBSNP_129_INDEL","CODING_NUM_IN_DBSNP_129_INDEL","CODING_DBSNP_129_INS_DEL_RATIO" ########
+##### "CODING_NOVEL_INS_DEL_RATIO","CODING_TOTAL_MULTIALLELIC_SNV" #########################################
+##### "CODING_NUM_IN_DBSNP_129_MULTIALLELIC_SNV","CODING_TOTAL_COMPLEX_INDEL" ##############################
+##### "CODING_NUM_IN_DBSNP_129_COMPLEX_INDEL","CODING_SNP_REFERENCE_BIAS","CODING_NUM_SINGLETONS" ##########
+############################################################################################################
 
-			zgrep -v "^#" $CORE_PATH/$PROJECT_SAMPLE/SNV/RELEASE/FILTERED_ON_TARGET/$SM_TAG"_MS_OnTarget_SNV.vcf.gz" \
-				| awk '{SNV_COUNT++NR} {DBSNP_COUNT+=($3~"rs")} {HET_COUNT+=($10 ~ /^0\/1/)} {VAR_HOM+=($10 ~ /^1\/1/)} \
-					END {if (SNV_COUNT!=""&&VAR_HOM!="0") print SNV_COUNT,(DBSNP_COUNT/SNV_COUNT)*100,(HET_COUNT)/(VAR_HOM); \
-					else if (SNV_COUNT!=""&&VAR_HOM=="0") print SNV_COUNT,(DBSNP_COUNT/SNV_COUNT)*100,"NaN"; \
-					else print "0","NaN","NaN"}' \
-				| sed 's/ /\t/g' \
-				| $DATAMASH_DIR/datamash transpose \
-			>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
-	fi
-
-####################################################
-##### GRABBING TI/TV ON UCSC CODING EXONS, ALL #####
-####################################################
-##### THIS IS THE HEADER ###########################
-##### "ALL_TI_TV_COUNT","ALL_TI_TV_RATIO" ##########
-####################################################
-
-	awk 'BEGIN {OFS="\t"} END {if ($2!="") {print $2,$6} \
-	else {print "0","NaN"}}' \
-	$CORE_PATH/$PROJECT_SAMPLE/REPORTS/TI_TV_MS/$SM_TAG"_All_.titv.txt" \
-	| $DATAMASH_DIR/datamash transpose \
-	>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
-
-######################################################
-##### GRABBING TI/TV ON UCSC CODING EXONS, KNOWN #####
-######################################################
-##### THIS IS THE HEADER #############################
-##### "KNOWN_TI_TV_COUNT","KNOWN_TI_TV_RATIO" ########
-######################################################
-
-	awk 'BEGIN {OFS="\t"} END {if ($2!="") {print $2,$6} \
-	else {print "0","NaN"}}' \
-	$CORE_PATH/$PROJECT_SAMPLE/REPORTS/TI_TV_MS/$SM_TAG"_Known_.titv.txt" \
-	| $DATAMASH_DIR/datamash transpose \
-	>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
-
-######################################################
-##### GRABBING TI/TV ON UCSC CODING EXONS, NOVEL #####
-######################################################
-##### THIS IS THE HEADER #############################
-##### "NOVEL_TI_TV_COUNT","NOVEL_TI_TV_RATIO" ########
-######################################################
-
-	awk 'BEGIN {OFS="\t"} END {if ($2!="") {print $2,$6} \
-	else {print "0","NaN"}}' \
-	$CORE_PATH/$PROJECT_SAMPLE/REPORTS/TI_TV_MS/$SM_TAG"_Novel_.titv.txt" \
-	| $DATAMASH_DIR/datamash transpose \
-	>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
-
-#############################################################################################################################
-##### INDEL METRICS ON BAIT #################################################################################################
-#############################################################################################################################
-##### THIS IS THE HEADER ####################################################################################################
-##### "COUNT_ALL_INDEL_BAIT","ALL_INDEL_BAIT_PCT_SNP138","COUNT_BIALLELIC_INDEL_BAIT","BIALLELIC_INDEL_BAIT_PCT_SNP138" #####
-#############################################################################################################################
-
-	if [[ ! -f $CORE_PATH/$PROJECT_SAMPLE/INDEL/RELEASE/FILTERED_ON_BAIT/$SM_TAG"_MS_OnBait_INDEL.vcf.gz" ]]
-		then
-			echo -e NaN'\t'NaN'\t'NaN'\t'NaN \
-			| $DATAMASH_DIR/datamash transpose \
-			>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
-		else
-
-			zgrep -v "^#" $CORE_PATH/$PROJECT_SAMPLE/INDEL/RELEASE/FILTERED_ON_BAIT/$SM_TAG"_MS_OnBait_INDEL.vcf.gz" \
-				| awk '{INDEL_COUNT++NR} \
-				{INDEL_BIALLELIC+=($5!~",")} \
-				{DBSNP_COUNT+=($3~"rs")} \
-				{DBSNP_COUNT_BIALLELIC+=($3~"rs"&&$5!~",")} \
-				END {if (INDEL_BIALLELIC==""&&INDEL_COUNT=="") print "0","NaN","0","NaN"; \
-				else if (INDEL_BIALLELIC==0&&INDEL_COUNT>=1) print INDEL_COUNT,(DBSNP_COUNT/INDEL_COUNT)*100,"0","NaN"; \
-				else print INDEL_COUNT,(DBSNP_COUNT/INDEL_COUNT)*100,INDEL_BIALLELIC,(DBSNP_COUNT_BIALLELIC/INDEL_BIALLELIC)*100}' \
-				| sed 's/ /\t/g' \
-				| $DATAMASH_DIR/datamash transpose \
-			>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
-	fi
-
-#####################################################################################################################################
-##### INDEL METRICS ON TARGET #######################################################################################################
-#####################################################################################################################################
-##### THIS IS THE HEADER ############################################################################################################
-##### "COUNT_ALL_INDEL_TARGET","ALL_INDEL_TARGET_PCT_SNP138","COUNT_BIALLELIC_INDEL_TARGET","BIALLELIC_INDEL_TARGET_PCT_SNP138" #####
-##### "BIALLELIC_ID_RATIO" ##########################################################################################################
-#####################################################################################################################################
-
-	if [[ ! -f $CORE_PATH/$PROJECT_SAMPLE/INDEL/RELEASE/FILTERED_ON_TARGET/$SM_TAG"_MS_OnTarget_INDEL.vcf.gz" ]]
-		then
-			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
-			| $DATAMASH_DIR/datamash transpose \
-			>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
-		else
-
-			zgrep -v "^#" $CORE_PATH/$PROJECT_SAMPLE/INDEL/RELEASE/FILTERED_ON_TARGET/$SM_TAG"_MS_OnTarget_INDEL.vcf.gz" \
-				| awk '{INDEL_COUNT++NR} \
-					{INDEL_BIALLELIC+=($5!~",")} \
-					{DBSNP_COUNT+=($3~"rs")} \
-					{DBSNP_COUNT_BIALLELIC+=($3~"rs"&&$5!~",")} \
-					{BIALLELIC_INSERTION+=(length($5)-length($4))>0&&$5!~","} \
-					{BIALLELIC_DELETION+=(length($5)-length($4))<0&&$5!~","} \
-					END {if (INDEL_COUNT=="") print "0","NaN","0","NaN","NaN"; \
-					else if (INDEL_COUNT!=""&&INDEL_BIALLELIC==0) print INDEL_COUNT,(DBSNP_COUNT/INDEL_COUNT)*100,"0","NaN","NaN"; \
-					else if (INDEL_COUNT!=""&&INDEL_BIALLELIC>=1&&BIALLELIC_DELETION==0) print INDEL_COUNT,(DBSNP_COUNT/INDEL_COUNT)*100,INDEL_BIALLELIC,(DBSNP_COUNT_BIALLELIC/INDEL_BIALLELIC)*100,"NaN"; \
-					else print INDEL_COUNT,(DBSNP_COUNT/INDEL_COUNT)*100,INDEL_BIALLELIC,(DBSNP_COUNT_BIALLELIC/INDEL_BIALLELIC)*100,(BIALLELIC_INSERTION/BIALLELIC_DELETION)}' \
-				| sed 's/ /\t/g' \
-				| $DATAMASH_DIR/datamash transpose \
-			>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
-	fi
-
-#################################################################
-##### BASIC METRICS FOR MIXED VARIANT TYPES ON BAIT #############
-#################################################################
-##### GENERATE COUNT PCT,IN DBSNP FOR ON BAIT MIXED VARIANT #####
-##### THIS IS THE HEADER ########################################
-##### "COUNT_MIXED_ON_BAIT","PERCENT_MIXED_ON_BAIT_SNP138"} #####
-#################################################################
-
-	if [[ ! -f $CORE_PATH/$PROJECT_SAMPLE/MIXED/RELEASE/FILTERED_ON_BAIT/$SM_TAG"_MS_OnBait_MIXED.vcf.gz" ]]
-		then
-			echo -e NaN'\t'NaN \
-			| $DATAMASH_DIR/datamash transpose \
-			>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
-		else
-
-			zgrep -v "^#" $CORE_PATH/$PROJECT_SAMPLE/MIXED/RELEASE/FILTERED_ON_BAIT/$SM_TAG"_MS_OnBait_MIXED.vcf.gz" \
-				| awk '{MIXED_COUNT++NR} {DBSNP_COUNT+=($3~"rs")} \
-					END {if (MIXED_COUNT!="") print MIXED_COUNT,(DBSNP_COUNT/MIXED_COUNT)*100 ; \
-					else print "0","NaN"}' \
-				| sed 's/ /\t/g' \
-				| $DATAMASH_DIR/datamash transpose \
-			>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
-	fi
-
-####################################################################
-##### GENERATE COUNT PCT,IN DBSNP FOR ON TARGET MIXED VARIANT ######
-####################################################################
-##### THIS IS THE HEADER ###########################################
-##### "COUNT_MIXED_ON_TARGET","PERCENT_MIXED_ON_TARGET_SNP138" #####
-####################################################################
-
-	if [[ ! -f $CORE_PATH/$PROJECT_SAMPLE/MIXED/RELEASE/FILTERED_ON_TARGET/$SM_TAG"_MS_OnTarget_MIXED.vcf.gz" ]]
-		then
-			echo -e NaN'\t'NaN \
-			| $DATAMASH_DIR/datamash transpose \
-			>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
-		else
-
-			zgrep -v "^#" $CORE_PATH/$PROJECT_SAMPLE/MIXED/RELEASE/FILTERED_ON_TARGET/$SM_TAG"_MS_OnTarget_MIXED.vcf.gz" \
-				| awk '{MIXED_COUNT++NR} {DBSNP_COUNT+=($3~"rs")} \
-					END {if (MIXED_COUNT!="") print MIXED_COUNT,(DBSNP_COUNT/MIXED_COUNT)*100 ; \
-					else print "0","NaN"}' \
-				| sed 's/ /\t/g' \
-				| $DATAMASH_DIR/datamash transpose \
-			>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
-	fi
+	awk 'BEGIN {OFS="\t"} \
+			$1=="'$SM_TAG'" \
+			{print $2,$3*100,$4,$5,$6,$7,$8,$9,$10*100,$11,$12,$13,$14,$15,$16*100,\
+				$17,$18,$19,$20,$21,$22,$23,$24,$25}' \
+		${CORE_PATH}/${PROJECT_MS}/REPORTS/VCF_METRICS/MULTI_SAMPLE/${PREFIX}_TITV.variant_calling_detail_metrics.txt \
+		| $DATAMASH_DIR/datamash transpose \
+	>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 
 ##########################################################################################################
 ##### tranpose from rows to list so these can be concatenated together for a project/batch QC report #####
@@ -677,4 +551,4 @@
 
 	cat $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt" \
 	| $DATAMASH_DIR/datamash transpose \
-	>| $CORE_PATH/$PROJECT_MS/REPORTS/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_PREP.txt"
+	>| $CORE_PATH/$PROJECT_MS/REPORTS/QC_REPORT_PREP_MS/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_PREP.txt"

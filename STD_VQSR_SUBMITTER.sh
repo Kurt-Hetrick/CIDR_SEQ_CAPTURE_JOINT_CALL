@@ -148,6 +148,7 @@
 	mkdir -p $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/
 	mkdir -p $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE
 	mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/{ANNOVAR,LAB_PREP_REPORTS_MS,QC_REPORTS,QC_REPORT_PREP_$PREFIX}
+	mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/QC_REPORT_PREP_MS/QC_REPORT_PREP_$PREFIX
 	mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/VCF_METRICS/MULTI_SAMPLE/
 	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX
 	mkdir -p $CORE_PATH/$PROJECT_MS/LOGS/{A01_COMBINE_GVCF,B01_GENOTYPE_GVCF,C01_VARIANT_ANNOTATOR,H01_CALCULATE_GENOTYPE_POSTERIORS,I01_VARIANT_ANNOTATOR_REFINED}
@@ -1327,59 +1328,6 @@ done
 				${VERACODE_CSV}
 		}
 
-	##########################################################################
-	### grabbing per sample indel only vcf files for on bait and on target ###
-	##########################################################################
-
-		# for each sample, make a vcf containing only passing mixed
-
-			PASSING_MIXED_ON_BAIT_BY_SAMPLE ()
-			{
-				echo \
-				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q $QUEUE_LIST \
-					-p $PRIORITY \
-					-j y \
-				-N K03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
-					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE_$SAMPLE.log \
-				-hold_jid "K03_SELECT_VARIANTS_FOR_SAMPLE_"$UNIQUE_ID_SM_TAG \
-				$SCRIPT_DIR/K03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE.sh \
-					$JAVA_1_8 \
-					$GATK_DIR \
-					$SAMPLE_REF_GENOME \
-					$CORE_PATH \
-					$PROJECT_SAMPLE \
-					$SM_TAG
-			}
-
-		# for each sample, make a vcf containing only passing indels that fall within the on target bed file
-
-			PASSING_MIXED_ON_TARGET_BY_SAMPLE ()
-			{
-				echo \
-				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q $QUEUE_LIST \
-					-p $PRIORITY \
-					-j y \
-				-N K03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
-					-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/K03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE_$SAMPLE.log \
-				-hold_jid "K03_SELECT_VARIANTS_FOR_SAMPLE_"$UNIQUE_ID_SM_TAG \
-				$SCRIPT_DIR/K03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE.sh \
-					$JAVA_1_8 \
-					$GATK_DIR \
-					$SAMPLE_REF_GENOME \
-					$CORE_PATH \
-					$PROJECT_SAMPLE \
-					$SM_TAG \
-					$TARGET_BED
-			}
-
 	# MAKE A QC REPORT FOR EACH SAMPLE
 	# THIS IS CREATING A JOB_ID FOR A SAMPLE WHEN ALL OF THE BREAKOUTs PER SAMPLE IS DONE
 	# THIS IS TO MITIGATE CREATING A HOLD ID THAT IS TOO LONG FOR GENERATING THE QC REPORT.
@@ -1399,16 +1347,10 @@ done
 				-j y \
 			-N Y"_"$BARCODE_2D \
 				-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/$SM_TAG"-QC_REPORT_PREP_QC.log" \
-				-hold_jid K03A01_PASSING_VARIANTS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
-K03A02_PASSING_SNVS_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
-K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$UNIQUE_ID_SM_TAG,\
-K03A04_PASSING_INDELS_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
-K03A05_PASSING_INDELS_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
-K03A06-1_TITV_ALL_$UNIQUE_ID_SM_TAG,\
-K03A07-1_TITV_KNOWN_$UNIQUE_ID_SM_TAG,\
-K03A08-1_TITV_NOVEL_$UNIQUE_ID_SM_TAG,\
-K03A09_PASSING_MIXED_ON_BAIT_BY_SAMPLE_$UNIQUE_ID_SM_TAG,\
-K03A10_PASSING_MIXED_ON_TARGET_BY_SAMPLE_$UNIQUE_ID_SM_TAG \
+				-hold_jid J01A03-VCF_METRICS_BAIT_${PROJECT_MS},\
+J01A04-VCF_METRICS_TARGET_${PROJECT_MS},\
+J01A05-VCF_METRICS_TITV_${PROJECT_MS},\
+K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$UNIQUE_ID_SM_TAG \
 $SCRIPT_DIR/Y01_QC_REPORT_PREP.sh \
 	$SAMTOOLS_DIR \
 	$DATAMASH_DIR \
@@ -1424,8 +1366,8 @@ do
 	CREATE_SAMPLE_INFO_ARRAY
 	CONCORDANCE_ON_TARGET_PER_SAMPLE
 	echo sleep 0.1s
-	# QC_REPORT_PREP
-	# echo sleep 0.1s
+	QC_REPORT_PREP
+	echo sleep 0.1s
 done
 
 ##########################################################################
@@ -1436,48 +1378,48 @@ done
 	# I think that i will have to make this a look to handle multiple projects...maybe not
 	# but again, today is not that day.
 
-		# awk 'BEGIN {FS=","} NR>1 {print $8}' \
-		# $SAMPLE_SHEET \
-		# 	| awk '{split($1,sm_tag,/[@-]/)} {print sm_tag[2]}' \
-		# 	| sort -k 1,1 \
-		# 	| uniq \
-		# 	| $DATAMASH_DIR/datamash \
-		# 		-s \
-		# 		collapse 1 \
-		# 	| awk 'gsub (/,/,",Y_",$1) \
-		# 		{print "qsub",\
-		# 			"-S /bin/bash",\
-		# 			"-cwd",\
-		# 			"-V",\
-		# 			"-q" , "'$QUEUE_LIST'",\
-		# 			"-p" , "'$PRIORITY'",\
-		# 			"-m","e",\
-		# 			"-M","'$SEND_TO'",\
-		# 		"-N" , "Y01-Y01-END_PROJECT_TASKS_" "'$PREFIX'",\
-		# 		"-o","'$CORE_PATH'" "/" "'$PROJECT_MS'" "/LOGS/Y01-Y01-" "'$PREFIX'" ".END_PROJECT_TASKS.log",\
-		# 			"-j y",\
-		# 		"-hold_jid" , "Y_"$1,\
-		# 		"'$SCRIPT_DIR'" "/Y01-Y01_END_PROJECT_TASKS.sh",\
-		# 			"'$CORE_PATH'",\
-		# 			"'$DATAMASH_DIR'",\
-		# 			"'$PROJECT_MS'",\
-		# 			"'$PREFIX'",\
-		# 			"'$SAMPLE_SHEET'",\
-		# 			"'$BEDTOOLS_DIR'",\
-		# 			"'$REF_SEQ_TRANSCRIPTS'" "\n" "sleep 0.1s"}'
+		awk 'BEGIN {FS=","} NR>1 {print $8}' \
+		$SAMPLE_SHEET \
+			| awk '{split($1,sm_tag,/[@-]/)} {print sm_tag[2]}' \
+			| sort -k 1,1 \
+			| uniq \
+			| $DATAMASH_DIR/datamash \
+				-s \
+				collapse 1 \
+			| awk 'gsub (/,/,",Y_",$1) \
+				{print "qsub",\
+					"-S /bin/bash",\
+					"-cwd",\
+					"-V",\
+					"-q" , "'$QUEUE_LIST'",\
+					"-p" , "'$PRIORITY'",\
+					"-m","e",\
+					"-M","'$SEND_TO'",\
+				"-N" , "Y01-Y01-END_PROJECT_TASKS_" "'$PREFIX'",\
+				"-o","'$CORE_PATH'" "/" "'$PROJECT_MS'" "/LOGS/Y01-Y01-" "'$PREFIX'" ".END_PROJECT_TASKS.log",\
+					"-j y",\
+				"-hold_jid" , "Y_"$1,\
+				"'$SCRIPT_DIR'" "/Y01-Y01_END_PROJECT_TASKS.sh",\
+					"'$CORE_PATH'",\
+					"'$DATAMASH_DIR'",\
+					"'$PROJECT_MS'",\
+					"'$PREFIX'",\
+					"'$SAMPLE_SHEET'",\
+					"'$BEDTOOLS_DIR'",\
+					"'$REF_SEQ_TRANSCRIPTS'" "\n" "sleep 0.1s"}'
 
 # email when finished submitting
 
-	# SUBMITTER_ID=`whoami`
+	SUBMITTER_ID=`whoami`
 
-	# PERSON_NAME=`getent passwd | awk 'BEGIN {FS=":"} $1=="'$SUBMITTER_ID'" {print $5}'`
+	PERSON_NAME=`getent passwd | awk 'BEGIN {FS=":"} $1=="'$SUBMITTER_ID'" {print $5}'`
 
-	# SCATTER_COUNT=`ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed | wc -l`
+	SCATTER_COUNT=`ls $CORE_PATH/$PROJECT_MS/TEMP/BED_FILE_SPLIT/BF*bed | wc -l`
 
-	# STUDY_COUNT=`awk '{print "basename",$1,".g.vcf.gz"}' $GVCF_LIST | bash | grep ^[0-9] | wc -l`
+	STUDY_COUNT=`awk '{print "basename",$1,".g.vcf.gz"}' $GVCF_LIST | bash | grep ^[0-9] | wc -l`
 
-	# HAPMAP_COUNT=`awk '{print "basename",$1,".g.vcf.gz"}' $GVCF_LIST | bash | grep -v ^[0-9] | wc -l`
+	HAPMAP_COUNT=`awk '{print "basename",$1,".g.vcf.gz"}' $GVCF_LIST | bash | grep -v ^[0-9] | wc -l`
 
-	# printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`\nby `whoami`\nMULTI-SAMPLE VCF OUTPUT PROJECT IS:\n$PROJECT_MS\nVCF PREFIX IS:\n$PREFIX\nSCATTER IS $SCATTER_COUNT\n$TOTAL_SAMPLES samples called together\n$STUDY_COUNT study samples\n$HAPMAP_COUNT HapMap samples" \
-	# 	| mail -s "$PERSON_NAME has submitted STD_VQSR_SUBMITTER.sh" \
-	# 		$SEND_TO
+	printf "$SAMPLE_SHEET\nhas finished submitting at\n`date`\nby `whoami`\nMULTI-SAMPLE VCF OUTPUT PROJECT IS:\n$PROJECT_MS\nVCF PREFIX IS:\n$PREFIX\nSCATTER IS $SCATTER_COUNT\n$TOTAL_SAMPLES samples called together\n$STUDY_COUNT study samples\n$HAPMAP_COUNT HapMap samples" \
+		| mail -s "$PERSON_NAME has submitted STD_VQSR_SUBMITTER.sh" \
+			$SEND_TO
