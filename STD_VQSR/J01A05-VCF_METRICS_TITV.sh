@@ -28,7 +28,7 @@
 	GATK_DIR_4011=$2
 
 	REF_DICT=$3
-	PROJECT_DBSNP=$4
+	KNOWN_SNPS=$4
 	CORE_PATH=$5
 	PROJECT_MS=$6
 	PROJECT_TITV_BED=$7
@@ -48,7 +48,7 @@ START_VCF_METRICS_TITV=`date '+%s'` # capture time process starts for wall clock
 			CMD=${CMD}" ${GATK_DIR_4011}/gatk-package-4.0.11.0-local.jar"
 		CMD=${CMD}" CollectVariantCallingMetrics"
 			CMD=${CMD}" --SEQUENCE_DICTIONARY ${REF_DICT}"
-			CMD=${CMD}" --DBSNP ${PROJECT_DBSNP}"
+			CMD=${CMD}" --DBSNP ${KNOWN_SNPS}"
 			CMD=${CMD}" --THREAD_COUNT 4"
 			CMD=${CMD}" --TARGET_INTERVALS ${CORE_PATH}/${PROJECT_MS}/TEMP/${PROJECT_MS}-${PROJECT_TITV_BED_NAME}-picard.bed"
 			CMD=${CMD}" --INPUT ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf"

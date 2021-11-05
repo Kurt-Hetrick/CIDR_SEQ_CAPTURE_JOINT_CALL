@@ -930,7 +930,7 @@ done
 				${JAVA_1_8} \
 				${GATK_DIR_4011} \
 				${REF_DICT} \
-				${PROJECT_DBSNP} \
+				${KNOWN_SNPS} \
 				${CORE_PATH} \
 				${PROJECT_MS} \
 				${PROJECT_TITV_BED} \
