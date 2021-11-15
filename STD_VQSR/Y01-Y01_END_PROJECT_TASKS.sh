@@ -275,20 +275,27 @@
 
 	# grab what positions have been skipped due to having more than 50 alleles and put it into a bed file
 
-		grep "50 alleles" $CORE_PATH/$PROJECT_MS/LOGS/B01_GENOTYPE_GVCF/*log \
-		cut -d " " -f 19 | sort | uniq | awk 'BEGIN {FS=":";OFS="\t"} {print $1,$2-1,$2}'| sort -k 1,1 -k 2,2n \
-		>| $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX"_"$SAMPLE_SHEET"_"$TIMESTAMP"_SKIPPED_POSITIONS.bed"
+		grep "50 alleles" ${CORE_PATH}/${PROJECT_MS}/LOGS/B01_GENOTYPE_GVCF/*log \
+			| cut -d " " -f 19 \
+			| sort \
+			| uniq \
+			| awk 'BEGIN {FS=":";OFS="\t"} \
+				{print $1,$2-1,$2}' \
+			| sort -k 1,1 -k 2,2n \
+		>| ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}_${SAMPLE_SHEET_NAME}_${TIMESTAMP}_SKIPPED_POSITIONS.bed
 
 	# take said bed files and intersect with the coding regions used for the clinical exome pipeline
 
-		$BEDTOOLS_DIR/bedtools \
+		${BEDTOOLS_DIR}/bedtools \
 			intersect \
 			-wo \
-			-a $REF_SEQ_TRANSCRIPTS \
-			-b $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX"_"$SAMPLE_SHEET"_"$TIMESTAMP"_SKIPPED_POSITIONS.bed" \
-		| awk 'BEGIN {print "CODING_CHR","VARIANT_START","CODING_START","CODING_END","REFSEQ_GENE","TRANSCIPT","CODING_EXON_NUMBER","STRAND"} {print $1,$10,$2+1,$3,$4,$5,$6,$7}' \
+			-a ${REF_SEQ_TRANSCRIPTS} \
+			-b ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}_${SAMPLE_SHEET_NAME}_${TIMESTAMP}_SKIPPED_POSITIONS.bed \
+		| awk 'BEGIN {print "CODING_CHR","VARIANT_START","CODING_START","CODING_END",\
+			"REFSEQ_GENE","TRANSCIPT","CODING_EXON_NUMBER","STRAND"} \
+			{print $1,$10,$2+1,$3,$4,$5,$6,$7}' \
 		| sed 's/ /\t/g' \
-		>> $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX"_"$SAMPLE_SHEET"_"$TIMESTAMP"_SKIPPED_POSITIONS_CODING.txt"
+		>> ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}_${SAMPLE_SHEET_NAME}_${TIMESTAMP}_SKIPPED_POSITIONS_CODING.txt
 
 ######################################################################################################
 ######################################################################################################

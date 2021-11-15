@@ -147,7 +147,7 @@
 	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/{BED_FILE_SPLIT,AGGREGATE,QC_REPORT_PREP_$PREFIX,SPLIT_LIST}
 	mkdir -p $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/
 	mkdir -p $CORE_PATH/$PROJECT_MS/GVCF/AGGREGATE
-	mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/{ANNOVAR,LAB_PREP_REPORTS_MS,QC_REPORTS,QC_REPORT_PREP_$PREFIX}
+	mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/{ANNOVAR,LAB_PREP_REPORTS_MS,QC_REPORTS}
 	mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/QC_REPORT_PREP_MS/QC_REPORT_PREP_$PREFIX
 	mkdir -p $CORE_PATH/$PROJECT_MS/REPORTS/VCF_METRICS/MULTI_SAMPLE/
 	mkdir -p $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX
@@ -345,9 +345,9 @@
 			SAMPLE_INFO_ARRAY=(`sed 's/\r//g' $SAMPLE_SHEET \
 				| awk 'BEGIN{FS=","} NR>1 {print $1,$8,$17,$15,$18,$12}' \
 				| sed 's/,/\t/g' \
-				| sort -k 8,8 \
+				| sort -k 2,2 \
 				| uniq \
-				| awk '$2=="'$SAMPLE'" {print $1,$2,$3,$4,$5,$6}'`)
+				| awk '$2=="'$SAMPLE'" {print $1,$2,$3,$4,$5,$6,NR}'`)
 
 			PROJECT_SAMPLE=${SAMPLE_INFO_ARRAY[0]}
 			SM_TAG=${SAMPLE_INFO_ARRAY[1]}
@@ -355,6 +355,7 @@
 			TITV_BED=${SAMPLE_INFO_ARRAY[3]}
 			DBSNP=${SAMPLE_INFO_ARRAY[4]} #Not used unless we implement HC_BAM
 			SAMPLE_REF_GENOME=${SAMPLE_INFO_ARRAY[5]}
+			SAMPLE_ROW_COUNT=${SAMPLE_INFO_ARRAY[6]}
 
 			UNIQUE_ID_SM_TAG=$(echo $SM_TAG | sed 's/@/_/g') # If there is an @ in the qsub or holdId name it breaks
 			BARCODE_2D=$(echo $SM_TAG | awk '{split($1,SM_TAG,/[@-]/); print SM_TAG[2]}') # SM_TAG = RIS_ID[@-]BARCODE_2D
@@ -705,25 +706,25 @@ done
 
 		LIFTOVER_INITIAL_HG19_VCF_TO_HG38 ()
 		{
-				echo \
-				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q $QUEUE_LIST \
-					-p $PRIORITY \
-					-j y \
-				-N G01A01A01_LIFTOVER_INITIAL_HG19_TO_GRCH38_$PROJECT_MS \
-					-o $CORE_PATH/$PROJECT_MS/LOGS/G01A01A01_LIFTOVER_INITIAL_HG19_TO_HG38.log \
-					-hold_jid G01A01_LIFTOVER_INITIAL_GRCH37_TO_HG19_$PROJECT_MS \
-				$SCRIPT_DIR/G01A01A01_LIFTOVER_INITIAL_HG19_TO_GRCH38.sh \
-					$JAVA_1_8 \
-					$PICARD_DIR \
-					$CORE_PATH \
-					$PROJECT_MS \
-					$PREFIX \
-					$GRCH38_REF \
-					$HG19_TO_GRCH38_CHAIN
+			echo \
+			qsub \
+				-S /bin/bash \
+				-cwd \
+				-V \
+				-q $QUEUE_LIST \
+				-p $PRIORITY \
+				-j y \
+			-N G01A01A01_LIFTOVER_INITIAL_HG19_TO_GRCH38_$PROJECT_MS \
+				-o $CORE_PATH/$PROJECT_MS/LOGS/G01A01A01_LIFTOVER_INITIAL_HG19_TO_HG38.log \
+				-hold_jid G01A01_LIFTOVER_INITIAL_GRCH37_TO_HG19_$PROJECT_MS \
+			$SCRIPT_DIR/G01A01A01_LIFTOVER_INITIAL_HG19_TO_GRCH38.sh \
+				$JAVA_1_8 \
+				$PICARD_DIR \
+				$CORE_PATH \
+				$PROJECT_MS \
+				$PREFIX \
+				$GRCH38_REF \
+				$HG19_TO_GRCH38_CHAIN
 		}
 
 # call cat variants and vqsr
@@ -1298,6 +1299,10 @@ done
 ##### CONCORDANCE #####
 #######################
 
+QC_JOB_NAME_PREFIX=$(openssl rand -base64 21 \
+	| tr -dc '[:alpha:]' \
+	| awk '{print substr($1,1,2)}')
+
 	# for each sample use the passing on target snvs to calculate concordance and het sensitivity to array genotypes.
 	# reconfigure using the new concordance tool.
 		CONCORDANCE_ON_TARGET_PER_SAMPLE ()
@@ -1310,8 +1315,8 @@ done
 				-q $QUEUE_LIST \
 				-p $PRIORITY \
 				-j y \
-			-N K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_${UNIQUE_ID_SM_TAG} \
-				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/${SM_TAG}/K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$SAMPLE.log \
+			-N ${QC_JOB_NAME_PREFIX}_${SAMPLE_ROW_COUNT} \
+				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/${SM_TAG}/K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_${SM_TAG}.log \
 			-hold_jid A00-FIX_BED_FILES_${UNIQUE_ID_SM_TAG}_${PROJECT_MS},J01A01_BGZIP_INDEX_${PROJECT_MS} \
 			$SCRIPT_DIR/K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE.sh \
 				${BEDTOOLS_DIR} \
@@ -1328,85 +1333,89 @@ done
 				${VERACODE_CSV}
 		}
 
-	# MAKE A QC REPORT FOR EACH SAMPLE
-	# THIS IS CREATING A JOB_ID FOR A SAMPLE WHEN ALL OF THE BREAKOUTs PER SAMPLE IS DONE
-	# THIS IS TO MITIGATE CREATING A HOLD ID THAT IS TOO LONG FOR GENERATING THE QC REPORT.
-	# ALTHOUGH AT SOME POINT THIS STRING MIGHT END BEING TOO LONG AT SOME POINT.
-	# SO QC REPORTS MIGHT HAVE TO END UP BEING DONE OUTSIDE OF THE PIPELINE FOR SOME BIG PROJECTS.
-	# yucky, yuck...indenting creates a white space in the hold id which does not work so I have to do this hot mess.
-	
-		QC_REPORT_PREP ()
-		{
-			echo \
-			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-				-j y \
-			-N Y"_"$BARCODE_2D \
-				-o $CORE_PATH/$PROJECT_MS/LOGS/$SM_TAG/$SM_TAG"-QC_REPORT_PREP_QC.log" \
-				-hold_jid J01A03-VCF_METRICS_BAIT_${PROJECT_MS},\
-J01A04-VCF_METRICS_TARGET_${PROJECT_MS},\
-J01A05-VCF_METRICS_TITV_${PROJECT_MS},\
-K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_$UNIQUE_ID_SM_TAG \
-$SCRIPT_DIR/Y01_QC_REPORT_PREP.sh \
-	$SAMTOOLS_DIR \
-	$DATAMASH_DIR \
-	$CORE_PATH \
-	$PROJECT_SAMPLE \
-	$SM_TAG \
-	$PROJECT_MS \
-	$PREFIX
-		}
-
-for SAMPLE in $(awk 'BEGIN {FS=","} NR>1 {print $8}' $SAMPLE_SHEET | sort | uniq )
+for SAMPLE in $(awk 1 ${SAMPLE_SHEET} \
+	| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d; /^,/d' \
+	| awk 'BEGIN {FS=","} \
+		NR>1 \
+		{print $8}' \
+	| sort \
+	| uniq);
 do
 	CREATE_SAMPLE_INFO_ARRAY
 	CONCORDANCE_ON_TARGET_PER_SAMPLE
 	echo sleep 0.1s
-	QC_REPORT_PREP
-	echo sleep 0.1s
 done
+
+# build hold id for qc report prep per sample, per project
+
+	BUILD_HOLD_ID_PATH_QC_REPORT_PREP ()
+	{
+		HOLD_ID_PATH="-hold_jid "
+
+		for SAMPLE_NUMBER in $(seq $TOTAL_SAMPLES)
+		do
+			HOLD_ID_PATH=$HOLD_ID_PATH${QC_JOB_NAME_PREFIX}"_"${SAMPLE_NUMBER}","
+		done
+	}
+
+	QC_REPORT_PREP ()
+	{
+		echo \
+		qsub \
+			-S /bin/bash \
+			-cwd \
+			-V \
+			-q $QUEUE_LIST \
+			-p $PRIORITY \
+			-j y \
+		-N Y01-QC_REPORT_PREP_${PREFIX} \
+			-o $CORE_PATH/$PROJECT_MS/LOGS/${PREFIX}-QC_REPORT_PREP_QC.log \
+		${HOLD_ID_PATH}J01A03-VCF_METRICS_BAIT_${PROJECT_MS},J01A04-VCF_METRICS_TARGET_${PROJECT_MS},J01A05-VCF_METRICS_TITV_${PROJECT_MS} \
+		$SCRIPT_DIR/Y01_QC_REPORT_PREP.sh \
+			$SAMTOOLS_DIR \
+			$DATAMASH_DIR \
+			$CORE_PATH \
+			$PROJECT_MS \
+			$PREFIX \
+			$SAMPLE_SHEET
+	}
+
+BUILD_HOLD_ID_PATH_QC_REPORT_PREP
+QC_REPORT_PREP
+echo sleep 0.1s
 
 ##########################################################################
 ######################End of Functions####################################
 ##########################################################################
 
-	# Maybe I'll make this a function and throw it into a loop, but today is not that day.
-	# I think that i will have to make this a look to handle multiple projects...maybe not
-	# but again, today is not that day.
+# run end project functions (qc report, file clean-up) for each project
 
-		awk 'BEGIN {FS=","} NR>1 {print $8}' \
-		$SAMPLE_SHEET \
-			| awk '{split($1,sm_tag,/[@-]/)} {print sm_tag[2]}' \
-			| sort -k 1,1 \
-			| uniq \
-			| $DATAMASH_DIR/datamash \
-				-s \
-				collapse 1 \
-			| awk 'gsub (/,/,",Y_",$1) \
-				{print "qsub",\
-					"-S /bin/bash",\
-					"-cwd",\
-					"-V",\
-					"-q" , "'$QUEUE_LIST'",\
-					"-p" , "'$PRIORITY'",\
-					"-m","e",\
-					"-M","'$SEND_TO'",\
-				"-N" , "Y01-Y01-END_PROJECT_TASKS_" "'$PREFIX'",\
-				"-o","'$CORE_PATH'" "/" "'$PROJECT_MS'" "/LOGS/Y01-Y01-" "'$PREFIX'" ".END_PROJECT_TASKS.log",\
-					"-j y",\
-				"-hold_jid" , "Y_"$1,\
-				"'$SCRIPT_DIR'" "/Y01-Y01_END_PROJECT_TASKS.sh",\
-					"'$CORE_PATH'",\
-					"'$DATAMASH_DIR'",\
-					"'$PROJECT_MS'",\
-					"'$PREFIX'",\
-					"'$SAMPLE_SHEET'",\
-					"'$BEDTOOLS_DIR'",\
-					"'$REF_SEQ_TRANSCRIPTS'" "\n" "sleep 0.1s"}'
+	PROJECT_WRAP_UP ()
+	{
+		echo \
+		qsub \
+			-S /bin/bash \
+			-cwd \
+			-V \
+			-q $QUEUE_LIST \
+			-p ${PRIORITY} \
+			-m e \
+			-M ${SEND_TO} \
+			-j y \
+		-N Y01-Y01-END_PROJECT_TASKS_${PREFIX} \
+			-o ${CORE_PATH}/${PROJECT_MS}/LOGS/Y01-Y01-${PREFIX}.END_PROJECT_TASKS.log \
+		-hold_jid Y01-QC_REPORT_PREP_${PREFIX} \
+		${SCRIPT_DIR}/Y01-Y01_END_PROJECT_TASKS.sh \
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX} \
+			${SAMPLE_SHEET} \
+			${BEDTOOLS_DIR} \
+			${REF_SEQ_TRANSCRIPTS}
+	}
+
+PROJECT_WRAP_UP
 
 # email when finished submitting
 
