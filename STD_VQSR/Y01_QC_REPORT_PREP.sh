@@ -36,27 +36,14 @@
 
 	SAMTOOLS_DIR=$1 # needs to be a newer version to read a cram file. e.g. 1.6
 	DATAMASH_DIR=$2
+	PARALLEL_DIR=$3
 
-	CORE_PATH=$3
-	PROJECT_MS=$4
-	PREFIX=$5
-	SAMPLE_SHEET=$6
+	CORE_PATH=$4
+	PROJECT_MS=$5
+	PREFIX=$6
+	SAMPLE_SHEET=$7
 
 # next script will cat everything together and add the header.
-
-# for each unique sample id in the sample sheet grab the project and store as an array
-
-	CREATE_SAMPLE_INFO_ARRAY ()
-	{
-		SAMPLE_INFO_ARRAY=(`awk 1 ${SAMPLE_SHEET} \
-			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
-			| awk 'BEGIN {FS=",";OFS="\t"} $8=="'$SAMPLE'" {print $1,$8}' \
-			| sort \
-			| uniq`)
-
-		PROJECT_SAMPLE=${SAMPLE_INFO_ARRAY[0]}
-		SM_TAG=${SAMPLE_INFO_ARRAY[1]}
-	}
 
 #############################################################
 ##### Grabbing the BAM header (for RG ID,PU,LB,etc) #########
@@ -69,8 +56,20 @@
 ##### "HYB_COLUMN" ##########################################
 #############################################################
 
+echo
+echo RETRIEVING READ GROUP HEADERS: `date`
+echo
+
 	GRAB_READ_GROUP_HEADER ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+		SAMTOOLS_DIR=$7
+
 		if [ -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt ]
 		then
 			cat ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt \
@@ -169,6 +168,26 @@
 		fi
 	}
 
+		export -f GRAB_READ_GROUP_HEADER
+
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		GRAB_READ_GROUP_HEADER \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX \
+			$SAMTOOLS_DIR
+
 #################################################
 ##### GENDER CHECK FROM ANEUPLOIDY CHECK ########
 #################################################
@@ -176,8 +195,18 @@
 ##### X_AVG_DP,X_NORM_DP,Y_AVG_DP,Y_NORM_DP #####
 #################################################
 
+echo RETRIEVING GENDER CHECK METRICS FROM ANEUPLOIDY CHECK METRICS: `date`
+echo
+
 	GRAB_GENDER_CHECK_FROM_ANEUPLOIDY_CHECK ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+
 		awk 'BEGIN {OFS="\t"} $2=="X"&&$3=="whole" {print $6,$7} $2=="Y"&&$3=="whole" {print $6,$7}' \
 		${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/ANEUPLOIDY_CHECK/${SM_TAG}".chrom_count_report.txt" \
 			| paste - - \
@@ -185,6 +214,25 @@
 			| ${DATAMASH_DIR}/datamash transpose \
 		>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
 	}
+
+		export -f GRAB_GENDER_CHECK_FROM_ANEUPLOIDY_CHECK
+
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		GRAB_GENDER_CHECK_FROM_ANEUPLOIDY_CHECK \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX
 
 #################################
 ##### GRABBING CONCORDANCE. #####
@@ -197,8 +245,18 @@
 ##### "SNP_ARRAY" ########################################################
 ##########################################################################
 
+echo RETRIEVING CONCORDANCE METRICS: `date`
+echo
+
 	GRAB_CONCORDANCE ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+
 		if [ -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/CONCORDANCE_MS/${SM_TAG}"_concordance.csv" ];
 		then
 			awk 1 ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/CONCORDANCE_MS/${SM_TAG}"_concordance.csv" \
@@ -213,6 +271,25 @@
 		fi
 	}
 
+		export -f GRAB_CONCORDANCE
+
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		GRAB_CONCORDANCE \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX
+
 #########################################################################################
 ##### VERIFY BAM ID #####################################################################
 #########################################################################################
@@ -221,8 +298,18 @@
 ##### "VERIFYBAM_DIFF_LK0_LK1","VERIFYBAM_AVG_DP" #######################################
 #########################################################################################
 
+echo RETRIEVING VERIFYBAMID METRICS: `date`
+echo
+
 	GRAB_VERIFYBAMID ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+
 		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//VERIFYBAMID/${SM_TAG}".selfSM" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
@@ -236,6 +323,25 @@
 		fi
 	}
 
+		export -f GRAB_VERIFYBAMID
+
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		GRAB_VERIFYBAMID \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX
+
 ######################################################################################################
 ##### INSERT SIZE ####################################################################################
 ######################################################################################################
@@ -243,8 +349,18 @@
 ##### "MEDIAN_INSERT_SIZE","MEAN_INSERT_SIZE","STANDARD_DEVIATION_INSERT_SIZE","MAD_INSERT_SIZE" #####
 ######################################################################################################
 
+echo RETRIEVING INSERT SIZE METRICS: `date`
+echo
+
 	GRAB_INSERT_SIZE ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+
 		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/INSERT_SIZE/METRICS/${SM_TAG}".insert_size_metrics.txt" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN \
@@ -258,6 +374,25 @@
 		fi
 	}
 
+		export -f GRAB_INSERT_SIZE
+
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		GRAB_INSERT_SIZE \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX
+
 #######################################################################################################
 ##### ALIGNMENT SUMMARY METRICS FOR READ 1 ############################################################
 #######################################################################################################
@@ -267,8 +402,18 @@
 ##### "PCT_READS_ALIGNED_IN_PAIRS_R1","PCT_ADAPTER_R1" ################################################
 #######################################################################################################
 
+echo RETRIEVING ALIGNMENT SUMMARY METRICS FOR READ ONE: `date`
+echo
+
 	GRAB_ALIGNMENT_SUMMARY_METRICS_READ_ONE ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+
 		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}".alignment_summary_metrics.txt" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
@@ -283,6 +428,25 @@
 		fi
 	}
 
+		export -f GRAB_ALIGNMENT_SUMMARY_METRICS_READ_ONE
+
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		GRAB_ALIGNMENT_SUMMARY_METRICS_READ_ONE \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX
+
 #######################################################################################################
 ##### ALIGNMENT SUMMARY METRICS FOR READ 2 ############################################################
 #######################################################################################################
@@ -292,8 +456,18 @@
 ##### "PCT_READS_ALIGNED_IN_PAIRS_R2","PCT_ADAPTER_R2" ################################################
 #######################################################################################################
 
+echo RETRIEVING READ ALIGNMENT SUMMARY METRICS FOR READ 2: `date`
+echo
+
 	GRAB_ALIGNMENT_SUMMARY_METRICS_READ_TWO ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+
 		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}".alignment_summary_metrics.txt" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
@@ -309,6 +483,25 @@
 		fi
 	}
 
+		export -f GRAB_ALIGNMENT_SUMMARY_METRICS_READ_TWO
+
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		GRAB_ALIGNMENT_SUMMARY_METRICS_READ_TWO \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX
+
 ################################################################################################
 ##### ALIGNMENT SUMMARY METRICS FOR PAIR #######################################################
 ################################################################################################
@@ -319,8 +512,18 @@
 ##### "PF_HQ_ALIGNED_Q20_BASES_PAIR","MEAN_READ_LENGTH","PCT_PF_READS_IMPROPER_PAIRS_PAIR" #####
 ################################################################################################
 
+echo RETRIEVING READ ALIGNMENT SUMMARY METRICS FOR READ PAIRS: `date`
+echo
+
 	GRAB_ALIGNMENT_SUMMARY_METRICS_BY_PAIR ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+
 		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}".alignment_summary_metrics.txt" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
@@ -337,6 +540,25 @@
 		fi
 	}
 
+		export -f GRAB_ALIGNMENT_SUMMARY_METRICS_BY_PAIR
+
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		GRAB_ALIGNMENT_SUMMARY_METRICS_BY_PAIR \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX
+
 ##################################
 ##### MARK DUPLICATES REPORT #####
 ##################################
@@ -347,8 +569,18 @@
 ##### "PERCENT_DUPLICATION_OPTICAL" #########################################################################
 #############################################################################################################
 
+echo RETRIEVING MARK DUPLICATES METRICS: `date`
+echo
+
 	GRAB_MARK_DUPLICATES ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+
 		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/PICARD_DUPLICATES/${SM_TAG}"_MARK_DUPLICATES.txt" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
@@ -374,6 +606,25 @@
 		fi
 	}
 
+		export -f GRAB_MARK_DUPLICATES
+
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		GRAB_MARK_DUPLICATES \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX
+
 ##########################################
 ##### HYBRIDIZATION SELECTION REPORT #####
 ##########################################
@@ -388,8 +639,18 @@
 ##### "THEORETICAL_HET_SENSITIVITY","HET_SNP_Q","BAIT_SET","PCT_USABLE_BASES_ON_BAIT" ######################
 ############################################################################################################
 
+echo RETRIEVING HYBRIDIZATION METRICS: `date`
+echo
+
 	GRAB_HYB_SELECTION ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+
 		# this will take when there are no reads in the file...but i don't think that it will handle when there are reads, but none fall on target
 		# the next time i that happens i'll fix this to handle it.
 
@@ -413,6 +674,25 @@
 		fi
 	}
 
+		export -f GRAB_HYB_SELECTION
+
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		GRAB_HYB_SELECTION \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX
+
 ##############################################
 ##### BAIT BIAS REPORT FOR Cref and Gref #####
 ##############################################
@@ -420,8 +700,18 @@
 ##### Cref_Q,Gref_Q ##########################
 ##############################################
 
+echo RETRIEVING BAIT BIAS METRICS: `date`
+echo
+
 	GRAB_BAIT_BIAS ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+
 		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//BAIT_BIAS/SUMMARY/${SM_TAG}".bait_bias_summary_metrics.txt" ]]
 		then
 			echo -e NaN'\t'NaN \
@@ -440,6 +730,25 @@
 		fi
 	}
 
+		export -f GRAB_BAIT_BIAS
+
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		GRAB_BAIT_BIAS \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX
+
 ############################################################
 ##### PRE-ADAPTER BIAS REPORT FOR Deamination and OxoG #####
 ############################################################
@@ -447,8 +756,18 @@
 ##### DEAMINATION_Q,OxoG_Q #################################
 ############################################################
 
+echo RETRIEVING PRE ADAPTER BIAS METRICS: `date`
+echo
+
 	GRAB_PRE_ADAPTER_BIAS ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+
 		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//PRE_ADAPTER/SUMMARY/${SM_TAG}".pre_adapter_summary_metrics.txt" ]]
 		then
 			echo -e NaN'\t'NaN \
@@ -467,6 +786,25 @@
 		fi
 	}
 
+		export -f GRAB_PRE_ADAPTER_BIAS
+
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		GRAB_PRE_ADAPTER_BIAS \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX
+
 ###########################################################
 ##### BASE DISTRIBUTION REPORT AVERAGE FROM PER CYCLE #####
 ###########################################################
@@ -474,8 +812,18 @@
 ##### PCT_A,PCT_C,PCT_G,PCT_T,PCT_N #######################
 ###########################################################
 
+echo RETRIEVING BASE DISTRIBUTION AVERAGE PER CYCLE METRICS: `date`
+echo
+
 	GRAB_BASE_DISTRIBUTION_AVERAGE_PER_CYCLE ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+
 		BASE_DISTIBUTION_BY_CYCLE_ROW_COUNT=(`wc -l ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}".base_distribution_by_cycle_metrics.txt"`)
 
 		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}".base_distribution_by_cycle_metrics.txt" ]]
@@ -504,6 +852,25 @@
 		fi
 	}
 
+		export -f GRAB_BASE_DISTRIBUTION_AVERAGE_PER_CYCLE
+
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		GRAB_BASE_DISTRIBUTION_AVERAGE_PER_CYCLE \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX
+
 ############################################
 ##### BASE SUBSTITUTION RATE ###############
 ############################################
@@ -512,8 +879,18 @@
 ##### PCT_C_to_A,PCT_C_to_G,PCT_C_to_T #####
 ############################################
 
+echo RETRIEVING BASE SUBSTITUTION RATE METRICS: `date`
+echo
+
 	GRAB_BASE_SUBSTITUTION_RATE ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+
 		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ERROR_SUMMARY/${SM_TAG}".error_summary_metrics.txt" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
@@ -526,6 +903,25 @@
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
 		fi
 	}
+
+		export -f GRAB_BASE_SUBSTITUTION_RATE
+
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		GRAB_BASE_SUBSTITUTION_RATE \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX
 
 #############################################
 ##### VCF METRICS FOR BAIT BED FILE #########
@@ -540,8 +936,18 @@
 ##### "BAIT_NUM_IN_DBSNP_138_COMPLEX_INDEL","BAIT_SNP_REFERENCE_BIAS","BAIT_NUM_SINGLETONS" ########
 ####################################################################################################
 
+echo RETRIEVING ON BAIT VCF METRICS: `date`
+echo
+
 	GRAB_VCF_METRICS_BAIT ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+
 		awk 'BEGIN {OFS="\t"} \
 				$1=="'${SM_TAG}'" \
 				{print $2,$3*100,$4,$5,$6,$7,$8,$9,$10*100,$13,$14,$15,$16*100,\
@@ -550,6 +956,25 @@
 			| ${DATAMASH_DIR}/datamash transpose \
 		>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 	}
+
+		export -f GRAB_VCF_METRICS_BAIT
+
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		GRAB_VCF_METRICS_BAIT \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX
 
 ########################################################################
 ##### VCF METRICS FOR TARGET BED FILE ##################################
@@ -565,8 +990,18 @@
 ##### "TARGET_SNP_REFERENCE_BIAS","TARGET_NUM_SINGLETONS" ###############################################
 #########################################################################################################
 
+echo RETRIEVING ON TARGET VCF METRICS: `date`
+echo
+
 	GRAB_VCF_METRICS_TARGET ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+
 		awk 'BEGIN {OFS="\t"} \
 				$1=="'${SM_TAG}'" \
 				{print $2,$3*100,$4,$5,$6,$7,$8,$9,$10*100,$13,$14,$15,$16*100,\
@@ -575,6 +1010,25 @@
 			| ${DATAMASH_DIR}/datamash transpose \
 		>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 	}
+
+		export -f GRAB_VCF_METRICS_TARGET
+
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		GRAB_VCF_METRICS_TARGET \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX
 
 #########################################################
 ##### VCF METRICS FOR TITV BED FILE #####################
@@ -590,8 +1044,18 @@
 ##### "CODING_NUM_IN_DBSNP_129_COMPLEX_INDEL","CODING_SNP_REFERENCE_BIAS","CODING_NUM_SINGLETONS" ##########
 ############################################################################################################
 
+echo RETRIEVING ON TITV VCF METRICS: `date`
+echo
+
 	GRAB_VCF_METRICS_TITV ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+
 		awk 'BEGIN {OFS="\t"} \
 				$1=="'${SM_TAG}'" \
 				{print $2,$3*100,$4,$5,$6,$7,$8,$9,$10*100,$11,$12,$13,$14,$15,$16*100,\
@@ -601,44 +1065,61 @@
 		>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 	}
 
+		export -f GRAB_VCF_METRICS_TITV
+
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		GRAB_VCF_METRICS_TITV \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX
+
 ##########################################################################################################
 ##### tranpose from rows to list so these can be concatenated together for a project/batch QC report #####
 ##########################################################################################################
 
+echo TRANSPOSING METRICS FROM ROWS TO COLUMNS: `date`
+echo
+
 	TRANSPOSE_METRICS ()
 	{
+		PROJECT_SAMPLE=$1
+		SM_TAG=$2
+		CORE_PATH=$3
+		DATAMASH_DIR=$4
+		PROJECT_MS=$5
+		PREFIX=$6
+
 		cat ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt" \
 		| ${DATAMASH_DIR}/datamash transpose \
 		>| ${CORE_PATH}/${PROJECT_MS}/REPORTS/QC_REPORT_PREP_MS/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_PREP.txt"
 	}
 
-# RUN FUNCTIONS TO CREATE A QC METRIC REPORT STUB FOR EACH SAMPLE
+		export -f TRANSPOSE_METRICS
 
-	for SAMPLE in $(awk 1 ${SAMPLE_SHEET} \
-		| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
-		| awk 'BEGIN {FS=","} \
-			NR>1 \
-			{print $8}' \
-		| sort \
-		| uniq);
-	do
-		CREATE_SAMPLE_INFO_ARRAY
-		GRAB_READ_GROUP_HEADER
-		GRAB_GENDER_CHECK_FROM_ANEUPLOIDY_CHECK
-		GRAB_CONCORDANCE
-		GRAB_VERIFYBAMID
-		GRAB_INSERT_SIZE
-		GRAB_ALIGNMENT_SUMMARY_METRICS_READ_ONE
-		GRAB_ALIGNMENT_SUMMARY_METRICS_READ_TWO
-		GRAB_ALIGNMENT_SUMMARY_METRICS_BY_PAIR
-		GRAB_MARK_DUPLICATES
-		GRAB_HYB_SELECTION
-		GRAB_BAIT_BIAS
-		GRAB_PRE_ADAPTER_BIAS
-		GRAB_BASE_DISTRIBUTION_AVERAGE_PER_CYCLE
-		GRAB_BASE_SUBSTITUTION_RATE
-		GRAB_VCF_METRICS_BAIT
-		GRAB_VCF_METRICS_TARGET
-		GRAB_VCF_METRICS_TITV
-		TRANSPOSE_METRICS
-	done
+		awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d' \
+			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
+			| sort \
+			| uniq \
+		| $PARALLEL_DIR/parallel \
+			--no-notice \
+			-j 4 \
+			--colsep ' ' \
+		TRANSPOSE_METRICS \
+			{1} \
+			{2} \
+			$CORE_PATH \
+			$DATAMASH_DIR \
+			$PROJECT_MS \
+			$PREFIX

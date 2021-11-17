@@ -97,6 +97,7 @@
 	R_DIRECTORY="/mnt/linuxtools/R/R-3.1.1/bin"
 	GATK_DIR_4011="/mnt/linuxtools/GATK/gatk-4.0.11.0"
 	PICARD_DIR="/mnt/linuxtools/PICARD/picard-2.20.6"
+	PARALLEL_DIR="/cm/shared/apps/parallel/20161222/bin"
 
 ##################
 # PIPELINE FILES #
@@ -972,8 +973,11 @@ done
 					-cwd \
 					-V \
 					-q $QUEUE_LIST \
-					-p $PRIORITY \
+					-p -3 \
 					-j y \
+					-pe slots 20 \
+					-R y \
+					-l mem_free=700G \
 				-N J01A02_LIFTOVER_REFINED_GRCH37_TO_HG19_$PROJECT_MS \
 					-o $CORE_PATH/$PROJECT_MS/LOGS/J01A02_LIFTOVER_REFINED_MS_TO_HG19.log \
 					-hold_jid J01_CAT_REFINED_VARIANTS_$PROJECT_MS \
@@ -997,8 +1001,11 @@ done
 						-cwd \
 						-V \
 						-q $QUEUE_LIST \
-						-p $PRIORITY \
+						-p -3 \
 						-j y \
+						-pe slots 20 \
+						-R y \
+						-l mem_free=700G \
 					-N J01A02A01_LIFTOVER_REFINED_HG19_TO_GRCH38_$PROJECT_MS \
 						-o $CORE_PATH/$PROJECT_MS/LOGS/J01A02A01_LIFTOVER_REFINED_HG19_TO_HG38.log \
 						-hold_jid J01A02_LIFTOVER_REFINED_GRCH37_TO_HG19_$PROJECT_MS \
@@ -1022,11 +1029,11 @@ done
 				-cwd \
 				-V \
 				-q $QUEUE_LIST \
-				-p $PRIORITY \
+				-p -3 \
 				-j y \
-				-pe slots 5 \
+				-pe slots 20 \
 				-R y \
-				-l mem_free=300G \
+				-l mem_free=700G \
 			-N K01_ANNOVAR_$PROJECT_MS \
 				-o $CORE_PATH/$PROJECT_MS/LOGS/K01_ANNOVAR.log \
 				-hold_jid J01_CAT_REFINED_VARIANTS_$PROJECT_MS \
@@ -1374,6 +1381,7 @@ done
 		$SCRIPT_DIR/Y01_QC_REPORT_PREP.sh \
 			$SAMTOOLS_DIR \
 			$DATAMASH_DIR \
+			$PARALLEL_DIR \
 			$CORE_PATH \
 			$PROJECT_MS \
 			$PREFIX \

@@ -58,7 +58,7 @@ zcat -f ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.BEDsuperset.VQSR.1KG.ExAC3.REF
 
 $CIDRSEQSUITE_ANNOVAR_JAVA/java -jar \
 -Duser.home=$CIDRSEQSUITE_PROPS \
--Xmx300g \
+-Xmx700g \
 $CIDRSEQSUITE_DIR_4_0/CIDRSeqSuite.jar \
 -pipeline \
 -annovar_directory_annotation \
@@ -68,7 +68,7 @@ $CORE_PATH/$PROJECT_MS/TEMP/ANNOVAR/$PREFIX
 echo \
 $CIDRSEQSUITE_ANNOVAR_JAVA/java -jar \
 -Duser.home=$CIDRSEQSUITE_PROPS \
--Xmx300g \
+-Xmx700g \
 $CIDRSEQSUITE_DIR_4_0/CIDRSeqSuite.jar \
 -pipeline \
 -annovar_directory_annotation \

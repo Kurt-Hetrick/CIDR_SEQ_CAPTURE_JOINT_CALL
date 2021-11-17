@@ -38,6 +38,7 @@
 START_LIFTOVER_MS_HG38=`date '+%s'`
 
 	$JAVA_1_8/java -jar \
+	-Xmx700g \
 	$PICARD_DIR/picard.jar \
 	LiftoverVcf \
 	INPUT=$CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.HG19.LIFTOVER.vcf.gz" \
@@ -57,6 +58,7 @@ echo $SM_TAG"_"$PROJECT_MS",L.01,LIFTOVER_REFINED_VCF_HG38,"$HOSTNAME","$START_L
 
 echo \
 $JAVA_1_8/java -jar \
+-Xmx700g \
 $PICARD_DIR/picard.jar \
 LiftoverVcf \
 INPUT=$CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.HG19.LIFTOVER.vcf.gz" \
