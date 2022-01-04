@@ -45,16 +45,16 @@
 
 # next script will cat everything together and add the header.
 
-#############################################################
-##### Grabbing the BAM header (for RG ID,PU,LB,etc) #########
-#############################################################
-#############################################################
-##### THIS IS THE HEADER ####################################
-##### "PROJECT_SAMPLE","SM_TAG","RG_PU","LIBRARY" ###########
-##### "LIBRARY_PLATE","LIBRARY_WELL","LIBRARY_ROW" ##########
-##### "LIBRARY_COLUMN","HYB_PLATE","HYB_WELL","HYB_ROW" #####
-##### "HYB_COLUMN" ##########################################
-#############################################################
+#########################################################################
+### Grabbing the BAM header (for RG ID,PU,LB,etc) #######################
+#########################################################################
+### THIS IS THE HEADER ##################################################
+### "SM_TAG","PROJECT","RG_PU","LIBRARY" ################################
+### "LIBRARY_PLATE","LIBRARY_WELL","LIBRARY_ROW","LIBRARY_COLUMN" #######
+### "HYB_PLATE","HYB_WELL","HYB_ROW","HYB_COLUMN" #######################
+### "CRAM_PIPELINE_VERSION","SEQUENCING_PLATFORM","SEQUENCER_MODEL" #####
+### "EXEMPLAR_DATE","BAIT_BED_FILE","TARGET_BED_FILE","TITV_BED_FILE" ###
+#########################################################################
 
 echo
 echo RETRIEVING READ GROUP HEADERS: `date`
@@ -86,11 +86,19 @@ echo
 						unique 10 \
 						unique 11 \
 						unique 12 \
+						unique 13 \
+						unique 14 \
+						unique 15 \
+						unique 16 \
+						unique 17 \
+						unique 18 \
+						unique 19 \
 					| sed 's/,/;/g' \
 					| ${DATAMASH_DIR}/datamash \
 						transpose \
 			>| ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
-		elif [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt && -f ${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram ]];
+		elif [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt \
+				&& -f ${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram ]];
 			then
 
 				# grab field number for SM_TAG
@@ -126,6 +134,66 @@ echo
 						| sed 's/^ *//g' \
 						| awk '$2~/^LB:/ {print $1}'`)
 
+				# grab field number for CRAM_PROCESSING_VERSION (PG field)
+
+					PG_FIELD=(`${SAMTOOLS_DIR}/samtools \
+						view -H \
+					${CORE_PATH}/${PROJECT}/CRAM/${SM_TAG}.cram \
+						| grep -m 1 ^@RG \
+						| sed 's/\t/\n/g' \
+						| cat -n \
+						| sed 's/^ *//g' \
+						| awk '$2~/^PG:/ \
+							{print $1}'`)
+
+				# grab field number for PLATFORM_MODEL field (PG field)
+
+					PM_FIELD=(`${SAMTOOLS_DIR}/samtools \
+						view -H \
+					${CORE_PATH}/${PROJECT}/CRAM/${SM_TAG}.cram \
+						| grep -m 1 ^@RG \
+						| sed 's/\t/\n/g' \
+						| cat -n \
+						| sed 's/^ *//g' \
+						| awk '$2~/^PM:/ \
+							{print $1}'`)
+
+				# grab field number for LIMS_DATE
+
+					DT_FIELD=(`${SAMTOOLS_DIR}/samtools \
+						view -H \
+					${CORE_PATH}/${PROJECT}/CRAM/${SM_TAG}.cram \
+						| grep -m 1 ^@RG \
+						| sed 's/\t/\n/g' \
+						| cat -n \
+						| sed 's/^ *//g' \
+						| awk '$2~/^DT:/ \
+							{print $1}'`)
+
+				# grab field number for PLATFORM
+
+					PL_FIELD=(`${SAMTOOLS_DIR}/samtools \
+						view -H \
+					${CORE_PATH}/${PROJECT}/CRAM/${SM_TAG}.cram \
+						| grep -m 1 ^@RG \
+						| sed 's/\t/\n/g' \
+						| cat -n \
+						| sed 's/^ *//g' \
+						| awk '$2~/^PL:/ \
+							{print $1}'`)
+
+				# grab field number for BED FILES (DS field)
+
+					DS_FIELD=(`${SAMTOOLS_DIR}/samtools \
+						view -H \
+					${CORE_PATH}/${PROJECT}/CRAM/${SM_TAG}.cram \
+						| grep -m 1 ^@RG \
+						| sed 's/\t/\n/g' \
+						| cat -n \
+						| sed 's/^ *//g' \
+						| awk '$2~/^DS:/ \
+							{print $1}'`)
+
 				# Now grab the header and format
 					# breaking out the library name into its parts is assuming that the format is...
 					# fill in empty fields with NA thing (for loop in awk) is a lifesaver
@@ -136,12 +204,45 @@ echo
 					${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
 						| grep ^@RG \
 						| awk \
-							-v SM_FIELD="$SM_FIELD" \
-							-v PU_FIELD="$PU_FIELD" \
-							-v LB_FIELD="$LB_FIELD" \
-							'BEGIN {OFS="\t"} {split($SM_FIELD,SMtag,":"); split($PU_FIELD,PU,":"); split($LB_FIELD,Library,":"); split(Library[2],Library_Unit,"_"); \
-							print "'${PROJECT_SAMPLE}'",SMtag[2],PU[2],Library[2],Library_Unit[1],Library_Unit[2],substr(Library_Unit[2],1,1),substr(Library_Unit[2],2,2),\
-							Library_Unit[3],Library_Unit[4],substr(Library_Unit[4],1,1),substr(Library_Unit[4],2,2)}' \
+						-v SM_FIELD="$SM_FIELD" \
+						-v PU_FIELD="$PU_FIELD" \
+						-v LB_FIELD="$LB_FIELD" \
+						-v PG_FIELD="$PG_FIELD" \
+						-v PM_FIELD="$PM_FIELD" \
+						-v DT_FIELD="$DT_FIELD" \
+						-v PL_FIELD="$PL_FIELD" \
+						-v DS_FIELD="$DS_FIELD" \
+						'BEGIN {OFS="\t"} \
+						{split($SM_FIELD,SMtag,":"); \
+						split($PU_FIELD,PU,":"); \
+						split($LB_FIELD,Library,":"); \
+						split(Library[2],Library_Unit,"_"); \
+						split($PG_FIELD,PROGRAM,":"); \
+						split($PL_FIELD,SEQ_PLATFORM,":"); \
+						split($PM_FIELD,SEQ_MODEL,":"); \
+						split($DT_FIELD,DT,":"); \
+						split(DT[2],DATE,"T"); \
+						split($DS_FIELD,DS,":"); \
+						split(DS[2],BED_FILES,","); \
+						print "'${PROJECT}'",\
+							SMtag[2],\
+							PU[2],\
+							Library[2],\
+							Library_Unit[1],\
+							Library_Unit[2],\
+							substr(Library_Unit[2],1,1),\
+							substr(Library_Unit[2],2,2),\
+							Library_Unit[3],\
+							Library_Unit[4],\
+							substr(Library_Unit[4],1,1),\
+							substr(Library_Unit[4],2,2),\
+							PROGRAM[2],\
+							SEQ_PLATFORM[2],\
+							SEQ_MODEL[2],\
+							DATE[1],\
+							BED_FILES[1],\
+							BED_FILES[2],\
+							BED_FILES[3]}' \
 						| awk 'BEGIN { FS = OFS = "\t" } { for(i=1; i<=NF; i++) if($i ~ /^ *$/) $i = "NA" }; 1' \
 						| ${DATAMASH_DIR}/datamash \
 							-s \
@@ -156,12 +257,19 @@ echo
 							unique 10 \
 							unique 11 \
 							unique 12 \
+							unique 13 \
+							unique 14 \
+							unique 15 \
+							unique 16 \
+							unique 17 \
+							unique 18 \
+							unique 19 \
 						| sed 's/,/;/g' \
 						| ${DATAMASH_DIR}/datamash \
 							transpose \
 					>| ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
-			echo -e "${PROJECT_SAMPLE}\t${SM_TAG}\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA" \
+			echo -e "${PROJECT}\t${SM_TAG}\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA" \
 			| ${DATAMASH_DIR}/datamash \
 				transpose \
 			>| ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
@@ -175,7 +283,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \
@@ -222,7 +330,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \
@@ -278,7 +386,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \
@@ -330,7 +438,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \
@@ -381,7 +489,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \
@@ -435,7 +543,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \
@@ -490,7 +598,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \
@@ -547,7 +655,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \
@@ -567,6 +675,7 @@ echo
 ##### "SECONDARY_OR_SUPPLEMENTARY_READS","READ_PAIR_DUPLICATES","READ_PAIRS_EXAMINED","PAIRED_DUP_RATE" #####
 ##### "UNPAIRED_READ_DUPLICATES","UNPAIRED_READS_EXAMINED","UNPAIRED_DUP_RATE" ##############################
 ##### "PERCENT_DUPLICATION_OPTICAL" #########################################################################
+##### NOTE: THIS ISN'T AS ROBUST AS THE QC PIPELINE, BUT IT SHOULDN'T HAVE TO BE ############################
 #############################################################################################################
 
 echo RETRIEVING MARK DUPLICATES METRICS: `date`
@@ -613,7 +722,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \
@@ -625,19 +734,19 @@ echo
 			$PROJECT_MS \
 			$PREFIX
 
-##########################################
-##### HYBRIDIZATION SELECTION REPORT #####
-##########################################
-##### THIS IS THE HEADER ###################################################################################
-##### "GENOME_SIZE","BAIT_TERRITORY","TARGET_TERRITORY","PCT_PF_UQ_READS_ALIGNED","PF_UQ_GIGS_ALIGNED" #####
-##### "PCT_SELECTED_BASES","ON_BAIT_VS_SELECTED","MEAN_BAIT_COVERAGE","MEAN_TARGET_COVERAGE" ###############
-##### "MEDIAN_TARGET_COVERAGE","MAX_TARGET_COVERAGE","ZERO_CVG_TARGETS_PCT","PCT_EXC_MAPQ" #################
-##### "PCT_EXC_BASEQ","PCT_EXC_OVERLAP","PCT_EXC_OFF_TARGET","FOLD_80_BASE_PENALTY" ########################
-##### "PCT_TARGET_BASES_1X","PCT_TARGET_BASES_2X","PCT_TARGET_BASES_10X","PCT_TARGET_BASES_20X" ############
-##### "PCT_TARGET_BASES_30X","PCT_TARGET_BASES_40X","PCT_TARGET_BASES_50X" #################################
-##### "PCT_TARGET_BASES_100X","HS_LIBRARY_SIZE","AT_DROPOUT","GC_DROPOUT" ##################################
-##### "THEORETICAL_HET_SENSITIVITY","HET_SNP_Q","BAIT_SET","PCT_USABLE_BASES_ON_BAIT" ######################
-############################################################################################################
+########################################################################################################
+### HYBRIDIZATION SELECTION REPORT #####################################################################
+########################################################################################################
+### THIS IS THE HEADER #################################################################################
+### "GENOME_SIZE","BAIT_TERRITORY","TARGET_TERRITORY","PCT_PF_UQ_READS_ALIGNED","PF_UQ_GIGS_ALIGNED" ###
+### "PCT_SELECTED_BASES","ON_BAIT_VS_SELECTED","MEAN_TARGET_COVERAGE" ##################################
+### "MEDIAN_TARGET_COVERAGE","MAX_TARGET_COVERAGE","ZERO_CVG_TARGETS_PCT","PCT_EXC_MAPQ" ###############
+### "PCT_EXC_ADAPTER","PCT_EXC_BASEQ","PCT_EXC_OVERLAP","PCT_EXC_OFF_TARGET","FOLD_80_BASE_PENALTY" ####
+### "PCT_TARGET_BASES_1X","PCT_TARGET_BASES_2X","PCT_TARGET_BASES_10X","PCT_TARGET_BASES_20X" ##########
+### "PCT_TARGET_BASES_30X","PCT_TARGET_BASES_40X","PCT_TARGET_BASES_50X","PCT_TARGET_BASES_100X" #######
+### "HS_LIBRARY_SIZE","AT_DROPOUT","GC_DROPOUT","THEORETICAL_HET_SENSITIVITY","HET_SNP_Q" ##############
+### "BAIT_SET","PCT_USABLE_BASES_ON_BAIT" ##############################################################
+########################################################################################################
 
 echo RETRIEVING HYBRIDIZATION METRICS: `date`
 echo
@@ -654,23 +763,186 @@ echo
 		# this will take when there are no reads in the file...but i don't think that it will handle when there are reads, but none fall on target
 		# the next time i that happens i'll fix this to handle it.
 
-		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//HYB_SELECTION/${SM_TAG}"_hybridization_selection_metrics.txt" ]]
+		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt ]]
 		then
-			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
-			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
+				| ${DATAMASH_DIR}/datamash \
+					transpose \
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
-			awk 'BEGIN {FS="\t";OFS="\t"} \
-				NR==8 \
-				{if ($12=="?"&&$44=="") print $2,$3,$4,"NaN",($14/1000000000),"NaN","NaN",$23,$24,$25,$29,"NaN","NaN","NaN","NaN","NaN",\
-				$36,$37,$38,$39,$40,$41,$42,$43,"NaN",$51,$52,$53,$54,$1,"NaN" ; \
-				else if ($12!="?"&&$44=="") print $2,$3,$4,$12*100,($14/1000000000),$19*100,$21,$23,$24,$25,$29*100,$31*100,\
-				$32*100,$33*100,$34*100,$35,$36*100,$37*100,$38*100,$39*100,$40*100,$41*100,$42*100,$43*100,"NaN",$51,$52,$53,$54,$1,$26*100 ; \
-				else print $2,$3,$4,$12*100,($14/1000000000),$19*100,$21,$23,$24,$25,$29*100,$31*100,$32*100,$33*100,$34*100,$35,\
-				$36*100,$37*100,$38*100,$39*100,$40*100,$41*100,$42*100,$43*100,$44,$51,$52,$53,$54,$1,$26*100}' \
-			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//HYB_SELECTION/${SM_TAG}"_hybridization_selection_metrics.txt" \
-			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			# grab field numbers for metrics and store a variables.
+
+				BAIT_SET=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="BAIT_SET") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				BAIT_TERRITORY=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="BAIT_TERRITORY") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				PCT_SELECTED_BASES=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_SELECTED_BASES") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				ON_BAIT_VS_SELECTED=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="ON_BAIT_VS_SELECTED") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				PCT_USABLE_BASES_ON_BAIT=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_USABLE_BASES_ON_BAIT") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				HS_LIBRARY_SIZE=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="HS_LIBRARY_SIZE") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				TARGET_TERRITORY=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="TARGET_TERRITORY") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				GENOME_SIZE=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="GENOME_SIZE") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				PF_UQ_BASES_ALIGNED=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PF_UQ_BASES_ALIGNED") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				PCT_PF_UQ_READS_ALIGNED=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_PF_UQ_READS_ALIGNED") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				MEAN_TARGET_COVERAGE=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="MEAN_TARGET_COVERAGE") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				MEDIAN_TARGET_COVERAGE=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="MEDIAN_TARGET_COVERAGE") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				MAX_TARGET_COVERAGE=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="MAX_TARGET_COVERAGE") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				ZERO_CVG_TARGETS_PCT=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="ZERO_CVG_TARGETS_PCT") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				PCT_EXC_ADAPTER=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_EXC_ADAPTER") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				PCT_EXC_MAPQ=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_EXC_MAPQ") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				PCT_EXC_BASEQ=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_EXC_BASEQ") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				PCT_EXC_OVERLAP=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_EXC_OVERLAP") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				PCT_EXC_OFF_TARGET=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_EXC_OFF_TARGET") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				FOLD_80_BASE_PENALTY=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="FOLD_80_BASE_PENALTY") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				PCT_TARGET_BASES_1X=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_1X") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				PCT_TARGET_BASES_2X=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_2X") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				PCT_TARGET_BASES_10X=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_10X") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				PCT_TARGET_BASES_20X=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_20X") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				PCT_TARGET_BASES_30X=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_30X") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				PCT_TARGET_BASES_40X=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_40X") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				PCT_TARGET_BASES_50X=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_50X") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				PCT_TARGET_BASES_100X=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_100X") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				AT_DROPOUT=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="AT_DROPOUT") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				GC_DROPOUT=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="GC_DROPOUT") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				HET_SNP_SENSITIVITY=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="HET_SNP_SENSITIVITY") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+				HET_SNP_Q=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="HET_SNP_Q") print i}}' \
+					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+
+			# this was supposed to be
+			## if there are no reads, then print x
+			## if there are no reads in the target area, the print y
+			## else the data is fine and do as you intended.
+			## however i no longer have anything to test this on...
+
+				awk \
+					-v BAIT_SET="$BAIT_SET" \
+					-v BAIT_TERRITORY="$BAIT_TERRITORY" \
+					-v PCT_SELECTED_BASES="$PCT_SELECTED_BASES" \
+					-v ON_BAIT_VS_SELECTED="$ON_BAIT_VS_SELECTED" \
+					-v PCT_USABLE_BASES_ON_BAIT="$PCT_USABLE_BASES_ON_BAIT" \
+					-v HS_LIBRARY_SIZE="$HS_LIBRARY_SIZE" \
+					-v TARGET_TERRITORY="$TARGET_TERRITORY" \
+					-v GENOME_SIZE="$GENOME_SIZE" \
+					-v PF_UQ_BASES_ALIGNED="$PF_UQ_BASES_ALIGNED" \
+					-v PCT_PF_UQ_READS_ALIGNED="$PCT_PF_UQ_READS_ALIGNED" \
+					-v MEAN_TARGET_COVERAGE="$MEAN_TARGET_COVERAGE" \
+					-v MEDIAN_TARGET_COVERAGE="$MEDIAN_TARGET_COVERAGE" \
+					-v MAX_TARGET_COVERAGE="$MAX_TARGET_COVERAGE" \
+					-v ZERO_CVG_TARGETS_PCT="$ZERO_CVG_TARGETS_PCT" \
+					-v PCT_EXC_ADAPTER="$PCT_EXC_ADAPTER" \
+					-v PCT_EXC_MAPQ="$PCT_EXC_MAPQ" \
+					-v PCT_EXC_BASEQ="$PCT_EXC_BASEQ" \
+					-v PCT_EXC_OVERLAP="$PCT_EXC_OVERLAP" \
+					-v PCT_EXC_OFF_TARGET="$PCT_EXC_OFF_TARGET" \
+					-v FOLD_80_BASE_PENALTY="$FOLD_80_BASE_PENALTY" \
+					-v PCT_TARGET_BASES_1X="$PCT_TARGET_BASES_1X" \
+					-v PCT_TARGET_BASES_2X="$PCT_TARGET_BASES_2X" \
+					-v PCT_TARGET_BASES_10X="$PCT_TARGET_BASES_10X" \
+					-v PCT_TARGET_BASES_20X="$PCT_TARGET_BASES_20X" \
+					-v PCT_TARGET_BASES_30X="$PCT_TARGET_BASES_30X" \
+					-v PCT_TARGET_BASES_40X="$PCT_TARGET_BASES_40X" \
+					-v PCT_TARGET_BASES_50X="$PCT_TARGET_BASES_50X" \
+					-v PCT_TARGET_BASES_100X="$PCT_TARGET_BASES_100X" \
+					-v AT_DROPOUT="$AT_DROPOUT" \
+					-v GC_DROPOUT="$GC_DROPOUT" \
+					-v HET_SNP_SENSITIVITY="$HET_SNP_SENSITIVITY" \
+					-v HET_SNP_Q="$HET_SNP_Q" \
+				'BEGIN {FS="\t";OFS="\t"} \
+					NR==8 \
+					{if ($PCT_PF_UQ_READS_ALIGNED=="?"&&$HS_LIBRARY_SIZE=="") \
+					print $GENOME_SIZE,$BAIT_TERRITORY,$TARGET_TERRITORY,"NaN",\
+						($PF_UQ_BASES_ALIGNED/1000000000),"NaN","NaN",\
+						$MEAN_TARGET_COVERAGE,$MEDIAN_TARGET_COVERAGE,$MAX_TARGET_COVERAGE,\
+						$ZERO_CVG_TARGETS_PCT*100,"NaN","NaN","NaN",\
+						"NaN","NaN","NaN",\
+						$PCT_TARGET_BASES_1X*100,$PCT_TARGET_BASES_2X*100,$PCT_TARGET_BASES_10X*100,\
+						$PCT_TARGET_BASES_20X*100,$PCT_TARGET_BASES_30X*100,$PCT_TARGET_BASES_40X*100,\
+						$PCT_TARGET_BASES_50X*100,$PCT_TARGET_BASES_100X*100,"NaN",$AT_DROPOUT,\
+						$GC_DROPOUT,$HET_SNP_SENSITIVITY,$HET_SNP_Q,$BAIT_SET,"NaN" ; \
+					else if ($PCT_PF_UQ_READS_ALIGNED!="?"&&$HS_LIBRARY_SIZE=="") \
+					print $GENOME_SIZE,$BAIT_TERRITORY,$TARGET_TERRITORY,$PCT_PF_UQ_READS_ALIGNED*100,\
+						($PF_UQ_BASES_ALIGNED/1000000000),$PCT_SELECTED_BASES*100,$ON_BAIT_VS_SELECTED,\
+						$MEAN_TARGET_COVERAGE,$MEDIAN_TARGET_COVERAGE,$MAX_TARGET_COVERAGE,\
+						$ZERO_CVG_TARGETS_PCT*100,$PCT_EXC_MAPQ*100,$PCT_EXC_BASEQ*100,$PCT_EXC_OVERLAP*100,\
+						$PCT_EXC_OFF_TARGET*100,$PCT_EXC_ADAPTER,$FOLD_80_BASE_PENALTY,\
+						$PCT_TARGET_BASES_1X*100,$PCT_TARGET_BASES_2X*100,$PCT_TARGET_BASES_10X*100,\
+						$PCT_TARGET_BASES_20X*100,$PCT_TARGET_BASES_30X*100,$PCT_TARGET_BASES_40X*100,\
+						$PCT_TARGET_BASES_50X*100,$PCT_TARGET_BASES_100X*100,"NaN",$AT_DROPOUT,\
+						$GC_DROPOUT,$HET_SNP_SENSITIVITY,$HET_SNP_Q,$BAIT_SET,$PCT_USABLE_BASES_ON_BAIT*100 ; \
+					else \
+					print $GENOME_SIZE,$BAIT_TERRITORY,$TARGET_TERRITORY,$PCT_PF_UQ_READS_ALIGNED*100,\
+						($PF_UQ_BASES_ALIGNED/1000000000),$PCT_SELECTED_BASES*100,$ON_BAIT_VS_SELECTED,\
+						$MEAN_TARGET_COVERAGE,$MEDIAN_TARGET_COVERAGE,$MAX_TARGET_COVERAGE,\
+						$ZERO_CVG_TARGETS_PCT*100,$PCT_EXC_MAPQ*100,$PCT_EXC_BASEQ*100,$PCT_EXC_OVERLAP*100,\
+						$PCT_EXC_OFF_TARGET*100,$PCT_EXC_ADAPTER,$FOLD_80_BASE_PENALTY,\
+						$PCT_TARGET_BASES_1X*100,$PCT_TARGET_BASES_2X*100,$PCT_TARGET_BASES_10X*100,\
+						$PCT_TARGET_BASES_20X*100,$PCT_TARGET_BASES_30X*100,$PCT_TARGET_BASES_40X*100,\
+						$PCT_TARGET_BASES_50X*100,$PCT_TARGET_BASES_100X*100,$HS_LIBRARY_SIZE,$AT_DROPOUT,\
+						$GC_DROPOUT,$HET_SNP_SENSITIVITY,$HET_SNP_Q,$BAIT_SET,$PCT_USABLE_BASES_ON_BAIT*100}' \
+				${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt \
+					| ${DATAMASH_DIR}/datamash \
+						transpose \
+				>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
 
@@ -681,7 +953,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \
@@ -737,7 +1009,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \
@@ -793,7 +1065,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \
@@ -859,7 +1131,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \
@@ -911,7 +1183,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \
@@ -964,7 +1236,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \
@@ -1018,7 +1290,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \
@@ -1072,7 +1344,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \
@@ -1112,7 +1384,7 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| $PARALLEL_DIR/parallel \
+		| ${PARALLEL_DIR}/parallel \
 			--no-notice \
 			-j 4 \
 			--colsep ' ' \

@@ -72,6 +72,13 @@
 				"HYB_WELL",\
 				"HYB_ROW",\
 				"HYB_COLUMN",\
+				"CRAM_PIPELINE_VERSION",\
+				"SEQUENCING_PLATFORM",\
+				"SEQUENCER_MODEL",\
+				"EXEMPLAR_DATE",\
+				"BAIT_BED_FILE",
+				"TARGET_BED_FILE",\
+				"TITV_BED_FILE",\
 				"X_AVG_DP",\
 				"X_NORM_DP",\
 				"Y_AVG_DP",\
@@ -151,6 +158,7 @@
 				"PCT_EXC_BASEQ",\
 				"PCT_EXC_OVERLAP",\
 				"PCT_EXC_OFF_TARGET",\
+				"PCT_EXC_ADAPTER",\
 				"FOLD_80_BASE_PENALTY",\
 				"PCT_TARGET_BASES_1X",\
 				"PCT_TARGET_BASES_2X",\

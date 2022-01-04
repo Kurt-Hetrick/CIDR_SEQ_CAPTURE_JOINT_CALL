@@ -186,8 +186,8 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 
 # write command line to file and execute the command line
 
-	echo ${CMD} >> ${CORE_PATH}/${PROJECT_SAMPLE}/COMMAND_LINES/${SM_TAG}.COMMAND.LINES.txt
-	echo >> ${CORE_PATH}/${PROJECT_SAMPLE}/COMMAND_LINES/${SM_TAG}.COMMAND.LINES.txt
+	echo ${CMD} >> ${CORE_PATH}/${PROJECT_SAMPLE}/COMMAND_LINES/${SM_TAG}_command_lines.txt
+	echo >> ${CORE_PATH}/${PROJECT_SAMPLE}/COMMAND_LINES/${SM_TAG}_command_lines.txt
 	echo ${CMD} | bash
 
 	# check the exit signal at this point.
@@ -223,8 +223,8 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 
 # write command line to file and execute the command line
 
-	echo ${CMD} >> ${CORE_PATH}/${PROJECT_SAMPLE}/COMMAND_LINES/${SM_TAG}.COMMAND.LINES.txt
-	echo >> ${CORE_PATH}/${PROJECT_SAMPLE}/COMMAND_LINES/${SM_TAG}.COMMAND.LINES.txt
+	echo ${CMD} >> ${CORE_PATH}/${PROJECT_SAMPLE}/COMMAND_LINES/${SM_TAG}_command_lines.txt
+	echo >> ${CORE_PATH}/${PROJECT_SAMPLE}/COMMAND_LINES/${SM_TAG}_command_lines.txt
 	echo ${CMD} | bash
 
 	# check the exit signal at this point.
