@@ -138,7 +138,7 @@ echo
 
 					PG_FIELD=(`${SAMTOOLS_DIR}/samtools \
 						view -H \
-					${CORE_PATH}/${PROJECT}/CRAM/${SM_TAG}.cram \
+					${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
 						| grep -m 1 ^@RG \
 						| sed 's/\t/\n/g' \
 						| cat -n \
@@ -150,7 +150,7 @@ echo
 
 					PM_FIELD=(`${SAMTOOLS_DIR}/samtools \
 						view -H \
-					${CORE_PATH}/${PROJECT}/CRAM/${SM_TAG}.cram \
+					${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
 						| grep -m 1 ^@RG \
 						| sed 's/\t/\n/g' \
 						| cat -n \
@@ -162,7 +162,7 @@ echo
 
 					DT_FIELD=(`${SAMTOOLS_DIR}/samtools \
 						view -H \
-					${CORE_PATH}/${PROJECT}/CRAM/${SM_TAG}.cram \
+					${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
 						| grep -m 1 ^@RG \
 						| sed 's/\t/\n/g' \
 						| cat -n \
@@ -174,7 +174,7 @@ echo
 
 					PL_FIELD=(`${SAMTOOLS_DIR}/samtools \
 						view -H \
-					${CORE_PATH}/${PROJECT}/CRAM/${SM_TAG}.cram \
+					${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
 						| grep -m 1 ^@RG \
 						| sed 's/\t/\n/g' \
 						| cat -n \
@@ -186,7 +186,7 @@ echo
 
 					DS_FIELD=(`${SAMTOOLS_DIR}/samtools \
 						view -H \
-					${CORE_PATH}/${PROJECT}/CRAM/${SM_TAG}.cram \
+					${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
 						| grep -m 1 ^@RG \
 						| sed 's/\t/\n/g' \
 						| cat -n \
@@ -224,7 +224,7 @@ echo
 						split(DT[2],DATE,"T"); \
 						split($DS_FIELD,DS,":"); \
 						split(DS[2],BED_FILES,","); \
-						print "'${PROJECT}'",\
+						print "'${PROJECT_SAMPLE}'",\
 							SMtag[2],\
 							PU[2],\
 							Library[2],\
@@ -269,7 +269,7 @@ echo
 							transpose \
 					>| ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
-			echo -e "${PROJECT}\t${SM_TAG}\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA" \
+			echo -e "${PROJECT_SAMPLE}\t${SM_TAG}\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA" \
 			| ${DATAMASH_DIR}/datamash \
 				transpose \
 			>| ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
