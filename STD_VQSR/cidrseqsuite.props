@@ -23,5 +23,5 @@ aux.installationDir=/mnt/linuxtools/CIDRSEQSUITE/junk/
 aux.version=0.1  
 annovar.installationDir=/mnt/research/tools/LINUX/CIDRSEQSUITE/pipeline_dependencies/annovar/2013_02_21/
 annovar.version=2013_06_13  
-annovar.databases=/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/CMG/2017_05_31_annovar_databases.HGMD.csv
+annovar.databases=/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/CMG/2017_05_31_annovar_databases.noHGMD.csv
 cidrseqsuite.liftover=/mnt/research/tools/LINUX/CIDRSEQSUITE/resources/Veracode_hg18_hg19.csv
