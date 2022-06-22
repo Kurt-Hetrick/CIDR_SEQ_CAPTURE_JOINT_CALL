@@ -51,7 +51,7 @@
 		# CONVERT VARIABLE LENGTH WHITESPACE FIELD DELIMETERS TO SINGLE TAB.
 					
 			awk 1 ${BAIT_BED} \
-				| sed -r 's/\r//g ; s/chr//g ; s/[[:space:]]+/\t/g' \
+				| sed -r 's/\r//g ; s/[[:space:]]+/\t/g' \
 			>| ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${BAIT_BED_NAME}.bed
 
 	# FIX THE TARGET BED FILE
@@ -62,7 +62,7 @@
 		# CONVERT VARIABLE LENGTH WHITESPACE FIELD DELIMETERS TO SINGLE TAB.
 					
 			awk 1 ${TARGET_BED} \
-				| sed -r 's/\r//g ; s/chr//g ; s/[[:space:]]+/\t/g' \
+				| sed -r 's/\r//g ; s/[[:space:]]+/\t/g' \
 			>| ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TARGET_BED_NAME}.bed
 
 	# FIX THE TITV BED FILE
@@ -73,7 +73,7 @@
 		# CONVERT VARIABLE LENGTH WHITESPACE FIELD DELIMETERS TO SINGLE TAB.
 					
 			awk 1 ${TITV_BED} \
-				| sed -r 's/\r//g ; s/chr//g ; s/[[:space:]]+/\t/g' \
+				| sed -r 's/\r//g ; s/[[:space:]]+/\t/g' \
 			>| ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TITV_BED_NAME}.bed
 
 # MAKE PICARD INTERVAL FILES (1-based start) for bed files in the sample sheet
