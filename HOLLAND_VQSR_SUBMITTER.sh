@@ -44,7 +44,7 @@
 		| cut -d @ -f 1 \
 		| sort \
 		| uniq \
-		| egrep -v "bigmem.q|all.q|cgc.q|programmers.q|rhel7.q|qtest.q|bigdata.q|uhoh.q" \
+		| egrep -v "bigmem.q|all.q|cgc.q|programmers.q|rhel7.q|qtest.q|bigdata.q|uhoh.q|testcgc.q" \
 		| datamash collapse 1 \
 		| awk '{print $1}'`
 
