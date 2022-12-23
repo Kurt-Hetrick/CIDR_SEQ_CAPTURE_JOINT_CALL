@@ -339,6 +339,8 @@
 
 	# this will take when there are no reads in the file...but i don't think that it will handle when there are reads, but none fall on target
 	# the next time i that happens i'll fix this to handle it.
+	# $33 = PCT_PF_UQ_READS
+	# $14 = HS_LIBRARY_SIZE
 
 		if [[ ! -f $CORE_PATH/$PROJECT_SAMPLE/REPORTS//HYB_SELECTION/$SM_TAG"_hybridization_selection_metrics.txt" ]]
 			then
@@ -348,12 +350,12 @@
 			else
 				awk 'BEGIN {FS="\t";OFS="\t"} \
 					NR==8 \
-					{if ($12=="?"&&$44=="") print $2,$3,$4,"NaN",($14/1000000000),"NaN","NaN",$23,$24,$25,$29,"NaN","NaN","NaN","NaN","NaN",\
-					$36,$37,$38,$39,$40,$41,$42,$43,"NaN",$51,$52,$53,$54,$1,"NaN" ; \
-					else if ($12!="?"&&$44=="") print $2,$3,$4,$12*100,($14/1000000000),$19*100,$21,$23,$24,$25,$29*100,$31*100,\
-					$32*100,$33*100,$34*100,$35,$36*100,$37*100,$38*100,$39*100,$40*100,$41*100,$42*100,$43*100,"NaN",$51,$52,$53,$54,$1,$26*100 ; \
-					else print $2,$3,$4,$12*100,($14/1000000000),$19*100,$21,$23,$24,$25,$29*100,$31*100,$32*100,$33*100,$34*100,$35,\
-					$36*100,$37*100,$38*100,$39*100,$40*100,$41*100,$42*100,$43*100,$44,$51,$52,$53,$54,$1,$26*100}' \
+					{if ($33=="?"&&$14=="") print $22,$2,$21,"NaN",($29/1000000000),"NaN","NaN",$34,$35,$26,$38,"NaN","NaN","NaN","NaN","NaN",\
+					$46,$47,$48,$49,$50,$51,$52,$53,"NaN",$63,$64,$65,$66,$1,"NaN" ; \
+					else if ($33!="?"&&$14=="") print $22,$2,$21,$33*100,($29/1000000000),$7*100,$9,$34,$35,$36,$38*100,$41*100,\
+					$42*100,$43*100,$44*100,$45,$46*100,$47*100,$48*100,$49*100,$50*100,$51*100,$52*100,$53*100,"NaN",$63,$64,$65,$66,$1,$11*100 ; \
+					else print $22,$2,$21,$33*100,($29/1000000000),$7*100,$9,$34,$35,$36,$38*100,$31*100,$42*100,$43*100,$44*100,$45,\
+					$46*100,$47*100,$48*100,$49*100,$50*100,$51*100,$52*100,$53*100,$14,$63,$64,$65,$66,$1,$11*100}' \
 				$CORE_PATH/$PROJECT_SAMPLE/REPORTS//HYB_SELECTION/$SM_TAG"_hybridization_selection_metrics.txt" \
 				| $DATAMASH_DIR/datamash transpose \
 				>> $CORE_PATH/$PROJECT_MS/TEMP/QC_REPORT_PREP_$PREFIX/$SM_TAG".QC_REPORT_TEMP.txt"
