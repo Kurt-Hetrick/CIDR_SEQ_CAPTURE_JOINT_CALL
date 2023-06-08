@@ -991,7 +991,8 @@ done
 				$TABIX_DIR \
 				${CORE_PATH} \
 				${PROJECT_MS} \
-				${PREFIX}
+				${PREFIX} \
+				${SEND_TO}
 		}
 
 		# liftover refined vcf from grch37 to hg19
