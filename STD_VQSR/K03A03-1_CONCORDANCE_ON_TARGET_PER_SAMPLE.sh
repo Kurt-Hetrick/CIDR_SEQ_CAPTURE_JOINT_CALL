@@ -40,7 +40,7 @@
 	PREFIX=${11}
 	VERACODE_CSV=${12}
 
-START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock tracking purposes.
+START_CONCORDANCE=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
 # look for a final report and store it as a variable. if there are multiple ones, then take the newest one
 
@@ -49,17 +49,19 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 
 # if final report exists containing the full sm-tag, then cidrseqsuite magic
 
-	if [[ ! -z "${FINAL_REPORT_FILE_TEST}" ]]
-		then
-			FINAL_REPORT=${FINAL_REPORT_FILE_TEST}
+	if
+		[[ ! -z "${FINAL_REPORT_FILE_TEST}" ]]
+	then
+		FINAL_REPORT=${FINAL_REPORT_FILE_TEST}
 
 	# if it does not exist, and if the $SM_TAG does not begin with an integer then split $SM_TAG On a @ or _ or -
 	# look for a final report that contains that that first element of the $SM_TAG
 	# bonus feature. if this first tests true but the file still does not exist then cidrseqsuite magic files b/c no file exists
 
-	elif [[ ${SM_TAG} != [0-9]* ]]
-		then
-			# note that underscore has to be before dash in bash regular expression
+	elif
+		[[ ${SM_TAG} != [0-9]* ]]
+	then
+		# note that underscore has to be before dash in bash regular expression
 			HAPMAP=${SM_TAG%%[@_-]*}
 
 			FINAL_REPORT=$(ls ${CORE_PATH}/${PROJECT_SAMPLE}/Pretesting/Final_Genotyping_Reports/*${HAPMAP}* \
@@ -67,7 +69,8 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 
 			# if there is no report for a hapmap sample then exit program with code 1
 
-			if [[ -z "${FINAL_REPORT}" ]]
+			if
+				[[ -z "${FINAL_REPORT}" ]]
 			then
 
 				echo
@@ -109,41 +112,41 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 # SNP NAME isn't technically necessary, but could be nice to have for investigative purposes.
 # SNP field is to remove insertion/deletions...can't remember what the copy number designation is.
 
-	CHR_FIELD_NUMBER=(`sed 's/\r//g' ${FINAL_REPORT} \
+	CHR_FIELD_NUMBER=$(sed 's/\r//g' ${FINAL_REPORT} \
 		| awk 'NR=="'$FIELD_HEADER_ROW'"' \
 		| sed 's/,/\n/g' \
 		| cat -n \
 		| sed 's/^ *//g' \
 		| awk 'BEGIN {FS="\t"} \
 			$2=="Chr" \
-			{print $1}'`)
+			{print $1}')
 
-	POSITION_FIELD_NUMBER=(`sed 's/\r//g' ${FINAL_REPORT} \
+	POSITION_FIELD_NUMBER=$(sed 's/\r//g' ${FINAL_REPORT} \
 		| awk 'NR=="'$FIELD_HEADER_ROW'"' \
 		| sed 's/,/\n/g' \
 		| cat -n \
 		| sed 's/^ *//g' \
 		| awk 'BEGIN {FS="\t"} \
 			$2=="Position" \
-			{print $1}'`)
+			{print $1}')
 
-	SNP_NAME_FIELD_NUMBER=(`sed 's/\r//g' ${FINAL_REPORT} \
+	SNP_NAME_FIELD_NUMBER=$(sed 's/\r//g' ${FINAL_REPORT} \
 		| awk 'NR=="'$FIELD_HEADER_ROW'"' \
 		| sed 's/,/\n/g' \
 		| cat -n \
 		| sed 's/^ *//g' \
 		| awk 'BEGIN {FS="\t"} \
 			$2=="SNP Name" \
-			{print $1}'`)
+			{print $1}')
 
-	SNP_FIELD_NUMBER=(`sed 's/\r//g' ${FINAL_REPORT} \
+	SNP_FIELD_NUMBER=$(sed 's/\r//g' ${FINAL_REPORT} \
 		| awk 'NR=="'$FIELD_HEADER_ROW'"' \
 		| sed 's/,/\n/g' \
 		| cat -n \
 		| sed 's/^ *//g' \
 		| awk 'BEGIN {FS="\t"} \
 			$2=="SNP" \
-			{print $1}'`)
+			{print $1}')
 
 # make a bed file from final report removing indel and only using karyotype chromosomes
 # intersect with the (fixed) target bed file.
@@ -163,7 +166,7 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 					$POSITION_FIELD_NUMBER,\
 					$SNP_NAME_FIELD_NUMBER}' \
 		| egrep "^[1-9]|^X|^Y" \
-		| $BEDTOOLS_DIR/bedtools intersect \
+		| ${BEDTOOLS_DIR}/bedtools intersect \
 			-a - \
 			-b ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TARGET_BED_NAME}.bed \
 	>| ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TARGET_BED_NAME}_FINAL_REPORT.bed
@@ -175,7 +178,7 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 		CMD=${CMD}" ${GATK_DIR_4011}/gatk-package-4.0.11.0-local.jar"
 	CMD=${CMD}" SelectVariants"
 		CMD=${CMD}" --reference ${REF_GENOME}"
-		CMD=${CMD}" --variant ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf"
+		CMD=${CMD}" --variant ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.GT.REFINED.vcf"
 		CMD=${CMD}" --exclude-non-variants"
 		CMD=${CMD}" --exclude-filtered"
 		CMD=${CMD}" --remove-unused-alternates"
@@ -192,16 +195,17 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 
 	# check the exit signal at this point.
 
-		SCRIPT_STATUS=`echo $?`
+		SCRIPT_STATUS=$(echo $?)
 
 		# if exit does not equal 0 then exit with whatever the exit signal is at the end.
 		# also write to file that this job failed
 
-			if [ "${SCRIPT_STATUS}" -ne 0 ]
-				then
-					echo ${SM_TAG} ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
-					>> ${CORE_PATH}/${PROJECT_MS}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt
-					exit ${SCRIPT_STATUS}
+			if
+				[ "${SCRIPT_STATUS}" -ne 0 ]
+			then
+				echo ${SM_TAG} ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
+				>> ${CORE_PATH}/${PROJECT_MS}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt
+				exit ${SCRIPT_STATUS}
 			fi
 
 # -single_sample_concordance
@@ -229,19 +233,20 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 
 	# check the exit signal at this point.
 
-		SCRIPT_STATUS=`echo $?`
+		SCRIPT_STATUS=$(echo $?)
 
 		# if exit does not equal 0 then exit with whatever the exit signal is at the end.
 		# also write to file that this job failed
 
-			if [ "${SCRIPT_STATUS}" -ne 0 ]
-				then
-					echo ${SM_TAG} ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
-					>> ${CORE_PATH}/${PROJECT_MS}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt
-					exit ${SCRIPT_STATUS}
+			if
+				[ "${SCRIPT_STATUS}" -ne 0 ]
+			then
+				echo ${SM_TAG} ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
+				>> ${CORE_PATH}/${PROJECT_MS}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt
+				exit ${SCRIPT_STATUS}
 			fi
 
-END_CONCORDANCE=`date '+%s'` # capture time process stops for wall clock tracking purposes.
+END_CONCORDANCE=$(date '+%s') # capture time process stops for wall clock tracking purposes.
 
 # write out timing metrics to file
 

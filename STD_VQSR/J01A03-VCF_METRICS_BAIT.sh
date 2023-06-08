@@ -36,9 +36,7 @@
 		SAMPLE_SHEET_NAME=$(basename ${SAMPLE_SHEET} .csv)
 	SUBMIT_STAMP=$9
 
-# FILTER INDEL AND MIXED VARIANTS
-
-START_VCF_METRICS_BAIT=`date '+%s'` # capture time process starts for wall clock tracking purposes.
+START_VCF_METRICS_BAIT=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
 	# construct command line
 
@@ -48,7 +46,7 @@ START_VCF_METRICS_BAIT=`date '+%s'` # capture time process starts for wall clock
 			CMD=${CMD}" --SEQUENCE_DICTIONARY ${REF_DICT}"
 			CMD=${CMD}" --DBSNP ${PROJECT_DBSNP}"
 			CMD=${CMD}" --THREAD_COUNT 4"
-			CMD=${CMD}" --INPUT ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf"
+			CMD=${CMD}" --INPUT ${CORE_PATH}/${PROJECT_MS}/TEMP/${PROJECT_MS}.GT.REFINED.vcf"
 		CMD=${CMD}" --OUTPUT ${CORE_PATH}/${PROJECT_MS}/REPORTS/VCF_METRICS/MULTI_SAMPLE/${PREFIX}_BAIT"
 		CMD=${CMD}" &&"
 		CMD=${CMD}" mv -v"
@@ -67,19 +65,20 @@ START_VCF_METRICS_BAIT=`date '+%s'` # capture time process starts for wall clock
 
 	# check the exit signal at this point.
 
-		SCRIPT_STATUS=`echo $?`
+		SCRIPT_STATUS=$(echo $?)
 
 		# if exit does not equal 0 then exit with whatever the exit signal is at the end.
 		# also write to file that this job failed
 
-			if [ "${SCRIPT_STATUS}" -ne 0 ]
-				then
-					echo ${PROJECT_MS} ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
-					>> ${CORE_PATH}/${PROJECT_MS}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt
-					exit ${SCRIPT_STATUS}
+			if
+				[ "${SCRIPT_STATUS}" -ne 0 ]
+			then
+				echo ${PROJECT_MS} ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
+				>> ${CORE_PATH}/${PROJECT_MS}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt
+				exit ${SCRIPT_STATUS}
 			fi
 
-END_VCF_METRICS_BAIT=`date '+%s'` # capture time process stops for wall clock tracking purposes.
+END_VCF_METRICS_BAIT=$(date '+%s') # capture time process stops for wall clock tracking purposes.
 
 # write out timing metrics to file
 

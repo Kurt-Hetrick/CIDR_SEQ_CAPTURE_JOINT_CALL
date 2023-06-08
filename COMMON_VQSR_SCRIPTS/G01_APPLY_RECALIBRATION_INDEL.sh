@@ -27,47 +27,68 @@
 #######################################
 
 # export all variables, useful to find out what compute node the program was executed on
-set
+
+	set
 
 # create a blank lane b/w the output variables and the program logging output
-echo
 
-# INPUT PARAMETERS
+	echo
 
-JAVA_1_8=$1
-GATK_DIR=$2
-REF_GENOME=$3
-CORE_PATH=$4
+# INPUT VARIABLES
 
-PROJECT_MS=$5
-PREFIX=$6
+	JAVA_1_8=$1
+	GATK_DIR=$2
+	REF_GENOME=$3
+	CORE_PATH=$4
 
-START_APPLY_VQSR_INDEL=`date '+%s'`
+	PROJECT_MS=$5
+	PREFIX=$6
 
-CMD=$JAVA_1_8'/java -jar'
-CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
-CMD=$CMD' -T ApplyRecalibration'
-CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
-CMD=$CMD' -R '$REF_GENOME
-CMD=$CMD' --input:VCF '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.HC.SNP.VQSR.vcf'
-CMD=$CMD' -recalFile '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.INDEL.recal'
-CMD=$CMD' -tranchesFile '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.INDEL.tranches'
-CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.SNP.INDEL.VQSR.vcf.gz'
-CMD=$CMD' -mode INDEL'
-CMD=$CMD' --ts_filter_level 99.0'
+START_APPLY_VQSR_INDEL=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
-echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo $CMD | bash
+# construct cmd line
 
-END_APPLY_VQSR_INDEL=`date '+%s'`
+	CMD="${JAVA_1_8}/java -jar"
+	CMD=${CMD}" ${GATK_DIR}/GenomeAnalysisTK.jar"
+	CMD=${CMD}" -T ApplyRecalibration"
+	CMD=${CMD}" --disable_auto_index_creation_and_locking_when_reading_rods"
+	CMD=${CMD}" -R ${REF_GENOME}"
+	CMD=${CMD}" --input:VCF ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.HC.SNP.VQSR.vcf"
+	CMD=${CMD}" -recalFile ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.HC.INDEL.recal"
+	CMD=${CMD}" -tranchesFile ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.HC.INDEL.tranches"
+	CMD=${CMD}" -o ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.FILTERED.vcf.gz"
+	CMD=${CMD}" -mode INDEL"
+	CMD=${CMD}" --ts_filter_level 99.0"
 
-HOSTNAME=`hostname`
+# write command line to file and execute the command line
 
-echo $PROJECT_MS",G01,APPLY_VQSR_INDEL,"$HOSTNAME","$START_APPLY_VQSR_INDEL","$END_APPLY_VQSR_INDEL \
->> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"
+	echo ${CMD} >> ${CORE_PATH}/${PROJECT_MS}/COMMAND_LINES/${PROJECT_MS}_command_lines.txt
+	echo >> ${CORE_PATH}/${PROJECT_MS}/COMMAND_LINES/${PROJECT_MS}_command_lines.txt
+	echo ${CMD} | bash
 
-# check to see if the index is generated which should send an non-zero exit signal if not.
-# eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
+	# check the exit signal at this point.
 
-ls $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".HC.SNP.INDEL.VQSR.vcf.gz.tbi"
+		SCRIPT_STATUS=$(echo $?)
+
+		### currently not being implemented.
+		# if exit does not equal 0 then exit with whatever the exit signal is at the end.
+		# also write to file that this job failed.
+
+			# if
+			# 	[ "${SCRIPT_STATUS}" -ne 0 ]
+			# then
+			# 	echo ${SM_TAG} ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
+			# 	>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt
+			# 	exit ${SCRIPT_STATUS}
+			# fi
+
+END_APPLY_VQSR_INDEL=$(date '+%s') # capture time process stops for wall clock tracking purposes.
+
+# write wall clock times to file
+
+	echo ${PROJECT_MS},G01,APPLY_VQSR_INDEL,${HOSTNAME},${START_APPLY_VQSR_INDEL},${END_APPLY_VQSR_INDEL} \
+	>> ${CORE_PATH}/${PROJECT_MS}/REPORTS/${PROJECT_MS}.JOINT.CALL.WALL.CLOCK.TIMES.csv
+
+# exit with the signal from the program
+
+	exit ${SCRIPT_STATUS}

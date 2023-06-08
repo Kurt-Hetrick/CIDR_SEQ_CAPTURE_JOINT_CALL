@@ -20,6 +20,8 @@
 
 	set
 
+# create a blank lane b/w the output variables and the program logging output
+
 	echo
 
 # INPUT VARIABLES
@@ -35,41 +37,51 @@
 
 # liftover from grch37 to hg19
 
-START_LIFTOVER_MS_HG19=`date '+%s'`
+START_LIFTOVER_MS_HG19=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
-	$JAVA_1_8/java -jar \
-	-Xmx700g \
-	$PICARD_DIR/picard.jar \
-	LiftoverVcf \
-	INPUT=$CORE_PATH/$PROJECT_MS/TEMP/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf" \
-	OUTPUT=$CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.HG19.LIFTOVER.vcf.gz" \
-	REJECT=$CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.HG19.LIFTOVER.REJECTED.vcf.gz" \
-	REFERENCE_SEQUENCE=$HG19_REF \
-	CHAIN=$B37_TO_HG19_CHAIN
+	CMD="${JAVA_1_8}/java -jar"
+	CMD=${CMD}" -Xmx700g"
+	CMD=${CMD}" ${PICARD_DIR}/picard.jar"
+	CMD=${CMD}" LiftoverVcf"
+	CMD=${CMD}" INPUT=${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.GT.REFINED.vcf"
+	CMD=${CMD}" OUTPUT=${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.GT.REFINED.HG19.LIFTOVER.vcf.gz"
+	CMD=${CMD}" REJECT=${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.GT.REFINED.HG19.LIFTOVER.REJECTED.vcf.gz"
+	CMD=${CMD}" REFERENCE_SEQUENCE=${HG19_REF}"
+	CMD=${CMD}" CHAIN=${B37_TO_HG19_CHAIN}"
 
 	# check the exit signal at this point.
 
 		SCRIPT_STATUS=`echo $?`
 
-END_LIFTOVER_MS_HG19=`date '+%s'`
+# write command line to file and execute the command line
 
-echo $SM_TAG"_"$PROJECT_MS",K.01,LIFTOVER_REFINED_VCF_HG19,"$HOSTNAME","$START_LIFTOVER_MS_HG19","$END_LIFTOVER_MS_HG19 \
->> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".WALL.CLOCK.TIMES.csv"
+	echo ${CMD} >> ${CORE_PATH}/${PROJECT_MS}/COMMAND_LINES/${PROJECT_MS}_command_lines.txt
+	echo >> ${CORE_PATH}/${PROJECT_MS}/COMMAND_LINES/${PROJECT_MS}_command_lines.txt
+	echo ${CMD} | bash
 
-echo \
-$JAVA_1_8/java -jar \
--Xmx700g \
-$PICARD_DIR/picard.jar \
-LiftoverVcf \
-INPUT=$CORE_PATH/$PROJECT_MS/TEMP/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf" \
-OUTPUT=$CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.HG19.LIFTOVER.vcf.gz" \
-REJECT=$CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".BEDsuperset.VQSR.1KG.ExAC3.REFINED.HG19.LIFTOVER.REJECTED.vcf.gz" \
-REFERENCE_SEQUENCE=$HG19_REF \
-CHAIN=$B37_TO_HG19_CHAIN \
->> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"-"$PREFIX".COMMAND.LINES.txt"
+	# check the exit signal at this point.
 
-echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"-"$PREFIX".COMMAND.LINES.txt"
+		SCRIPT_STATUS=$(echo $?)
+
+		### currently not being implemented.
+		# if exit does not equal 0 then exit with whatever the exit signal is at the end.
+		# also write to file that this job failed.
+
+			# if
+			# 	[ "${SCRIPT_STATUS}" -ne 0 ]
+			# then
+			# 	echo ${SM_TAG} ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
+			# 	>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt
+			# 	exit ${SCRIPT_STATUS}
+			# fi
+
+END_LIFTOVER_MS_HG19=$(date '+%s') # capture time process stops for wall clock tracking purposes.
+
+# write wall clock times to file
+
+	echo ${SM_TAG}_${PROJECT_MS},K.01,LIFTOVER_REFINED_VCF_HG19,${HOSTNAME},${START_LIFTOVER_MS_HG19},${END_LIFTOVER_MS_HG19} \
+	>> ${CORE_PATH}/${PROJECT_MS}/REPORTS/${PROJECT_MS}.WALL.CLOCK.TIMES.csv
 
 # exit with the signal from the program
 
-	exit $SCRIPT_STATUS
+	exit ${SCRIPT_STATUS}

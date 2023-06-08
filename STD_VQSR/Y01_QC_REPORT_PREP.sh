@@ -27,9 +27,11 @@
 #######################################
 
 	# export all variables, useful to find out what compute node the program was executed on
+
 		set
 
 	# create a blank lane b/w the output variables and the program logging output
+
 		echo
 
 # INPUT PARAMETERS
@@ -70,7 +72,8 @@ echo
 		PREFIX=$6
 		SAMTOOLS_DIR=$7
 
-		if [ -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt ]
+		if
+			[ -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt ]
 		then
 			cat ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt \
 					| ${DATAMASH_DIR}/datamash \
@@ -97,177 +100,177 @@ echo
 					| ${DATAMASH_DIR}/datamash \
 						transpose \
 			>| ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
-		elif [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt \
+		elif
+			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt \
 				&& -f ${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram ]];
-			then
+		then
+			# grab field number for SM_TAG
 
-				# grab field number for SM_TAG
+				SM_FIELD=(`${SAMTOOLS_DIR}/samtools \
+					view -H \
+				${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
+					| grep -m 1 ^@RG \
+					| sed 's/\t/\n/g' \
+					| cat -n \
+					| sed 's/^ *//g' \
+					| awk '$2~/^SM:/ {print $1}'`)
 
-					SM_FIELD=(`${SAMTOOLS_DIR}/samtools \
-						view -H \
-					${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
-						| grep -m 1 ^@RG \
-						| sed 's/\t/\n/g' \
-						| cat -n \
-						| sed 's/^ *//g' \
-						| awk '$2~/^SM:/ {print $1}'`)
+			# grab field number for PLATFORM_UNIT_TAG
 
-				# grab field number for PLATFORM_UNIT_TAG
+				PU_FIELD=(`${SAMTOOLS_DIR}/samtools \
+					view -H \
+				${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
+					| grep -m 1 ^@RG \
+					| sed 's/\t/\n/g' \
+					| cat -n \
+					| sed 's/^ *//g' \
+					| awk '$2~/^PU:/ {print $1}'`)
 
-					PU_FIELD=(`${SAMTOOLS_DIR}/samtools \
-						view -H \
-					${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
-						| grep -m 1 ^@RG \
-						| sed 's/\t/\n/g' \
-						| cat -n \
-						| sed 's/^ *//g' \
-						| awk '$2~/^PU:/ {print $1}'`)
+			# grab field number for LIBRARY_TAG
 
-				# grab field number for LIBRARY_TAG
+				LB_FIELD=(`${SAMTOOLS_DIR}/samtools \
+					view -H \
+				${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
+					| grep -m 1 ^@RG \
+					| sed 's/\t/\n/g' \
+					| cat -n \
+					| sed 's/^ *//g' \
+					| awk '$2~/^LB:/ {print $1}'`)
 
-					LB_FIELD=(`${SAMTOOLS_DIR}/samtools \
-						view -H \
-					${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
-						| grep -m 1 ^@RG \
-						| sed 's/\t/\n/g' \
-						| cat -n \
-						| sed 's/^ *//g' \
-						| awk '$2~/^LB:/ {print $1}'`)
+			# grab field number for CRAM_PROCESSING_VERSION (PG field)
 
-				# grab field number for CRAM_PROCESSING_VERSION (PG field)
+				PG_FIELD=(`${SAMTOOLS_DIR}/samtools \
+					view -H \
+				${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
+					| grep -m 1 ^@RG \
+					| sed 's/\t/\n/g' \
+					| cat -n \
+					| sed 's/^ *//g' \
+					| awk '$2~/^PG:/ \
+						{print $1}'`)
 
-					PG_FIELD=(`${SAMTOOLS_DIR}/samtools \
-						view -H \
-					${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
-						| grep -m 1 ^@RG \
-						| sed 's/\t/\n/g' \
-						| cat -n \
-						| sed 's/^ *//g' \
-						| awk '$2~/^PG:/ \
-							{print $1}'`)
+			# grab field number for PLATFORM_MODEL field (PG field)
 
-				# grab field number for PLATFORM_MODEL field (PG field)
+				PM_FIELD=(`${SAMTOOLS_DIR}/samtools \
+					view -H \
+				${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
+					| grep -m 1 ^@RG \
+					| sed 's/\t/\n/g' \
+					| cat -n \
+					| sed 's/^ *//g' \
+					| awk '$2~/^PM:/ \
+						{print $1}'`)
 
-					PM_FIELD=(`${SAMTOOLS_DIR}/samtools \
-						view -H \
-					${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
-						| grep -m 1 ^@RG \
-						| sed 's/\t/\n/g' \
-						| cat -n \
-						| sed 's/^ *//g' \
-						| awk '$2~/^PM:/ \
-							{print $1}'`)
+			# grab field number for LIMS_DATE
 
-				# grab field number for LIMS_DATE
+				DT_FIELD=(`${SAMTOOLS_DIR}/samtools \
+					view -H \
+				${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
+					| grep -m 1 ^@RG \
+					| sed 's/\t/\n/g' \
+					| cat -n \
+					| sed 's/^ *//g' \
+					| awk '$2~/^DT:/ \
+						{print $1}'`)
 
-					DT_FIELD=(`${SAMTOOLS_DIR}/samtools \
-						view -H \
-					${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
-						| grep -m 1 ^@RG \
-						| sed 's/\t/\n/g' \
-						| cat -n \
-						| sed 's/^ *//g' \
-						| awk '$2~/^DT:/ \
-							{print $1}'`)
+			# grab field number for PLATFORM
 
-				# grab field number for PLATFORM
+				PL_FIELD=(`${SAMTOOLS_DIR}/samtools \
+					view -H \
+				${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
+					| grep -m 1 ^@RG \
+					| sed 's/\t/\n/g' \
+					| cat -n \
+					| sed 's/^ *//g' \
+					| awk '$2~/^PL:/ \
+						{print $1}'`)
 
-					PL_FIELD=(`${SAMTOOLS_DIR}/samtools \
-						view -H \
-					${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
-						| grep -m 1 ^@RG \
-						| sed 's/\t/\n/g' \
-						| cat -n \
-						| sed 's/^ *//g' \
-						| awk '$2~/^PL:/ \
-							{print $1}'`)
+			# grab field number for BED FILES (DS field)
 
-				# grab field number for BED FILES (DS field)
+				DS_FIELD=(`${SAMTOOLS_DIR}/samtools \
+					view -H \
+				${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
+					| grep -m 1 ^@RG \
+					| sed 's/\t/\n/g' \
+					| cat -n \
+					| sed 's/^ *//g' \
+					| awk '$2~/^DS:/ \
+						{print $1}'`)
 
-					DS_FIELD=(`${SAMTOOLS_DIR}/samtools \
-						view -H \
-					${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
-						| grep -m 1 ^@RG \
-						| sed 's/\t/\n/g' \
-						| cat -n \
-						| sed 's/^ *//g' \
-						| awk '$2~/^DS:/ \
-							{print $1}'`)
+			# Now grab the header and format
+				# breaking out the library name into its parts is assuming that the format is...
+				# fill in empty fields with NA thing (for loop in awk) is a lifesaver
+				# https://unix.stackexchange.com/questions/53448/replacing-missing-value-blank-space-with-zero
 
-				# Now grab the header and format
-					# breaking out the library name into its parts is assuming that the format is...
-					# fill in empty fields with NA thing (for loop in awk) is a lifesaver
-					# https://unix.stackexchange.com/questions/53448/replacing-missing-value-blank-space-with-zero
-
-					${SAMTOOLS_DIR}/samtools \
-						view -H \
-					${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
-						| grep ^@RG \
-						| awk \
-						-v SM_FIELD="$SM_FIELD" \
-						-v PU_FIELD="$PU_FIELD" \
-						-v LB_FIELD="$LB_FIELD" \
-						-v PG_FIELD="$PG_FIELD" \
-						-v PM_FIELD="$PM_FIELD" \
-						-v DT_FIELD="$DT_FIELD" \
-						-v PL_FIELD="$PL_FIELD" \
-						-v DS_FIELD="$DS_FIELD" \
-						'BEGIN {OFS="\t"} \
-						{split($SM_FIELD,SMtag,":"); \
-						split($PU_FIELD,PU,":"); \
-						split($LB_FIELD,Library,":"); \
-						split(Library[2],Library_Unit,"_"); \
-						split($PG_FIELD,PROGRAM,":"); \
-						split($PL_FIELD,SEQ_PLATFORM,":"); \
-						split($PM_FIELD,SEQ_MODEL,":"); \
-						split($DT_FIELD,DT,":"); \
-						split(DT[2],DATE,"T"); \
-						split($DS_FIELD,DS,":"); \
-						split(DS[2],BED_FILES,","); \
-						print "'${PROJECT_SAMPLE}'",\
-							SMtag[2],\
-							PU[2],\
-							Library[2],\
-							Library_Unit[1],\
-							Library_Unit[2],\
-							substr(Library_Unit[2],1,1),\
-							substr(Library_Unit[2],2,2),\
-							Library_Unit[3],\
-							Library_Unit[4],\
-							substr(Library_Unit[4],1,1),\
-							substr(Library_Unit[4],2,2),\
-							PROGRAM[2],\
-							SEQ_PLATFORM[2],\
-							SEQ_MODEL[2],\
-							DATE[1],\
-							BED_FILES[1],\
-							BED_FILES[2],\
-							BED_FILES[3]}' \
-						| awk 'BEGIN { FS = OFS = "\t" } { for(i=1; i<=NF; i++) if($i ~ /^ *$/) $i = "NA" }; 1' \
-						| ${DATAMASH_DIR}/datamash \
-							-s \
-							-g 1,2 \
-							collapse 3 \
-							unique 4 \
-							unique 5 \
-							unique 6 \
-							unique 7 \
-							unique 8 \
-							unique 9 \
-							unique 10 \
-							unique 11 \
-							unique 12 \
-							unique 13 \
-							unique 14 \
-							unique 15 \
-							unique 16 \
-							unique 17 \
-							unique 18 \
-							unique 19 \
-						| sed 's/,/;/g' \
-						| ${DATAMASH_DIR}/datamash \
-							transpose \
-					>| ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
+				${SAMTOOLS_DIR}/samtools \
+					view -H \
+				${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram \
+					| grep ^@RG \
+					| awk \
+					-v SM_FIELD="$SM_FIELD" \
+					-v PU_FIELD="$PU_FIELD" \
+					-v LB_FIELD="$LB_FIELD" \
+					-v PG_FIELD="$PG_FIELD" \
+					-v PM_FIELD="$PM_FIELD" \
+					-v DT_FIELD="$DT_FIELD" \
+					-v PL_FIELD="$PL_FIELD" \
+					-v DS_FIELD="$DS_FIELD" \
+					'BEGIN {OFS="\t"} \
+					{split($SM_FIELD,SMtag,":"); \
+					split($PU_FIELD,PU,":"); \
+					split($LB_FIELD,Library,":"); \
+					split(Library[2],Library_Unit,"_"); \
+					split($PG_FIELD,PROGRAM,":"); \
+					split($PL_FIELD,SEQ_PLATFORM,":"); \
+					split($PM_FIELD,SEQ_MODEL,":"); \
+					split($DT_FIELD,DT,":"); \
+					split(DT[2],DATE,"T"); \
+					split($DS_FIELD,DS,":"); \
+					split(DS[2],BED_FILES,","); \
+					print "'${PROJECT_SAMPLE}'",\
+						SMtag[2],\
+						PU[2],\
+						Library[2],\
+						Library_Unit[1],\
+						Library_Unit[2],\
+						substr(Library_Unit[2],1,1),\
+						substr(Library_Unit[2],2,2),\
+						Library_Unit[3],\
+						Library_Unit[4],\
+						substr(Library_Unit[4],1,1),\
+						substr(Library_Unit[4],2,2),\
+						PROGRAM[2],\
+						SEQ_PLATFORM[2],\
+						SEQ_MODEL[2],\
+						DATE[1],\
+						BED_FILES[1],\
+						BED_FILES[2],\
+						BED_FILES[3]}' \
+					| awk 'BEGIN { FS = OFS = "\t" } { for(i=1; i<=NF; i++) if($i ~ /^ *$/) $i = "NA" }; 1' \
+					| ${DATAMASH_DIR}/datamash \
+						-s \
+						-g 1,2 \
+						collapse 3 \
+						unique 4 \
+						unique 5 \
+						unique 6 \
+						unique 7 \
+						unique 8 \
+						unique 9 \
+						unique 10 \
+						unique 11 \
+						unique 12 \
+						unique 13 \
+						unique 14 \
+						unique 15 \
+						unique 16 \
+						unique 17 \
+						unique 18 \
+						unique 19 \
+					| sed 's/,/;/g' \
+					| ${DATAMASH_DIR}/datamash \
+						transpose \
+				>| ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
 			echo -e "${PROJECT_SAMPLE}\t${SM_TAG}\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA\tNA" \
 			| ${DATAMASH_DIR}/datamash \
@@ -290,11 +293,11 @@ echo
 		GRAB_READ_GROUP_HEADER \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX \
-			$SAMTOOLS_DIR
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX} \
+			${SAMTOOLS_DIR}
 
 #################################################
 ##### GENDER CHECK FROM ANEUPLOIDY CHECK ########
@@ -320,7 +323,7 @@ echo
 			| paste - - \
 			| awk 'BEGIN {OFS="\t"} END {if ($1!~/[0-9]/) print "NaN","NaN","NaN","NaN"; else print $0}' \
 			| ${DATAMASH_DIR}/datamash transpose \
-		>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+		>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 	}
 
 		export -f GRAB_GENDER_CHECK_FROM_ANEUPLOIDY_CHECK
@@ -330,17 +333,17 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| ${PARALLEL_DIR}/parallel \
-			--no-notice \
-			-j 4 \
-			--colsep ' ' \
+			| ${PARALLEL_DIR}/parallel \
+				--no-notice \
+				-j 4 \
+				--colsep ' ' \
 		GRAB_GENDER_CHECK_FROM_ANEUPLOIDY_CHECK \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX}
 
 #################################
 ##### GRABBING CONCORDANCE. #####
@@ -365,17 +368,18 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
-		if [ -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/CONCORDANCE_MS/${SM_TAG}"_concordance.csv" ];
+		if
+			[ -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/CONCORDANCE_MS/${SM_TAG}_concordance.csv ];
 		then
-			awk 1 ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/CONCORDANCE_MS/${SM_TAG}"_concordance.csv" \
+			awk 1 ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/CONCORDANCE_MS/${SM_TAG}_concordance.csv \
 			| awk 'BEGIN {FS=",";OFS="\t"} NR>1 \
 			{print $5,$6,$7,$2,$3,$4,$8,$9,$10,$11}' \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
 			echo -e "NaN\tNaN\tNaN\tNaN\tNaN\tNaN\tNaN\tNaN\tNaN\tNaN" \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
 
@@ -386,17 +390,17 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| ${PARALLEL_DIR}/parallel \
-			--no-notice \
-			-j 4 \
-			--colsep ' ' \
+			| ${PARALLEL_DIR}/parallel \
+				--no-notice \
+				-j 4 \
+				--colsep ' ' \
 		GRAB_CONCORDANCE \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX}
 
 #########################################################################################
 ##### VERIFY BAM ID #####################################################################
@@ -418,16 +422,17 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
-		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//VERIFYBAMID/${SM_TAG}".selfSM" ]]
+		if
+			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//VERIFYBAMID/${SM_TAG}.selfSM ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
 			awk 'BEGIN {OFS="\t"} NR>1 {print $7*100,$4,$8,$9,($9-$8),$6}' \
-			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//VERIFYBAMID/${SM_TAG}".selfSM" \
+			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//VERIFYBAMID/${SM_TAG}.selfSM \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
 
@@ -445,10 +450,10 @@ echo
 		GRAB_VERIFYBAMID \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX}
 
 ######################################################################################################
 ##### INSERT SIZE ####################################################################################
@@ -469,16 +474,16 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
-		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/INSERT_SIZE/METRICS/${SM_TAG}".insert_size_metrics.txt" ]]
+		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/INSERT_SIZE/METRICS/${SM_TAG}.insert_size_metrics.txt ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
 			awk 'BEGIN {OFS="\t"} NR==8 {print $1,$6,$7,$3}' \
-			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/INSERT_SIZE/METRICS/${SM_TAG}".insert_size_metrics.txt" \
+			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/INSERT_SIZE/METRICS/${SM_TAG}.insert_size_metrics.txt \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
 
@@ -489,17 +494,17 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| ${PARALLEL_DIR}/parallel \
-			--no-notice \
-			-j 4 \
-			--colsep ' ' \
+			| ${PARALLEL_DIR}/parallel \
+				--no-notice \
+				-j 4 \
+				--colsep ' ' \
 		GRAB_INSERT_SIZE \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX}
 
 #######################################################################################################
 ##### ALIGNMENT SUMMARY METRICS FOR READ 1 ############################################################
@@ -522,17 +527,18 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
-		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}".alignment_summary_metrics.txt" ]]
+		if
+			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}.alignment_summary_metrics.txt ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
 			awk 'BEGIN {OFS="\t"} NR==8 {if ($1=="UNPAIRED") print "0","0","0","0","0","0","0","0"; \
 				else print $7*100,$9,$11,$13,$14,$15,$18*100,$24*100}' \
-			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}".alignment_summary_metrics.txt" \
+			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}.alignment_summary_metrics.txt \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
 
@@ -543,17 +549,17 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| ${PARALLEL_DIR}/parallel \
-			--no-notice \
-			-j 4 \
-			--colsep ' ' \
+			| ${PARALLEL_DIR}/parallel \
+				--no-notice \
+				-j 4 \
+				--colsep ' ' \
 		GRAB_ALIGNMENT_SUMMARY_METRICS_READ_ONE \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX}
 
 #######################################################################################################
 ##### ALIGNMENT SUMMARY METRICS FOR READ 2 ############################################################
@@ -576,18 +582,19 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
-		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}".alignment_summary_metrics.txt" ]]
+		if
+			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}.alignment_summary_metrics.txt ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
 
 			awk 'BEGIN {OFS="\t"} NR==9 {if ($1=="") print "0","0","0","0","0","0","0","0" ; \
 				else print $7*100,$9,$11,$13,$14,$15,$18*100,$24*100}' \
-			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}".alignment_summary_metrics.txt" \
+			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}.alignment_summary_metrics.txt \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
 
@@ -605,10 +612,10 @@ echo
 		GRAB_ALIGNMENT_SUMMARY_METRICS_READ_TWO \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX}
 
 ################################################################################################
 ##### ALIGNMENT SUMMARY METRICS FOR PAIR #######################################################
@@ -632,19 +639,20 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
-		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}".alignment_summary_metrics.txt" ]]
+		if
+			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}.alignment_summary_metrics.txt ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
 			awk 'BEGIN {OFS="\t"} \
 				NR==10 \
 				{if ($1=="") print "0","0","0","0","0","0","0","0","0","0","0","0" ; \
 				else print $2,($2*$16/1000000000),$7*100,$13,$14,$15,$18*100,$22,$23*100,$11,$16,$20*100}' \
-			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}".alignment_summary_metrics.txt" \
+			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}.alignment_summary_metrics.txt \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
 
@@ -662,10 +670,10 @@ echo
 		GRAB_ALIGNMENT_SUMMARY_METRICS_BY_PAIR \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX}
 
 ##################################
 ##### MARK DUPLICATES REPORT #####
@@ -690,20 +698,21 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
-		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/PICARD_DUPLICATES/${SM_TAG}"_MARK_DUPLICATES.txt" ]]
+		if
+			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/PICARD_DUPLICATES/${SM_TAG}_MARK_DUPLICATES.txt ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
-			MAX_RECORD=(`grep -n "^$" ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/PICARD_DUPLICATES/${SM_TAG}"_MARK_DUPLICATES.txt" | awk 'BEGIN {FS=":"} NR==2 {print $1}'`)
+			MAX_RECORD=$(grep -n "^$" ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/PICARD_DUPLICATES/${SM_TAG}_MARK_DUPLICATES.txt | awk 'BEGIN {FS=":"} NR==2 {print $1}')
 
 			awk 'BEGIN {OFS="\t"} \
 				NR>7&&NR<'$MAX_RECORD' \
 				{if ($10!~/[0-9]/) print $5,$8,"NaN","NaN",$4,$7,$3,"NaN",$6,$2,"NaN" ; \
 				else if ($10~/[0-9]/&&$2=="0") print $5,$8,$9*100,$10,$4,$7,$3,($7/$3),$6,$2,"NaN" ; \
 				else print $5,$8,$9*100,$10,$4,$7,$3,($7/$3),$6,$2,($6/$2)}' \
-			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/PICARD_DUPLICATES/${SM_TAG}"_MARK_DUPLICATES.txt" \
+			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/PICARD_DUPLICATES/${SM_TAG}_MARK_DUPLICATES.txt \
 			| ${DATAMASH_DIR}/datamash sum 1 sum 2 mean 4 sum 5 sum 6 sum 7 sum 9 sum 10 \
 			| awk 'BEGIN {OFS="\t"} \
 				{if ($3!~/[0-9]/) print $1,$2,"NaN","NaN",$4,$5,$6,"NaN",$7,$8,"NaN","NaN" ; \
@@ -711,7 +720,7 @@ echo
 				else if ($3~/[0-9]/&&$1!="0"&&$8=="0") print $1,$2,(($7+($5*2))/($8+($6*2)))*100,$3,$4,$5,$6,($5/$6),$7,$8,"NaN",($2/$6)*100 ; \
 				else print $1,$2,(($7+($5*2))/($8+($6*2)))*100,$3,$4,$5,$6,($5/$6),$7,$8,($7/$8),($2/$6)*100}' \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
 
@@ -722,17 +731,17 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| ${PARALLEL_DIR}/parallel \
-			--no-notice \
-			-j 4 \
-			--colsep ' ' \
+			| ${PARALLEL_DIR}/parallel \
+				--no-notice \
+				-j 4 \
+				--colsep ' ' \
 		GRAB_MARK_DUPLICATES \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX}
 
 ########################################################################################################
 ### HYBRIDIZATION SELECTION REPORT #####################################################################
@@ -953,17 +962,17 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| ${PARALLEL_DIR}/parallel \
-			--no-notice \
-			-j 4 \
-			--colsep ' ' \
+			| ${PARALLEL_DIR}/parallel \
+				--no-notice \
+				-j 4 \
+				--colsep ' ' \
 		GRAB_HYB_SELECTION \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX}
 
 ##############################################
 ##### BAIT BIAS REPORT FOR Cref and Gref #####
@@ -984,13 +993,14 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
-		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//BAIT_BIAS/SUMMARY/${SM_TAG}".bait_bias_summary_metrics.txt" ]]
+		if
+			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//BAIT_BIAS/SUMMARY/${SM_TAG}.bait_bias_summary_metrics.txt ]]
 		then
 			echo -e NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
-			grep -v "^#" ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//BAIT_BIAS/SUMMARY/${SM_TAG}".bait_bias_summary_metrics.txt" \
+			grep -v "^#" ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//BAIT_BIAS/SUMMARY/${SM_TAG}.bait_bias_summary_metrics.txt \
 				| sed '/^$/d' \
 				| awk 'BEGIN {OFS="\t"} $12=="Cref"||$12=="Gref" {print $5}' \
 				| paste - - \
@@ -998,7 +1008,7 @@ echo
 				| sed 's/,/;/g' \
 				| awk 'BEGIN {OFS="\t"} {print $0}' \
 				| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
 
@@ -1009,17 +1019,17 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| ${PARALLEL_DIR}/parallel \
-			--no-notice \
-			-j 4 \
-			--colsep ' ' \
+			| ${PARALLEL_DIR}/parallel \
+				--no-notice \
+				-j 4 \
+				--colsep ' ' \
 		GRAB_BAIT_BIAS \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX}
 
 ############################################################
 ##### PRE-ADAPTER BIAS REPORT FOR Deamination and OxoG #####
@@ -1040,13 +1050,14 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
-		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//PRE_ADAPTER/SUMMARY/${SM_TAG}".pre_adapter_summary_metrics.txt" ]]
+		if
+			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//PRE_ADAPTER/SUMMARY/${SM_TAG}.pre_adapter_summary_metrics.txt ]]
 		then
 			echo -e NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
-			grep -v "^#" ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//PRE_ADAPTER/SUMMARY/${SM_TAG}".pre_adapter_summary_metrics.txt" \
+			grep -v "^#" ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//PRE_ADAPTER/SUMMARY/${SM_TAG}.pre_adapter_summary_metrics.txt \
 				| sed '/^$/d' \
 				| awk 'BEGIN {OFS="\t"} $12=="Deamination"||$12=="OxoG" {print $5}' \
 				| paste - - \
@@ -1054,7 +1065,7 @@ echo
 				| sed 's/,/;/g' \
 				| awk 'BEGIN {OFS="\t"} {print $0}' \
 				| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
 
@@ -1065,17 +1076,17 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| ${PARALLEL_DIR}/parallel \
-			--no-notice \
-			-j 4 \
-			--colsep ' ' \
+			| ${PARALLEL_DIR}/parallel \
+				--no-notice \
+				-j 4 \
+				--colsep ' ' \
 		GRAB_PRE_ADAPTER_BIAS \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX}
 
 ###########################################################
 ##### BASE DISTRIBUTION REPORT AVERAGE FROM PER CYCLE #####
@@ -1096,22 +1107,24 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
-		BASE_DISTIBUTION_BY_CYCLE_ROW_COUNT=(`wc -l ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}".base_distribution_by_cycle_metrics.txt"`)
+		BASE_DISTIBUTION_BY_CYCLE_ROW_COUNT=$(wc -l ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}.base_distribution_by_cycle_metrics.txt | awk '{print $1}')
 
-		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}".base_distribution_by_cycle_metrics.txt" ]]
+		if
+			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}.base_distribution_by_cycle_metrics.txt ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 
-		elif [[ -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}".base_distribution_by_cycle_metrics.txt" && $BASE_DISTIBUTION_BY_CYCLE_ROW_COUNT -lt 8 ]]
-			then
-				echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
-				| datamash transpose \
-				>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+		elif
+			[[ -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}.base_distribution_by_cycle_metrics.txt && ${BASE_DISTIBUTION_BY_CYCLE_ROW_COUNT} -lt 8 ]]
+		then
+			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
+			| datamash transpose \
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 
 		else
-			sed '/^$/d' ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}".base_distribution_by_cycle_metrics.txt" \
+			sed '/^$/d' ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}.base_distribution_by_cycle_metrics.txt \
 				| awk 'NR>6' \
 				| ${DATAMASH_DIR}/datamash \
 					mean 3 \
@@ -1120,7 +1133,7 @@ echo
 					mean 6 \
 					mean 7 \
 				| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
 
@@ -1131,17 +1144,17 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| ${PARALLEL_DIR}/parallel \
-			--no-notice \
-			-j 4 \
-			--colsep ' ' \
+			| ${PARALLEL_DIR}/parallel \
+				--no-notice \
+				-j 4 \
+				--colsep ' ' \
 		GRAB_BASE_DISTRIBUTION_AVERAGE_PER_CYCLE \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX}
 
 ############################################
 ##### BASE SUBSTITUTION RATE ###############
@@ -1163,16 +1176,17 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
-		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ERROR_SUMMARY/${SM_TAG}".error_summary_metrics.txt" ]]
+		if
+			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ERROR_SUMMARY/${SM_TAG}.error_summary_metrics.txt ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
 
-			sed '/^$/d' ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ERROR_SUMMARY/${SM_TAG}".error_summary_metrics.txt" \
+			sed '/^$/d' ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ERROR_SUMMARY/${SM_TAG}.error_summary_metrics.txt \
 				| awk 'NR>6 {print $6*100}' \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt"
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
 
@@ -1183,17 +1197,17 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| ${PARALLEL_DIR}/parallel \
-			--no-notice \
-			-j 4 \
-			--colsep ' ' \
+			| ${PARALLEL_DIR}/parallel \
+				--no-notice \
+				-j 4 \
+				--colsep ' ' \
 		GRAB_BASE_SUBSTITUTION_RATE \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX}
 
 #############################################
 ##### VCF METRICS FOR BAIT BED FILE #########
@@ -1236,17 +1250,17 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| ${PARALLEL_DIR}/parallel \
-			--no-notice \
-			-j 4 \
-			--colsep ' ' \
+			| ${PARALLEL_DIR}/parallel \
+				--no-notice \
+				-j 4 \
+				--colsep ' ' \
 		GRAB_VCF_METRICS_BAIT \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX}
 
 ########################################################################
 ##### VCF METRICS FOR TARGET BED FILE ##################################
@@ -1290,17 +1304,17 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| ${PARALLEL_DIR}/parallel \
-			--no-notice \
-			-j 4 \
-			--colsep ' ' \
+			| ${PARALLEL_DIR}/parallel \
+				--no-notice \
+				-j 4 \
+				--colsep ' ' \
 		GRAB_VCF_METRICS_TARGET \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX}
 
 #########################################################
 ##### VCF METRICS FOR TITV BED FILE #####################
@@ -1344,17 +1358,17 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| ${PARALLEL_DIR}/parallel \
-			--no-notice \
-			-j 4 \
-			--colsep ' ' \
+			| ${PARALLEL_DIR}/parallel \
+				--no-notice \
+				-j 4 \
+				--colsep ' ' \
 		GRAB_VCF_METRICS_TITV \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX}
 
 ##########################################################################################################
 ##### tranpose from rows to list so these can be concatenated together for a project/batch QC report #####
@@ -1372,9 +1386,9 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
-		cat ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_TEMP.txt" \
-		| ${DATAMASH_DIR}/datamash transpose \
-		>| ${CORE_PATH}/${PROJECT_MS}/REPORTS/QC_REPORT_PREP_MS/QC_REPORT_PREP_${PREFIX}/${SM_TAG}".QC_REPORT_PREP.txt"
+		cat ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt \
+			| ${DATAMASH_DIR}/datamash transpose \
+		>| ${CORE_PATH}/${PROJECT_MS}/REPORTS/QC_REPORT_PREP_MS/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_PREP.txt
 	}
 
 		export -f TRANSPOSE_METRICS
@@ -1384,14 +1398,14 @@ echo
 			| awk 'BEGIN {FS=","} NR>1 {print $1,$8}' \
 			| sort \
 			| uniq \
-		| ${PARALLEL_DIR}/parallel \
-			--no-notice \
-			-j 4 \
-			--colsep ' ' \
+			| ${PARALLEL_DIR}/parallel \
+				--no-notice \
+				-j 4 \
+				--colsep ' ' \
 		TRANSPOSE_METRICS \
 			{1} \
 			{2} \
-			$CORE_PATH \
-			$DATAMASH_DIR \
-			$PROJECT_MS \
-			$PREFIX
+			${CORE_PATH} \
+			${DATAMASH_DIR} \
+			${PROJECT_MS} \
+			${PREFIX}

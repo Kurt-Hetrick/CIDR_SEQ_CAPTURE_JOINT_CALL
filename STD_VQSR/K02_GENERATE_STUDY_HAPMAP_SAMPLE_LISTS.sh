@@ -43,19 +43,19 @@
 # REMOVE THE STANDARD VCF COLUMNS
 # KEEP ONLY THOSE SAMPLE NAMES THAT START WITH "NA" OR "HG"
 
-egrep -m 1 '^#CHROM' $CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf' \
-| sed 's/\t/\n/g' \
-| awk 'NR>9 {print $0}' \
-| egrep '^NA|^HG' \
->| $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/$PREFIX'_hapmap_samples.args'
+	egrep -m 1 '^#CHROM' ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.GT.REFINED.vcf \
+		| sed 's/\t/\n/g' \
+		| awk 'NR>9 {print $0}' \
+		| egrep '^NA|^HG' \
+	>| ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/${PREFIX}_hapmap_samples.args
 
 # TAKE HEADER IN THE VCF THAT CONTAINS THE SAMPLE NAMES
 # CONVERT INTO ROWS
 # REMOVE THE STANDARD VCF COLUMNS
 # KEEP ONLY THOSE SAMPLE NAMES THAT DO NOT START WITH "NA" OR "HG"
 
-egrep -m 1 '^#CHROM' $CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf' \
-| sed 's/\t/\n/g' \
-| awk 'NR>9 {print $0}' \
-| egrep -v '^NA|^HG' \
->| $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/$PREFIX'_study_samples.args'
+	egrep -m 1 '^#CHROM' ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.GT.REFINED.vcf \
+		| sed 's/\t/\n/g' \
+		| awk 'NR>9 {print $0}' \
+		| egrep -v '^NA|^HG' \
+	>| ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/${PREFIX}_study_samples.args

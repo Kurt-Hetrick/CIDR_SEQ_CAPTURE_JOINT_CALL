@@ -27,10 +27,12 @@
 #######################################
 
 # export all variables, useful to find out what compute node the program was executed on
-set
+
+	set
 
 # create a blank lane b/w the output variables and the program logging output
-echo
+
+	echo
 
 # INPUT PARAMETERS
 
@@ -44,30 +46,49 @@ echo
 	PREFIX=$7
 	BED_FILE_NAME=$8
 
-START_VARIANT_ANNOTATOR_2=`date '+%s'`
+START_VARIANT_ANNOTATOR_2=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
-	CMD=$JAVA_1_8'/java -jar'
-	CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
-	CMD=$CMD' -T VariantAnnotator'
-	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
-	CMD=$CMD' -R '$REF_GENOME
-	CMD=$CMD' --variant '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.'$BED_FILE_NAME'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.temp.vcf.gz'
-	CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$BED_FILE_NAME'.r.vcf.gz'
-	CMD=$CMD' -L '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.'$BED_FILE_NAME'.BEDsuperset.VQSR.1KG.ExAC3.REFINED.temp.vcf.gz'
-	CMD=$CMD' -A GenotypeSummaries'
+# construct cmd line
 
-echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo $CMD | bash
+	CMD="${JAVA_1_8}/java -jar"
+	CMD=${CMD}" ${GATK_DIR}/GenomeAnalysisTK.jar"
+	CMD=${CMD}" -T VariantAnnotator"
+	CMD=${CMD}" --disable_auto_index_creation_and_locking_when_reading_rods"
+	CMD=${CMD}" -R ${REF_GENOME}"
+	CMD=${CMD}" --variant ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.GT.REFINED.temp.vcf.gz"
+	CMD=${CMD}" -o ${CORE_PATH}/${PROJECT_MS}/TEMP/${BED_FILE_NAME}.r.vcf.gz"
+	CMD=${CMD}" -L ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.GT.REFINED.temp.vcf.gz"
+	CMD=${CMD}" -A GenotypeSummaries"
 
-END_VARIANT_ANNOTATOR_2=`date '+%s'`
+# write command line to file and execute the command line
 
-HOSTNAME=`hostname`
+	echo ${CMD} >> ${CORE_PATH}/${PROJECT_MS}/COMMAND_LINES/${PROJECT_MS}_command_lines.txt
+	echo >> ${CORE_PATH}/${PROJECT_MS}/COMMAND_LINES/${PROJECT_MS}_command_lines.txt
+	echo ${CMD} | bash
 
-echo $PROJECT_MS",I01,VARIANT_ANNOTATOR_2,"$HOSTNAME","$START_VARIANT_ANNOTATOR_2","$END_VARIANT_ANNOTATOR_2 \
->> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"
+	# check the exit signal at this point.
 
-# check to see if the index is generated which should send an non-zero exit signal if not.
-# eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
+		SCRIPT_STATUS=$(echo $?)
 
-ls $CORE_PATH/$PROJECT_MS/TEMP/$BED_FILE_NAME".r.vcf.gz.tbi"
+		### currently not being implemented.
+		# if exit does not equal 0 then exit with whatever the exit signal is at the end.
+		# also write to file that this job failed.
+
+			# if
+			# 	[ "${SCRIPT_STATUS}" -ne 0 ]
+			# then
+			# 	echo ${SM_TAG} ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
+			# 	>> ${CORE_PATH}/${PROJECT}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt
+			# 	exit ${SCRIPT_STATUS}
+			# fi
+
+END_VARIANT_ANNOTATOR_2=$(date '+%s') # capture time process stops for wall clock tracking purposes.
+
+# write wall clock times to file
+
+	echo ${PROJECT_MS},I01,VARIANT_ANNOTATOR_2,${HOSTNAME},${START_VARIANT_ANNOTATOR_2},${END_VARIANT_ANNOTATOR_2} \
+	>> ${CORE_PATH}/${PROJECT_MS}/REPORTS/${PROJECT_MS}.JOINT.CALL.WALL.CLOCK.TIMES.csv
+
+# exit with the signal from the program
+
+	exit ${SCRIPT_STATUS}
