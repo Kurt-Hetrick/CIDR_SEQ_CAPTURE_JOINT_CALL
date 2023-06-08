@@ -48,10 +48,7 @@ START_ANNOVAR=$(date '+%s') # capture time process starts for wall clock trackin
 
 # find the vcf and decompress it
 
-	FINAL_MULTI_SAMPLE_VCF=$(ls ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.GT.REFINED{.vcf,.vcf.gz} 2> /dev/null)
-
-	zcat -f ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.GT.REFINED{.vcf,.vcf.gz} \
-	>| ${CORE_PATH}/${PROJECT_MS}/TEMP/ANNOVAR/${PREFIX}/${PREFIX}.GT.REFINED.vcf
+	FINAL_MULTI_SAMPLE_VCF=$(ls ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.FILTERED.GT.REFINED.vcf)
 
 # fyi after -annovar_directory_annotation the arguments are for
 # 1. path to vcf file directory

@@ -52,8 +52,8 @@ START_ALL_SNP=$(date '+%s') # capture time process starts for wall clock trackin
 	CMD=${CMD}" ${GATK_DIR_4011}/gatk-package-4.0.11.0-local.jar"
 	CMD=${CMD}" SelectVariants"
 	CMD=${CMD}" --reference ${REF_GENOME}"
-	CMD=${CMD}" --variant ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.GT.REFINED.vcf"
-	CMD=${CMD}" --output ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/${PREFIX}.GT.REFINED.SNP.ALL.SAMPLES.vcf"
+	CMD=${CMD}" --variant ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.FILTERED.GT.REFINED.vcf"
+	CMD=${CMD}" --output ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/VARIANT_SUMMARY_STAT_VCF/${PREFIX}.FILTERED.GT.REFINED.SNP.ALL.SAMPLES.vcf"
 	CMD=${CMD}" --select-type-to-include SNP"
 
 # write command line to file and execute the command line

@@ -46,12 +46,12 @@ START_BGZIP_INDEX=$(date '+%s')
 
 # compress vcf file with bgzip
 
-	CMD1="${TABIX_DIR}/bgzip -c ${CORE_PATH}/${PROJECT_MS}/TEMP/${PROJECT_MS}.GT.REFINED.vcf"
-	CMD1=${CMD1}" >| ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.GT.REFINED.vcf.gz"
+	CMD1="${TABIX_DIR}/bgzip -c ${CORE_PATH}/${PROJECT_MS}/TEMP/${PROJECT_MS}.FILTERED.GT.REFINED.vcf"
+	CMD1=${CMD1}" >| ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.FILTERED.GT.REFINED.vcf.gz"
 
 # index vcf file
 
-	CMD2="${TABIX_DIR}/tabix -p vcf -f ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.GT.REFINED.vcf.gz"
+	CMD2="${TABIX_DIR}/tabix -p vcf -f ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.FILTERED.GT.REFINED.vcf.gz"
 
 END_BGZIP_INDEX=$(date '+%s')
 
@@ -75,4 +75,4 @@ echo ${PROJECT_MS},K01,BGZIP_VARIANTS,${HOSTNAME},${START_BGZIP_INDEX},${END_BGZ
 # check to see if the index is generated which should send an non-zero exit signal if not.
 # eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
 
-ls ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.GT.REFINED.vcf.gz.tbi
+ls ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.FILTERED.GT.REFINED.vcf.gz.tbi

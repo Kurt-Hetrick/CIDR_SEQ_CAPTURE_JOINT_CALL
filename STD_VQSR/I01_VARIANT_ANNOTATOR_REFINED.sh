@@ -55,9 +55,9 @@ START_VARIANT_ANNOTATOR_2=$(date '+%s') # capture time process starts for wall c
 	CMD=${CMD}" -T VariantAnnotator"
 	CMD=${CMD}" --disable_auto_index_creation_and_locking_when_reading_rods"
 	CMD=${CMD}" -R ${REF_GENOME}"
-	CMD=${CMD}" --variant ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.GT.REFINED.temp.vcf.gz"
+	CMD=${CMD}" --variant ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.FILTERED.GT.REFINED.temp.vcf.gz"
 	CMD=${CMD}" -o ${CORE_PATH}/${PROJECT_MS}/TEMP/${BED_FILE_NAME}.r.vcf.gz"
-	CMD=${CMD}" -L ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.GT.REFINED.temp.vcf.gz"
+	CMD=${CMD}" -L ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.FILTERED.GT.REFINED.temp.vcf.gz"
 	CMD=${CMD}" -A GenotypeSummaries"
 
 # write command line to file and execute the command line

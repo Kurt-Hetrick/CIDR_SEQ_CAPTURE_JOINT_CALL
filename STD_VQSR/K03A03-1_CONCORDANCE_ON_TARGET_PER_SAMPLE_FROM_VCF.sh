@@ -128,7 +128,7 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 	CMD="${JAVA_1_8}/java -jar"
 		CMD=${CMD}" /mnt/linuxtools/PICARD/picard-2.26.2/picard.jar"
 	CMD=${CMD}" GenotypeConcordance"
-		CMD=${CMD}" CALL_VCF=${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.BEDsuperset.VQSR.1KG.ExAC3.REFINED.vcf"
+		CMD=${CMD}" CALL_VCF=${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.FILTERED.GT.REFINED.vcf"
 		CMD=${CMD}" CALL_SAMPLE=${SM_TAG}"
 		CMD=${CMD}" TRUTH_VCF=${GENOTYPING_VCF}"
 		CMD=${CMD}" TRUTH_SAMPLE=${BEADCHIP_POSITION}"
