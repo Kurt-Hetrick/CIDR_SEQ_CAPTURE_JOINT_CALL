@@ -83,8 +83,12 @@ END_BGZIP_INDEX=$(date '+%s')
 		echo COMPRESSED VCF IS ${GZIP_VCF_FILE_MD5} AFTER BEING DECOMPRESSED
 		echo "MD5 VALIDATION CHECKS OUT. YAY!"
 	else
-		printf "${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.FILTERED.GT.REFINED.vcf.gz did not compress successfully" \
-		| mail -s "PLEASE CONTACT KURT SO HE CAN INVESTIGATE" ${SEND_TO}
+		echo UNCOMPRESSED VCF IS ${VCF_FILE_MD5}
+		echo COMPRESSED VCF IS ${GZIP_VCF_FILE_MD5} AFTER BEING DECOMPRESSED
+		echo "uh oh, it appears that there was an issue with the vcf file being compressed"
+
+		printf "PLEASE CONTACT KURT SO HE CAN INVESTIGATE" \
+		| mail -s "${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.FILTERED.GT.REFINED.vcf.gz did not compress successfully" ${SEND_TO}
 	fi
 
 echo ${PROJECT_MS},K01,BGZIP_VARIANTS,${HOSTNAME},${START_BGZIP_INDEX},${END_BGZIP_INDEX} \
