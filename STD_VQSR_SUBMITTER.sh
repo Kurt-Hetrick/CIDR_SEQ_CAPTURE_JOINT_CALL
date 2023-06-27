@@ -35,7 +35,9 @@
 
 		COMMON_VQSR_SCRIPT_DIR="${SUBMITTER_SCRIPT_PATH}/COMMON_VQSR_SCRIPTS"
 
-		SCRIPT_DIR="$SUBMITTER_SCRIPT_PATH/STD_VQSR"
+		COMMON_GRCH37_SCRIPT_DIR="${SUBMITTER_SCRIPT_PATH}/COMMON_GRCH37_SCRIPTS"
+
+		SCRIPT_DIR="${SUBMITTER_SCRIPT_PATH}/STD_VQSR"
 
 	# gcc is so that it can be pushed out to the compute nodes via qsub (-V)
 
@@ -96,7 +98,7 @@
 	CIDRSEQSUITE_6_1_1_DIR="/mnt/linuxtools/CIDRSEQSUITE/6.1.1"
 	CIDRSEQSUITE_ANNOVAR_JAVA="/mnt/linuxtools/JAVA/jre1.6.0_25/bin"
 	CIDRSEQSUITE_DIR_4_0="/mnt/research/tools/LINUX/CIDRSEQSUITE/Version_4_0"
-	CIDRSEQSUITE_PROPS_DIR="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/02_DEVELOPMENT_BRANCHES/CIDR_SEQ_CAPTURE_JOINT_CALL/STD_VQSR"
+	# CIDRSEQSUITE_PROPS_DIR="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/02_DEVELOPMENT_BRANCHES/CIDR_SEQ_CAPTURE_JOINT_CALL/STD_VQSR"
 		# cp -p /u01/home/hling/cidrseqsuite.props.HGMD /mnt/research/tools/LINUX/00_GIT_REPO_KURT/CIDR_SEQ_CAPTURE_JOINT_CALL/STD_VQSR/cidrseqsuite.props
 		# 14 June 2018
 	CIDRSEQSUITE_7_5_0_DIR="/mnt/research/tools/LINUX/CIDRSEQSUITE/7.5.0"
@@ -271,7 +273,6 @@
 
 		}
 
-
 	##########################################################################################################
 	##### UNIQUE THE SAMPLE INTO SAMPLE/PROJECT COMBOS AND CREATE A SAMPLE SHEET INTO 300 SAMPLE CHUNKS. #####
 	##########################################################################################################
@@ -408,7 +409,7 @@
 			${QSUB_ARGS} \
 		-N A00-FIX_BED_FILES_${UNIQUE_ID_SM_TAG}_${PROJECT_MS} \
 			-o ${CORE_PATH}/${PROJECT_SAMPLE}/LOGS/${SM_TAG}/${SM_TAG}-FIX_BED_FILES.log \
-		$SCRIPT_DIR/A00-FIX_BED_FILES.sh \
+		${COMMON_GRCH37_SCRIPT_DIR}/A00-FIX_BED_FILES.sh \
 			${CORE_PATH} \
 			${PROJECT_MS} \
 			${SM_TAG} \
@@ -723,7 +724,7 @@ done
 			-N G01A01_LIFTOVER_INITIAL_GRCH37_TO_HG19_${PROJECT_MS} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/G01A01_LIFTOVER_INITIAL_MS_TO_HG19.log \
 				-hold_jid G01_APPLY_RECALIBRATION_INDEL_${PROJECT_MS} \
-			$SCRIPT_DIR/G01A01_LIFTOVER_INITIAL_GRCH37_TO_HG19.sh \
+			${COMMON_GRCH37_SCRIPT_DIR}/G01A01_LIFTOVER_INITIAL_GRCH37_TO_HG19.sh \
 				${JAVA_1_8} \
 				${PICARD_DIR} \
 				${CORE_PATH} \
@@ -748,7 +749,7 @@ done
 			-N G01A01A01_LIFTOVER_INITIAL_HG19_TO_GRCH38_${PROJECT_MS} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/G01A01A01_LIFTOVER_INITIAL_HG19_TO_HG38.log \
 				-hold_jid G01A01_LIFTOVER_INITIAL_GRCH37_TO_HG19_${PROJECT_MS} \
-			$SCRIPT_DIR/G01A01A01_LIFTOVER_INITIAL_HG19_TO_GRCH38.sh \
+			${COMMON_GRCH37_SCRIPT_DIR}/G01A01A01_LIFTOVER_INITIAL_HG19_TO_GRCH38.sh \
 				${JAVA_1_8} \
 				${PICARD_DIR} \
 				${CORE_PATH} \
@@ -1013,7 +1014,7 @@ done
 				-N J01A02_LIFTOVER_REFINED_GRCH37_TO_HG19_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/J01A02_LIFTOVER_REFINED_MS_TO_HG19.log \
 					-hold_jid J01_CAT_REFINED_VARIANTS_${PROJECT_MS} \
-				$SCRIPT_DIR/J01A02_LIFTOVER_REFINED_GRCH37_TO_HG19.sh \
+				${COMMON_GRCH37_SCRIPT_DIR}/J01A02_LIFTOVER_REFINED_GRCH37_TO_HG19.sh \
 					${JAVA_1_8} \
 					${PICARD_DIR} \
 					${CORE_PATH} \
@@ -1041,7 +1042,7 @@ done
 					-N J01A02A01_LIFTOVER_REFINED_HG19_TO_GRCH38_${PROJECT_MS} \
 						-o ${CORE_PATH}/${PROJECT_MS}/LOGS/J01A02A01_LIFTOVER_REFINED_HG19_TO_HG38.log \
 						-hold_jid J01A02_LIFTOVER_REFINED_GRCH37_TO_HG19_${PROJECT_MS} \
-					$SCRIPT_DIR/J01A02A01_LIFTOVER_REFINED_HG19_TO_GRCH38.sh \
+					${COMMON_GRCH37_SCRIPT_DIR}/J01A02A01_LIFTOVER_REFINED_HG19_TO_GRCH38.sh \
 						${JAVA_1_8} \
 						${PICARD_DIR} \
 						${CORE_PATH} \
@@ -1071,8 +1072,8 @@ done
 				-hold_jid J01_CAT_REFINED_VARIANTS_${PROJECT_MS} \
 			${COMMON_SCRIPT_DIR}/K01_ANNOVAR.sh \
 				${JAVA_1_8} \
-				$CIDRSEQSUITE_DIR_4_0 \
-				$CIDRSEQSUITE_PROPS_DIR \
+				${CIDRSEQSUITE_DIR_4_0} \
+				${COMMON_GRCH37_SCRIPT_DIR} \
 				${CORE_PATH} \
 				${PROJECT_MS} \
 				${PREFIX}
@@ -1096,14 +1097,14 @@ done
 				echo \
 					qsub \
 						-S /bin/bash \
-			 			-cwd \
-			 			-V \
-			 			-q ${QUEUE_LIST} \
-			 			-p ${PRIORITY} \
-			 			-j y \
+						-cwd \
+						-V \
+						-q ${QUEUE_LIST} \
+						-p ${PRIORITY} \
+						-j y \
 					-N K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
 						-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS-${PREFIX}.log \
-			 		-hold_jid J01_CAT_REFINED_VARIANTS_${PROJECT_MS} \
+					-hold_jid J01_CAT_REFINED_VARIANTS_${PROJECT_MS} \
 					${COMMON_SCRIPT_DIR}/K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS.sh \
 						${CORE_PATH} \
 						${PROJECT_MS} \
@@ -1116,21 +1117,21 @@ done
 				echo \
 				 qsub \
 					-S /bin/bash \
-			 		-cwd \
-			 		-V \
-			 		-q ${QUEUE_LIST} \
-			 		-p ${PRIORITY} \
-			 		-j y \
+					-cwd \
+					-V \
+					-q ${QUEUE_LIST} \
+					-p ${PRIORITY} \
+					-j y \
 				-N K02A01_SELECT_SNPS_FOR_ALL_SAMPLES_${PROJECT_MS} \
 				 	-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A01_SELECT_SNPS_FOR_ALL_SAMPLES-${PREFIX}.log \
 				 -hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
 				${COMMON_SCRIPT_DIR}/K02A01_SELECT_ALL_SAMPLES_SNP.sh \
-				 	${JAVA_1_8} \
+					${JAVA_1_8} \
 					${GATK_DIR_4011} \
-				 	${REF_GENOME} \
-				 	${CORE_PATH} \
-				 	${PROJECT_MS} \
-				 	${PREFIX}
+					${REF_GENOME} \
+					${CORE_PATH} \
+					${PROJECT_MS} \
+					${PREFIX}
 			}
 
 		# select only passing snp sites that are polymorphic for the study samples
@@ -1139,11 +1140,11 @@ done
 				echo \
 				qsub \
 					-S /bin/bash \
-			 		-cwd \
-			 		-V \
-			 		-q ${QUEUE_LIST} \
-			 		-p ${PRIORITY} \
-			 		-j y \
+					-cwd \
+					-V \
+					-q ${QUEUE_LIST} \
+					-p ${PRIORITY} \
+					-j y \
 				-N K02A02_SELECT_PASS_STUDY_ONLY_SNP_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A02_SELECT_PASS_STUDY_ONLY_SNP-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1151,10 +1152,10 @@ done
 					${JAVA_1_8} \
 					${GATK_DIR_4011} \
 					${REF_GENOME} \
-				 	${CORE_PATH} \
-				 	${PROJECT_MS} \
-				 	${PREFIX} \
-				 	${HAP_MAP_SAMPLE_LIST}
+					${CORE_PATH} \
+					${PROJECT_MS} \
+					${PREFIX} \
+					${HAP_MAP_SAMPLE_LIST}
 			}
 
 		# select only passing snp sites that are polymorphic for the hapmap samples
@@ -1163,11 +1164,11 @@ done
 				echo \
 				qsub \
 					-S /bin/bash \
-			 		-cwd \
-			 		-V \
-			 		-q ${QUEUE_LIST} \
-			 		-p ${PRIORITY} \
-			 		-j y \
+					-cwd \
+					-V \
+					-q ${QUEUE_LIST} \
+					-p ${PRIORITY} \
+					-j y \
 				-N K02A03_SELECT_PASS_HAPMAP_ONLY_SNP_${PROJECT_MS} \
 				 	-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A03_SELECT_PASS_HAPMAP_ONLY_SNP-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1175,10 +1176,10 @@ done
 					${JAVA_1_8} \
 					${GATK_DIR_4011} \
 					${REF_GENOME} \
-				 	${CORE_PATH} \
-				 	${PROJECT_MS} \
-				 	${PREFIX} \
-				 	${MENDEL_SAMPLE_LIST}
+					${CORE_PATH} \
+					${PROJECT_MS} \
+					${PREFIX} \
+					${MENDEL_SAMPLE_LIST}
 			}
 
 		# select all the indel (and mixed) sites
@@ -1187,11 +1188,11 @@ done
 				echo \
 				qsub \
 					-S /bin/bash \
-			 		-cwd \
-			 		-V \
-			 		-q ${QUEUE_LIST} \
-			 		-p ${PRIORITY} \
-			 		-j y \
+					-cwd \
+					-V \
+					-q ${QUEUE_LIST} \
+					-p ${PRIORITY} \
+					-j y \
 				-N K02A04_SELECT_INDELS_FOR_ALL_SAMPLES_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A04_SELECT_INDELS_FOR_ALL_SAMPLES-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1199,9 +1200,9 @@ done
 					${JAVA_1_8} \
 					${GATK_DIR_4011} \
 					${REF_GENOME} \
-				 	${CORE_PATH} \
-				 	${PROJECT_MS} \
-				 	${PREFIX}
+					${CORE_PATH} \
+					${PROJECT_MS} \
+					${PREFIX}
 			}
 
 		# select only passing indel/mixed sites that are polymorphic for the study samples
@@ -1210,11 +1211,11 @@ done
 				echo \
 				qsub \
 					-S /bin/bash \
-			 		-cwd \
-			 		-V \
-			 		-q ${QUEUE_LIST} \
-			 		-p ${PRIORITY} \
-			 		-j y \
+					-cwd \
+					-V \
+					-q ${QUEUE_LIST} \
+					-p ${PRIORITY} \
+					-j y \
 				-N K02A05_SELECT_PASS_STUDY_ONLY_INDEL_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A05_SELECT_PASS_STUDY_ONLY_INDEL-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1222,10 +1223,10 @@ done
 					${JAVA_1_8} \
 					${GATK_DIR_4011} \
 					${REF_GENOME} \
-				 	${CORE_PATH} \
-				 	${PROJECT_MS} \
-				 	${PREFIX} \
-				 	${HAP_MAP_SAMPLE_LIST}
+					${CORE_PATH} \
+					${PROJECT_MS} \
+					${PREFIX} \
+					${HAP_MAP_SAMPLE_LIST}
 			}
 
 		# select only passing indel/mixed sites that are polymorphic for the hapmap samples
@@ -1234,11 +1235,11 @@ done
 				echo \
 				qsub \
 					-S /bin/bash \
-			 		-cwd \
-			 		-V \
-			 		-q ${QUEUE_LIST} \
-			 		-p ${PRIORITY} \
-			 		-j y \
+					-cwd \
+					-V \
+					-q ${QUEUE_LIST} \
+					-p ${PRIORITY} \
+					-j y \
 				-N K02A06_SELECT_PASS_HAPMAP_ONLY_INDEL_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A06_SELECT_PASS_HAPMAP_ONLY_INDEL-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1246,10 +1247,10 @@ done
 					${JAVA_1_8} \
 					${GATK_DIR_4011} \
 					${REF_GENOME} \
-				 	${CORE_PATH} \
-				 	${PROJECT_MS} \
-				 	${PREFIX} \
-				 	${MENDEL_SAMPLE_LIST}
+					${CORE_PATH} \
+					${PROJECT_MS} \
+					${PREFIX} \
+					${MENDEL_SAMPLE_LIST}
 			}
 
 		# select all passing snp sites
@@ -1258,11 +1259,11 @@ done
 				echo \
 				qsub \
 					-S /bin/bash \
-			 		-cwd \
-			 		-V \
-			 		-q ${QUEUE_LIST} \
-			 		-p ${PRIORITY} \
-			 		-j y \
+					-cwd \
+					-V \
+					-q ${QUEUE_LIST} \
+					-p ${PRIORITY} \
+					-j y \
 				-N K02A07_SELECT_SNP_FOR_ALL_SAMPLES_PASS_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A07_SELECT_SNP_FOR_ALL_SAMPLES_PASS-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1281,11 +1282,11 @@ done
 				echo \
 				qsub \
 					-S /bin/bash \
-			 		-cwd \
-			 		-V \
-			 		-q ${QUEUE_LIST} \
-			 		-p ${PRIORITY} \
-			 		-j y \
+					-cwd \
+					-V \
+					-q ${QUEUE_LIST} \
+					-p ${PRIORITY} \
+					-j y \
 				-N K02A08_SELECT_INDEL_FOR_ALL_SAMPLES_PASS_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A08_SELECT_INDEL_FOR_ALL_SAMPLES_PASS-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1411,9 +1412,9 @@ done
 			-o ${CORE_PATH}/${PROJECT_MS}/LOGS/${PREFIX}-QC_REPORT_PREP_QC.log \
 		${HOLD_ID_PATH}J01A03-VCF_METRICS_BAIT_${PROJECT_MS},J01A04-VCF_METRICS_TARGET_${PROJECT_MS},J01A05-VCF_METRICS_TITV_${PROJECT_MS} \
 		${COMMON_SCRIPT_DIR}/Y01_QC_REPORT_PREP.sh \
-			$SAMTOOLS_DIR \
-			$DATAMASH_DIR \
-			$PARALLEL_DIR \
+			${SAMTOOLS_DIR} \
+			${DATAMASH_DIR} \
+			${PARALLEL_DIR} \
 			${CORE_PATH} \
 			${PROJECT_MS} \
 			${PREFIX} \
