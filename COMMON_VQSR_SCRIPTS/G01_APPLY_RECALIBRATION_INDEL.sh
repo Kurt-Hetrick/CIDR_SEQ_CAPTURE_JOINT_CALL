@@ -30,8 +30,6 @@
 
 	set
 
-# create a blank lane b/w the output variables and the program logging output
-
 	echo
 
 # INPUT VARIABLES
@@ -53,9 +51,9 @@ START_APPLY_VQSR_INDEL=$(date '+%s') # capture time process starts for wall cloc
 	CMD=${CMD}" -T ApplyRecalibration"
 	CMD=${CMD}" --disable_auto_index_creation_and_locking_when_reading_rods"
 	CMD=${CMD}" -R ${REF_GENOME}"
-	CMD=${CMD}" --input:VCF ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.HC.SNP.VQSR.vcf"
-	CMD=${CMD}" -recalFile ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.HC.INDEL.recal"
-	CMD=${CMD}" -tranchesFile ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.HC.INDEL.tranches"
+	CMD=${CMD}" --input:VCF ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.SNP.VQSR.vcf"
+	CMD=${CMD}" -recalFile ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.INDEL.recal"
+	CMD=${CMD}" -tranchesFile ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.INDEL.tranches"
 	CMD=${CMD}" -o ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.FILTERED.vcf.gz"
 	CMD=${CMD}" -mode INDEL"
 	CMD=${CMD}" --ts_filter_level 99.0"

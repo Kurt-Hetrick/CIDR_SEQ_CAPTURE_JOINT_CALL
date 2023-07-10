@@ -46,21 +46,22 @@
 
 START_ANNOVAR=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
-# find the vcf and decompress it
+# find the vcf and copy it to the annovar staging folder
 
-	FINAL_MULTI_SAMPLE_VCF=$(ls ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.FILTERED.GT.REFINED.vcf)
+	cp ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.FILTERED.GT.REFINED.vcf \
+		${CORE_PATH}/${PROJECT_MS}/TEMP/ANNOVAR/${PREFIX}
 
 # fyi after -annovar_directory_annotation the arguments are for
 # 1. path to vcf file directory
 # 2. path to output directory
 
 	CMD="${CIDRSEQSUITE_ANNOVAR_JAVA}/java -jar"
-	CMD=${CMD}" -Duser.home=${CIDRSEQSUITE_PROPS}"
-	CMD=${CMD}" -Xmx700g"
-	CMD=${CMD}" ${CIDRSEQSUITE_DIR_4_0}/CIDRSeqSuite.jar"
-	CMD=${CMD}" -pipeline"
-	CMD=${CMD}" -annovar_directory_annotation"
-	CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/ANNOVAR/${PREFIX}"
+		CMD=${CMD}" -Duser.home=${CIDRSEQSUITE_PROPS}"
+		CMD=${CMD}" -Xmx700g"
+		CMD=${CMD}" ${CIDRSEQSUITE_DIR_4_0}/CIDRSeqSuite.jar"
+		CMD=${CMD}" -pipeline"
+		CMD=${CMD}" -annovar_directory_annotation"
+		CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/ANNOVAR/${PREFIX}"
 	CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/ANNOVAR/${PREFIX}"
 
 # write command line to file and execute the command line

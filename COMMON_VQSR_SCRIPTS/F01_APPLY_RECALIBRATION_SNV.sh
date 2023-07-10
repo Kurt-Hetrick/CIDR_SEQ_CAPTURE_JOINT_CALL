@@ -27,47 +27,66 @@
 #######################################
 
 # export all variables, useful to find out what compute node the program was executed on
-set
 
-# create a blank lane b/w the output variables and the program logging output
-echo
+	set
+
+	echo
 
 # INPUT PARAMETERS
 
-JAVA_1_8=$1
-GATK_DIR=$2
-REF_GENOME=$3
-CORE_PATH=$4
+	JAVA_1_8=$1
+	GATK_DIR=$2
+	REF_GENOME=$3
+	CORE_PATH=$4
 
-PROJECT_MS=$5
-PREFIX=$6
+	PROJECT_MS=$5
+	PREFIX=$6
 
-START_APPLY_VQSR_SNV=`date '+%s'`
+START_APPLY_VQSR_SNV=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
-CMD=$JAVA_1_8'/java -jar'
-CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
-CMD=$CMD' -T ApplyRecalibration'
-CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
-CMD=$CMD' -R '$REF_GENOME
-CMD=$CMD' --input:VCF '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.raw.HC.vcf'
-CMD=$CMD' -recalFile '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.SNP.recal'
-CMD=$CMD' -tranchesFile '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.SNP.tranches'
-CMD=$CMD' -o '$CORE_PATH'/'$PROJECT_MS'/TEMP/'$PREFIX'.HC.SNP.VQSR.vcf'
-CMD=$CMD' -mode SNP'
-CMD=$CMD' --ts_filter_level 99.5'
+# construct command line
 
-echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo $CMD | bash
+	CMD="${JAVA_1_8}/java -jar"
+	CMD=${CMD}" ${GATK_DIR}/GenomeAnalysisTK.jar"
+	CMD=${CMD}" -T ApplyRecalibration"
+	CMD=${CMD}" --disable_auto_index_creation_and_locking_when_reading_rods"
+	CMD=${CMD}" -R ${REF_GENOME}"
+	CMD=${CMD}" --input:VCF ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.raw.vcf"
+	CMD=${CMD}" -recalFile ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.SNP.recal"
+	CMD=${CMD}" -tranchesFile ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.SNP.tranches"
+	CMD=${CMD}" -o ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.SNP.VQSR.vcf"
+	CMD=${CMD}" -mode SNP"
+	CMD=${CMD}" --ts_filter_level 99.5"
 
-END_APPLY_VQSR_SNV=`date '+%s'`
+	# write command line to file and execute the command line
 
-HOSTNAME=`hostname`
+		echo ${CMD} >> ${CORE_PATH}/${PROJECT_MS}/COMMAND_LINES/${PROJECT_MS}_command_lines.txt
+		echo >> ${CORE_PATH}/${PROJECT_MS}/COMMAND_LINES/${PROJECT_MS}_command_lines.txt
+		echo ${CMD} | bash
 
-echo $PROJECT_MS",F01,APPLY_VQSR_SNV,"$HOSTNAME","$START_APPLY_VQSR_SNV","$END_APPLY_VQSR_SNV \
->> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"
+	# check the exit signal at this point.
 
-# check to see if the index is generated which should send an non-zero exit signal if not.
-# eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
+		SCRIPT_STATUS=$(echo $?)
 
-ls $CORE_PATH/$PROJECT_MS/TEMP/$PREFIX".HC.SNP.VQSR.vcf.idx"
+		# if exit does not equal 0 then exit with whatever the exit signal is at the end.
+		# also write to file that this job failed
+
+			# if
+			# 	[ "${SCRIPT_STATUS}" -ne 0 ]
+			# then
+			# 	echo ${PROJECT_MS} ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
+			# 	>> ${CORE_PATH}/${PROJECT_MS}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt
+
+			# 	exit ${SCRIPT_STATUS}
+			# fi
+
+END_APPLY_VQSR_SNV=$(date '+%s') # capture time process stops for wall clock tracking purposes.
+
+# write out timing metrics to file
+
+	echo ${PROJECT_MS},F01,APPLY_VQSR_SNV,${HOSTNAME},${START_APPLY_VQSR_SNV},${END_APPLY_VQSR_SNV} \
+	>> ${CORE_PATH}/${PROJECT_MS}/REPORTS/${PROJECT_MS}.JOINT.CALL.WALL.CLOCK.TIMES.csv
+
+# exit with the signal from the program
+
+	exit ${SCRIPT_STATUS}

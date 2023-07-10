@@ -27,56 +27,69 @@
 #######################################
 
 # export all variables, useful to find out what compute node the program was executed on
-set
 
-# create a blank lane b/w the output variables and the program logging output
-echo
+	set
+
+	echo
 
 # INPUT PARAMETERS
 
 	JAVA_1_8=$1
-	shift
-	GATK_DIR=$1
-	shift
-	REF_GENOME=$1
-	shift
-	CORE_PATH=$1
-	shift
-	PROJECT_MS=$1
-	shift
-	PREFIX=$1
-	shift
+	GATK_DIR=$2
+	REF_GENOME=$3
+	CORE_PATH=$4
+	PROJECT_MS=$5
+	PREFIX=$6
 
-START_CAT_VARIANTS=`date '+%s'`
+START_CAT_VARIANTS=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
 # Will want to check GATK 4 to see if this a full featured walker or not
 # As is right now, I would imagine that this limits your scatter count...
 
-	CMD=$JAVA_1_8'/java'
-	CMD=$CMD' -cp '$GATK_DIR'/GenomeAnalysisTK.jar'
-	CMD=$CMD' org.broadinstitute.gatk.tools.CatVariants'
-	CMD=$CMD' -R '$REF_GENOME
-	CMD=$CMD' -assumeSorted'
+	# construct command line
 
-for VCF in $(ls $CORE_PATH/$PROJECT_MS/TEMP/BF*.n.vcf)
-	do
-	  CMD=$CMD' --variant '$VCF
-	done
+		CMD="${JAVA_1_8}/java"
+			CMD=${CMD}" -cp ${GATK_DIR}/GenomeAnalysisTK.jar"
+			CMD=${CMD}" org.broadinstitute.gatk.tools.CatVariants"
+			CMD=${CMD}" -R ${REF_GENOME}"
+			CMD=${CMD}" -assumeSorted"
 
-CMD=$CMD' -out '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.raw.HC.vcf'
+		for VCF in \
+			$(ls ${CORE_PATH}/${PROJECT_MS}/TEMP/BF*.n.vcf)
+		do
+			CMD=${CMD}" --variant ${VCF}"
+		done
 
-echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo $CMD | bash
+		CMD=${CMD}" -out ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.raw.vcf"
 
-END_CAT_VARIANTS=`date '+%s'`
+	# write command line to file and execute the command line
 
-HOSTNAME=`hostname`
+		echo ${CMD} >> ${CORE_PATH}/${PROJECT_MS}/COMMAND_LINES/${PROJECT_MS}_command_lines.txt
+		echo >> ${CORE_PATH}/${PROJECT_MS}/COMMAND_LINES/${PROJECT_MS}_command_lines.txt
+		echo ${CMD} | bash
 
-echo $PROJECT_MS",D01,CAT_VARIANTS,"$HOSTNAME","$START_CAT_VARIANTS","$END_CAT_VARIANTS \
->> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"
+	# check the exit signal at this point.
 
-# check to see if the index is generated which should send an non-zero exit signal if not.
-# eventually, will want to check the exit signal above and push out whatever it is at the end. Not doing that today though.
+		SCRIPT_STATUS=$(echo $?)
 
-ls $CORE_PATH/$PROJECT_MS/MULTI_SAMPLE/$PREFIX".raw.HC.vcf.idx"
+		# if exit does not equal 0 then exit with whatever the exit signal is at the end.
+		# also write to file that this job failed
+
+			if
+				[ "${SCRIPT_STATUS}" -ne 0 ]
+			then
+				echo ${PROJECT_MS} ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
+				>> ${CORE_PATH}/${PROJECT_MS}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt
+				exit ${SCRIPT_STATUS}
+			fi
+
+END_CAT_VARIANTS=$(date '+%s') # capture time process stops for wall clock tracking purposes.
+
+# write out timing metrics to file
+
+	echo ${PROJECT_MS},D01,CAT_VARIANTS,${HOSTNAME},${START_CAT_VARIANTS},${END_CAT_VARIANTS} \
+	>> ${CORE_PATH}/${PROJECT_MS}/REPORTS/${PROJECT_MS}.JOINT.CALL.WALL.CLOCK.TIMES.csv
+
+# exit with the signal from the program
+
+	exit ${SCRIPT_STATUS}

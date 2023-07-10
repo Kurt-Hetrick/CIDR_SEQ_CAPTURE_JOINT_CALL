@@ -18,7 +18,7 @@
 	NUMBER_OF_BED_FILES=$5 # scatter count, if not supplied then the default is what is below. If you want to change this is you have to supply an input for priority as well.
 
 		if
-			[[ ! $NUMBER_OF_BED_FILES ]]
+			[[ ! ${NUMBER_OF_BED_FILES} ]]
 		then
 			NUMBER_OF_BED_FILES=500
 		fi
@@ -82,6 +82,12 @@
 	# grab email addy
 
 		SEND_TO=$(cat ${SCRIPT_DIR}/../email_lists.txt)
+
+	# make a directory to place the annovar logs
+
+		ANNOVAR_LOGS="/mnt/research/tools/LOGS"
+
+			mkdir -p ${ANNOVAR_LOGS}
 
 #####################
 # PIPELINE PROGRAMS #

@@ -60,14 +60,14 @@ START_VQSR_SNV=`date '+%s'`
 	CMD=$CMD' -T VariantRecalibrator'
 	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
 	CMD=$CMD' -R '$REF_GENOME
-	CMD=$CMD' --input:VCF '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.raw.HC.vcf'
+	CMD=$CMD' --input:VCF '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.raw.vcf'
 	CMD=$CMD' -resource:hapmap,known=false,training=true,truth=true,prior=15.0 '$HAPMAP_VCF
 	CMD=$CMD' -resource:omni,known=false,training=true,truth=true,prior=12.0 '$OMNI_VCF
 	CMD=$CMD' -resource:1000G,known=false,training=true,truth=false,prior=10.0 '$ONEKG_SNPS_VCF
 	CMD=$CMD' -resource:dbsnp,known=true,training=false,truth=false,prior=2.0 '$DBSNP_138_VCF
-	CMD=$CMD' -recalFile '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.SNP.recal'
-	CMD=$CMD' -tranchesFile '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.SNP.tranches'
-	CMD=$CMD' -rscriptFile '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.SNP.R'
+	CMD=$CMD' -recalFile '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.SNP.recal'
+	CMD=$CMD' -tranchesFile '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.SNP.tranches'
+	CMD=$CMD' -rscriptFile '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.SNP.R'
 	CMD=$CMD' -tranche 100.0'
 	CMD=$CMD' -tranche 99.9'
 	CMD=$CMD' -tranche 99.8'

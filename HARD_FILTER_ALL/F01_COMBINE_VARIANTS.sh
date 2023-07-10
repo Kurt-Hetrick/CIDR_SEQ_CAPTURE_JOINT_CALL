@@ -44,13 +44,15 @@
 
 START_COMBINE_VARIANTS=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
+# construct cmd line
+
 	CMD="${JAVA_1_8}/java -jar"
 	CMD=${CMD}" ${GATK_DIR}/GenomeAnalysisTK.jar"
 	CMD=${CMD}" -T CombineVariants"
 	CMD=${CMD}" -R ${REF_GENOME}"
 	CMD=${CMD}" --genotypemergeoption UNSORTED"
-	CMD=${CMD}" --variant ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.raw.HC.HardFiltered.INDEL.vcf.gz"
-	CMD=${CMD}" --variant ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.raw.HC.HardFiltered.SNP.vcf.gz"
+	CMD=${CMD}" --variant ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.FILTERED.INDEL.vcf.gz"
+	CMD=${CMD}" --variant ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.FILTERED.SNP.vcf.gz"
 	CMD=${CMD}" --disable_auto_index_creation_and_locking_when_reading_rods"
 	CMD=${CMD}" -o ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.FILTERED.vcf.gz"
 

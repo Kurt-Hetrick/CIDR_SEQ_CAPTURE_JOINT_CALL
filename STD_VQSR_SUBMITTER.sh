@@ -83,6 +83,12 @@
 
 		SEND_TO=$(cat ${SCRIPT_DIR}/../email_lists.txt)
 
+	# make a directory to place the annovar logs
+
+		ANNOVAR_LOGS="/mnt/research/tools/LOGS"
+
+			mkdir -p ${ANNOVAR_LOGS}
+
 #####################
 # PIPELINE PROGRAMS #
 #####################
@@ -802,8 +808,8 @@ done
 				${JAVA_1_8} \
 				${GATK_DIR} \
 				${REF_GENOME} \
-				$P3_1KG \
-				$ExAC \
+				${P3_1KG} \
+				${ExAC} \
 				${CORE_PATH} \
 				${PROJECT_MS} \
 				${PREFIX} \
@@ -1123,8 +1129,8 @@ done
 					-p ${PRIORITY} \
 					-j y \
 				-N K02A01_SELECT_SNPS_FOR_ALL_SAMPLES_${PROJECT_MS} \
-				 	-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A01_SELECT_SNPS_FOR_ALL_SAMPLES-${PREFIX}.log \
-				 -hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
+					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A01_SELECT_SNPS_FOR_ALL_SAMPLES-${PREFIX}.log \
+				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
 				${COMMON_SCRIPT_DIR}/K02A01_SELECT_ALL_SAMPLES_SNP.sh \
 					${JAVA_1_8} \
 					${GATK_DIR_4011} \
@@ -1170,7 +1176,7 @@ done
 					-p ${PRIORITY} \
 					-j y \
 				-N K02A03_SELECT_PASS_HAPMAP_ONLY_SNP_${PROJECT_MS} \
-				 	-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A03_SELECT_PASS_HAPMAP_ONLY_SNP-${PREFIX}.log \
+					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A03_SELECT_PASS_HAPMAP_ONLY_SNP-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
 				${COMMON_SCRIPT_DIR}/K02A03_SELECT_PASS_HAPMAP_ONLY_SNP.sh \
 					${JAVA_1_8} \

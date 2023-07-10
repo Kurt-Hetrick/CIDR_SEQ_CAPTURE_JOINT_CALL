@@ -26,10 +26,10 @@
 ##### END QSUB PARAMETER SETTINGS #####
 #######################################
 
-	# export all variables, useful to find out what compute node the program was executed on
+# export all variables, useful to find out what compute node the program was executed on
+
 	set
 
-	# create a blank lane b/w the output variables and the program logging output
 	echo
 
 # INPUT PARAMETERS
@@ -46,72 +46,82 @@
 	PROJECT_MS=$9
 	PREFIX=${10}
 	R_DIRECTORY=${11}
-		export PATH=.:$R_DIRECTORY:$PATH
+		export PATH=.:${R_DIRECTORY}:${PATH}
 	SEND_TO=${12}
 
 	# explicitly state the maximum number of gaussians to start of with
 
 		MAX_GAUSSIANS="8"
 
-START_VQSR_SNV=`date '+%s'`
+START_VQSR_SNV=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
-	CMD=$JAVA_1_8'/java -jar'
-	CMD=$CMD' '$GATK_DIR'/GenomeAnalysisTK.jar'
-	CMD=$CMD' -T VariantRecalibrator'
-	CMD=$CMD' --disable_auto_index_creation_and_locking_when_reading_rods'
-	CMD=$CMD' -R '$REF_GENOME
-	CMD=$CMD' --input:VCF '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.raw.HC.SNP.vcf.gz'
-	CMD=$CMD' -resource:hapmap,known=false,training=true,truth=true,prior=15.0 '$HAPMAP_VCF
-	CMD=$CMD' -resource:omni,known=false,training=true,truth=true,prior=12.0 '$OMNI_VCF
-	CMD=$CMD' -resource:1000G,known=false,training=true,truth=false,prior=10.0 '$ONEKG_SNPS_VCF
-	CMD=$CMD' -resource:dbsnp,known=true,training=false,truth=false,prior=2.0 '$DBSNP_138_VCF
-	CMD=$CMD' -recalFile '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.SNP.recal'
-	CMD=$CMD' -tranchesFile '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.SNP.tranches'
-	CMD=$CMD' -rscriptFile '$CORE_PATH'/'$PROJECT_MS'/MULTI_SAMPLE/'$PREFIX'.HC.SNP.R'
-	CMD=$CMD' -tranche 100.0'
-	CMD=$CMD' -tranche 99.9'
-	CMD=$CMD' -tranche 99.8'
-	CMD=$CMD' -tranche 99.7'
-	CMD=$CMD' -tranche 99.6'
-	CMD=$CMD' -tranche 99.5'
-	CMD=$CMD' -tranche 99.4'
-	CMD=$CMD' -tranche 99.3'
-	CMD=$CMD' -tranche 99.2'
-	CMD=$CMD' -tranche 99.1'
-	CMD=$CMD' -tranche 99.0'
-	CMD=$CMD' -tranche 98.0'
-	CMD=$CMD' -tranche 97.0'
-	CMD=$CMD' -tranche 96.0'
-	CMD=$CMD' -tranche 95.0'
-	CMD=$CMD' -tranche 90.0'
-	CMD=$CMD' -mode SNP'
-	CMD=$CMD' -an QD'
-	CMD=$CMD' -an MQRankSum'
-	CMD=$CMD' -an MQ'
-	CMD=$CMD' -an ReadPosRankSum'
-	CMD=$CMD' -an SOR'
-	CMD=$CMD' -an FS'
-	CMD=$CMD' --maxGaussians '$MAX_GAUSSIANS
+# construct cmd line
 
-	echo $CMD | bash
+	CMD="${JAVA_1_8}/java -jar"
+	CMD=${CMD}" ${GATK_DIR}/GenomeAnalysisTK.jar"
+	CMD=${CMD}" -T VariantRecalibrator"
+	CMD=${CMD}" --disable_auto_index_creation_and_locking_when_reading_rods"
+	CMD=${CMD}" -R ${REF_GENOME}"
+	CMD=${CMD}" --input:VCF ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.raw.SNP.vcf.gz"
+	CMD=${CMD}" -resource:hapmap,known=false,training=true,truth=true,prior=15.0 ${HAPMAP_VCF}"
+	CMD=${CMD}" -resource:omni,known=false,training=true,truth=true,prior=12.0 ${OMNI_VCF}"
+	CMD=${CMD}" -resource:1000G,known=false,training=true,truth=false,prior=10.0 ${ONEKG_SNPS_VCF}"
+	CMD=${CMD}" -resource:dbsnp,known=true,training=false,truth=false,prior=2.0 ${DBSNP_138_VCF}"
+	CMD=${CMD}" -recalFile ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.SNP.recal"
+	CMD=${CMD}" -tranchesFile ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.SNP.tranches"
+	CMD=${CMD}" -rscriptFile ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.HC.SNP.R"
+	CMD=${CMD}" -tranche 100.0"
+	CMD=${CMD}" -tranche 99.9"
+	CMD=${CMD}" -tranche 99.8"
+	CMD=${CMD}" -tranche 99.7"
+	CMD=${CMD}" -tranche 99.6"
+	CMD=${CMD}" -tranche 99.5"
+	CMD=${CMD}" -tranche 99.4"
+	CMD=${CMD}" -tranche 99.3"
+	CMD=${CMD}" -tranche 99.2"
+	CMD=${CMD}" -tranche 99.1"
+	CMD=${CMD}" -tranche 99.0"
+	CMD=${CMD}" -tranche 98.0"
+	CMD=${CMD}" -tranche 97.0"
+	CMD=${CMD}" -tranche 96.0"
+	CMD=${CMD}" -tranche 95.0"
+	CMD=${CMD}" -tranche 90.0"
+	CMD=${CMD}" -mode SNP"
+	CMD=${CMD}" -an QD"
+	CMD=${CMD}" -an MQRankSum"
+	CMD=${CMD}" -an MQ"
+	CMD=${CMD}" -an ReadPosRankSum"
+	CMD=${CMD}" -an SOR"
+	CMD=${CMD}" -an FS"
+	CMD=${CMD}" --maxGaussians ${MAX_GAUSSIANS}"
 
-	# capture the exit status
+# execute the command line
 
-		SCRIPT_STATUS=`echo $?`
+	echo ${CMD} | bash
+
+	# check the exit signal at this point.
+
+		SCRIPT_STATUS=$(echo $?)
 
 	# if vqsr fails then retry by decrementing the number of max gaussians by 1 until you get to 4
 	# if it still does not work after setting it to four then stop trying
 
-		if [ $SCRIPT_STATUS -ne 0 ]
-			then
-				until [[ $SCRIPT_STATUS -eq 0 || $MAX_GAUSSIANS -le 4 ]]
-					do
-						CMD=$(echo $CMD | sed 's/ --maxGaussians '"$MAX_GAUSSIANS"'//g')
-						MAX_GAUSSIANS=$[$MAX_GAUSSIANS-1]
-						CMD=$CMD' --maxGaussians '$MAX_GAUSSIANS
-						echo $CMD | bash
-						SCRIPT_STATUS=`echo $?`
-				done
+		if
+			[ ${SCRIPT_STATUS} -ne 0 ]
+		then
+			until
+				[[ ${SCRIPT_STATUS} -eq 0 || ${MAX_GAUSSIANS} -le 4 ]]
+			do
+				CMD=$(echo ${CMD} | sed 's/ --maxGaussians '"${MAX_GAUSSIANS}"'//g')
+
+					MAX_GAUSSIANS=$[${MAX_GAUSSIANS}-1]
+
+				CMD=${CMD}" --maxGaussians ${MAX_GAUSSIANS}"
+
+				echo ${CMD} | bash
+
+				SCRIPT_STATUS=$(echo $?)
+			done
 		fi
 
 	# if it fails the first time but ultimately works send a notification saying that the parameter has changed and that the methods document needs to change for release
@@ -141,14 +151,16 @@ START_VQSR_SNV=`date '+%s'`
 			:
 		fi
 
-echo $CMD >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
-echo >> $CORE_PATH/$PROJECT_MS/COMMAND_LINES/$PROJECT_MS"_command_lines.txt"
+# write final command line to file
 
-END_VQSR_SNV=`date '+%s'`
+	echo ${CMD} >> ${CORE_PATH}/${PROJECT_MS}/COMMAND_LINES/${PROJECT_MS}_command_lines.txt
+	echo >> ${CORE_PATH}/${PROJECT_MS}/COMMAND_LINES/${PROJECT_MS}_command_lines.txt
 
-echo $PROJECT_MS",E01,VQSR_SNV,"$HOSTNAME","$START_VQSR_SNV","$END_VQSR_SNV \
->> $CORE_PATH/$PROJECT_MS/REPORTS/$PROJECT_MS".JOINT.CALL.WALL.CLOCK.TIMES.csv"
+END_VQSR_SNV=$(date '+%s') # capture time process stops for wall clock tracking purposes.
+
+	echo ${PROJECT_MS},E01,VQSR_SNV,${HOSTNAME},${START_VQSR_SNV},${END_VQSR_SNV} \
+	>> ${CORE_PATH}/${PROJECT_MS}/REPORTS/${PROJECT_MS}.JOINT.CALL.WALL.CLOCK.TIMES.csv
 
 # exit with the signal from the program
 
-	exit $SCRIPT_STATUS
+	exit ${SCRIPT_STATUS}
