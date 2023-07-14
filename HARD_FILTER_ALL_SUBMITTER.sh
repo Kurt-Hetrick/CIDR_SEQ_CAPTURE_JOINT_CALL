@@ -319,7 +319,6 @@
 							{print $1,($2+1),$3,"+",$1"_"($2+1)"_"$3}' \
 						${CORE_PATH}/${PROJECT_MS}/TEMP/${PROJECT_MS}-${PROJECT_TITV_BED_NAME}.bed) \
 					>| ${CORE_PATH}/${PROJECT_MS}/TEMP/${PROJECT_MS}-${PROJECT_TITV_BED_NAME}-picard.bed
-
 		}
 
 	# Run Ben's EnhancedSequencingQCReport which;
@@ -786,7 +785,6 @@ done
 	echo sleep 0.1s
 	LIFTOVER_INITIAL_HG19_VCF_TO_HG38
 	echo sleep 0.1s
-
 
 ##################################################
 ##################################################
