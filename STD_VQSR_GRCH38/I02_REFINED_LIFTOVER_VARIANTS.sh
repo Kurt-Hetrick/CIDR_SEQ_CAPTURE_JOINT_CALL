@@ -27,10 +27,12 @@
 #######################################
 
 # export all variables, useful to find out what compute node the program was executed on
-set
+
+	set
 
 # create a blank lane b/w the output variables and the program logging output
-echo
+
+	echo
 
 # INPUT PARAMETERS
 
@@ -48,22 +50,22 @@ echo
 
 # liftover from hg38 to hg19
 
-START_LIFTOVER_REFINE_GT=`date '+%s'`
+START_LIFTOVER_REFINE_GT=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
 	# construct command line
 
 		CMD="singularity exec ${PICARD_LIFTOVER_CONTAINER} java -jar"
 			CMD=${CMD}" /picard/picard.jar"
 		CMD=${CMD}" LiftoverVcf"
-			CMD=${CMD}" INPUT=${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.BEDsuperset.VQSR.1KG.ExAC3.REFINED.temp.vcf.gz"
+			CMD=${CMD}" INPUT=${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.FILTERED.GT.REFINED.temp.vcf.gz"
 			CMD=${CMD}" REFERENCE_SEQUENCE=${HG19_REF}"
 			CMD=${CMD}" CHAIN=${HG38_TO_HG19_CHAIN}"
-		CMD=${CMD}" REJECT=${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.BEDsuperset.VQSR.1KG.ExAC3.REFINED.hg19.reject.vcf.gz"
-		CMD=${CMD}" OUTPUT=${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.BEDsuperset.VQSR.1KG.ExAC3.REFINED.hg19.temp.vcf.gz"
+		CMD=${CMD}" REJECT=${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.FILTERED.GT.REFINED.hg19.reject.vcf.gz"
+		CMD=${CMD}" OUTPUT=${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.FILTERED.GT.REFINED.hg19.temp.vcf.gz"
 		CMD=${CMD}" &&"
 		# remove loci that start with chrUn because cidrseqsuite will crash
-		CMD=${CMD}" zegrep -v \"^chrUn\" ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.BEDsuperset.VQSR.1KG.ExAC3.REFINED.hg19.temp.vcf.gz"
-		CMD=${CMD}" >| ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.BEDsuperset.VQSR.1KG.ExAC3.REFINED.hg19.primary.vcf"
+		CMD=${CMD}" zegrep -v \"^chrUn\" ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.FILTERED.GT.REFINED.hg19.temp.vcf.gz"
+		CMD=${CMD}" >| ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.FILTERED.GT.REFINED.hg19.primary.vcf"
 
 	# write command line to file and execute the command line
 
@@ -73,22 +75,20 @@ START_LIFTOVER_REFINE_GT=`date '+%s'`
 
 	# check the exit signal at this point.
 
-		SCRIPT_STATUS=`echo $?`
+		SCRIPT_STATUS=$(echo $?)
 
 		# if exit does not equal 0 then exit with whatever the exit signal is at the end.
 		# also write to file that this job failed
 
-			if [ "${SCRIPT_STATUS}" -ne 0 ]
-				then
-					echo ${SM_TAG} ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
-					>> ${CORE_PATH}/${PROJECT_MS}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt
+			if
+				[ "${SCRIPT_STATUS}" -ne 0 ]
+			then
+				echo ${SM_TAG} ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
+				>> ${CORE_PATH}/${PROJECT_MS}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt
 					exit ${SCRIPT_STATUS}
 			fi
 
-END_LIFTOVER_REFINE_GT=`date '+%s'`
-
-echo ${PROJECT_MS},J01,REFINE_GT,${HOSTNAME},${START_LIFTOVER_REFINE_GT},${END_LIFTOVER_REFINE_GT} \
->> ${CORE_PATH}/${PROJECT_MS}/REPORTS/${PROJECT_MS}.JOINT.CALL.WALL.CLOCK.TIMES.csv
+END_LIFTOVER_REFINE_GT=$(date '+%s') # capture time process stops for wall clock tracking purposes.
 
 # write out timing metrics to file
 
