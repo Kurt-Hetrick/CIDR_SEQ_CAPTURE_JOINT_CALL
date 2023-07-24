@@ -38,49 +38,41 @@
 		COMMON_VQSR_SCRIPT_DIR="${SUBMITTER_SCRIPT_PATH}/COMMON_VQSR_SCRIPTS"
 
 	# gcc is so that it can be pushed out to the compute nodes via qsub (-V)
-	module load gcc/7.2.0
+
+		module load gcc/7.2.0
 
 	# Directory where sequencing projects are located
-	CORE_PATH="/mnt/research/active"
+
+		CORE_PATH="/mnt/research/active"
 
 	# Generate a list of active queue and remove the ones that I don't want to use
-	QUEUE_LIST=`qstat -f -s r \
-		| egrep -v "^[0-9]|^-|^queue|^ " \
-		| cut -d @ -f 1 \
-		| sort \
-		| uniq \
-		| egrep -v "bigmem.q|all.q|cgc.q|programmers.q|rhel7.q|qtest.q|bigdata.q|uhoh.q|testcgc.q" \
-		| datamash collapse 1 \
-		| awk '{print $1}'`
 
-	#  # Use bigmem.q for ANNOVAR in addition to everything else
-	# ANNOVAR_QUEUE_LIST=`qstat -f -s r \
-	# 	| egrep -v "^[0-9]|^-|^queue|^ " \
-	# 	| cut -d @ -f 1 \
-	# 	| sort \
-	# 	| uniq \
-	# 	| egrep -v "all.q|cgc.q|programmers.q|qtest.q|uhoh.q" \
-	# 	| datamash collapse 1 \
-	# 	| awk '{print $1}'`
-
-	 # | awk '{print $1,"-l \x27hostname=!DellR730-03\x27"}'`
+		QUEUE_LIST=$(qstat -f -s r \
+			| egrep -v "^[0-9]|^-|^queue|^ " \
+			| cut -d @ -f 1 \
+			| sort \
+			| uniq \
+			| egrep -v "bigmem.q|all.q|cgc.q|programmers.q|rhel7.q|qtest.q|bigdata.q|uhoh.q|testcgc.q" \
+			| datamash collapse 1 \
+			| awk '{print $1}')
 
 	# eventually, i want to push this out to something...maybe in the vcf file header.
-	PIPELINE_VERSION=`git --git-dir=$SCRIPT_DIR/../.git --work-tree=$SCRIPT_DIR/.. log --pretty=format:'%h' -n 1`
+
+		PIPELINE_VERSION=$(git --git-dir=$SCRIPT_DIR/../.git --work-tree=$SCRIPT_DIR/.. log --pretty=format:'%h' -n 1)
 
 	# generate a random number b/w "0 - 32767" to be used for the job name for variant annotator both pre and post refinement
 	# this is to help cut down on the job name length so I can increase the scatter count
-	HACK=(`echo $RANDOM`)
+
+		HACK=$(echo $RANDOM)
 
 	# explicitly setting this b/c not everybody has had the $HOME directory transferred and I'm not going to through
 	# and figure out who does and does not have this set correctly
-	umask 0007
 
-	# TIMESTAMP=`date '+%F.%H-%M-%S'`
+		umask 0007
 
 	# grab email addy
 
-		SEND_TO=`cat $SCRIPT_DIR/../email_lists.txt`
+		SEND_TO=$(cat $SCRIPT_DIR/../email_lists.txt)
 
 	# QSUB ARGUMENTS LIST
 		# set shell on compute node
@@ -190,7 +182,6 @@
 		 # md5 a76eaa4714953f8125ed7dca7e02e252
 	ExAC="/mnt/research/tools/PIPELINE_FILES/GRCh38_aux_files/ExAC.r0.3.sites.vep.hg38.liftover.vcf.gz"
 		# md5 1c890a91e3a123e7bd617e97d1289216
-
 
 ##################################################
 ##################################################
@@ -381,12 +372,7 @@
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N A02-LAB_PREP_METRICS_${PROJECT_MS} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/${PROJECT_MS}-LAB_PREP_METRICS.log \
 			${COMMON_SCRIPT_DIR}/A02_LAB_PREP_METRICS.sh \
@@ -493,12 +479,7 @@ done
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N A01_COMBINE_GVCF_${PROJECT_MS}_${PGVCF_LIST_NAME}_${BED_FILE_NAME} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/A01_COMBINE_GVCF/A01_COMBINE_GVCF_${PGVCF_LIST_NAME}_${BED_FILE_NAME}.log \
 			${COMMON_SCRIPT_DIR}/A01_COMBINE_GVCF.sh \
@@ -546,12 +527,7 @@ done
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N B01_GENOTYPE_GVCF_${PROJECT_MS}_${BED_FILE_NAME} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/B01_GENOTYPE_GVCF/B01_GENOTYPE_GVCF_${BED_FILE_NAME}.log \
 			${GENOTYPE_GVCF_HOLD_ID} \
@@ -571,12 +547,7 @@ done
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N C${HACK}_${BED_FILE_NAME} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/C01_VARIANT_ANNOTATOR/C01_VARIANT_ANNOTATOR_${BED_FILE_NAME}.log \
 				-hold_jid B01_GENOTYPE_GVCF_${PROJECT_MS}_${BED_FILE_NAME} \
@@ -628,12 +599,7 @@ done
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N D01_CAT_VARIANTS_${PROJECT_MS} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/D01_CAT_VARIANTS.log \
 			-hold_jid ${CAT_VARIANTS_HOLD_ID} \
@@ -654,12 +620,7 @@ done
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N E01_VARIANT_RECALIBRATOR_SNV_${PROJECT_MS} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/E01_VARIANT_RECALIBRATOR_SNV.log \
 				-hold_jid D01_CAT_VARIANTS_${PROJECT_MS} \
@@ -686,12 +647,7 @@ done
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N E02_VARIANT_RECALIBRATOR_INDEL_${PROJECT_MS} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/E02_VARIANT_RECALIBRATOR_INDEL.log \
 				-hold_jid D01_CAT_VARIANTS_${PROJECT_MS} \
@@ -715,12 +671,7 @@ done
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N F01_APPLY_RECALIBRATION_SNV_${PROJECT_MS} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/F01_APPLY_RECALIBRATION_SNV.log \
 				-hold_jid E01_VARIANT_RECALIBRATOR_SNV_${PROJECT_MS} \
@@ -740,12 +691,7 @@ done
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N G01_APPLY_RECALIBRATION_INDEL_${PROJECT_MS} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/G01_APPLY_RECALIBRATION_INDEL.log \
 				-hold_jid F01_APPLY_RECALIBRATION_SNV_${PROJECT_MS},E02_VARIANT_RECALIBRATOR_INDEL_${PROJECT_MS} \
@@ -784,12 +730,7 @@ done
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N H01_CALCULATE_GENOTYPE_POSTERIORS_${PROJECT_MS}_${BED_FILE_NAME} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/H01_CALCULATE_GENOTYPE_POSTERIORS/H01_CALCULATE_GENOTYPE_POSTERIORS_${BED_FILE_NAME}.log \
 			-hold_jid G01_APPLY_RECALIBRATION_INDEL_${PROJECT_MS} \
@@ -811,17 +752,11 @@ done
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-v SINGULARITY_BINDPATH=/mnt:/mnt \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N I${HACK}J_${BED_FILE_NAME} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/I02_LIFTOVER_HG19_REFINED/I02_LIFTOVER_HG19_REFINED_${BED_FILE_NAME}.log \
 			-hold_jid H01_CALCULATE_GENOTYPE_POSTERIORS_${PROJECT_MS}_${BED_FILE_NAME} \
-			$SCRIPT_DIR/I02_REFINED_LIFTOVER_VARIANTS.sh \
+			${COMMON_GRCH38_SCRIPT_DIR}/I02_REFINED_LIFTOVER_VARIANTS.sh \
 				${PICARD_LIFTOVER_CONTAINER} \
 				${CORE_PATH} \
 				${PROJECT_MS} \
@@ -839,12 +774,7 @@ done
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N I${HACK}_${BED_FILE_NAME} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/I01_VARIANT_ANNOTATOR_REFINED/I01_VARIANT_ANNOTATOR_REFINED_${BED_FILE_NAME}.log \
 			-hold_jid H01_CALCULATE_GENOTYPE_POSTERIORS_${PROJECT_MS}_${BED_FILE_NAME} \
@@ -922,16 +852,11 @@ done
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N J02_COMBINE_REFINED_LIFTOVER_VARIANTS_${PROJECT_MS} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/J02_COMBINE_REFINED_LIFTOVER_VARIANTS.log \
 			-hold_jid ${COMBINE_REFINED_LIFTOVER_VARIANTS_HOLD_ID} \
-			$SCRIPT_DIR/J02_COMBINE_REFINED_LIFTOVER_VARIANTS.sh \
+			${COMMON_GRCH38_SCRIPT_DIR}/J02_COMBINE_REFINED_LIFTOVER_VARIANTS.sh \
 				${JAVA_1_8} \
 				${GATK_DIR} \
 				${HG19_REF} \
@@ -946,12 +871,7 @@ done
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N J01A03-VCF_METRICS_BAIT_${PROJECT_MS} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/J01A03-VCF_METRICS_BAIT.log \
 			-hold_jid J01_CAT_REFINED_VARIANTS_${PROJECT_MS} \
@@ -973,12 +893,7 @@ done
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N J01A04-VCF_METRICS_TARGET_${PROJECT_MS} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/J01A04-VCF_METRICS_TARGET.log \
 			-hold_jid J01_CAT_REFINED_VARIANTS_${PROJECT_MS} \
@@ -1001,12 +916,7 @@ done
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N J01A05-VCF_METRICS_TITV_${PROJECT_MS} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/J01A05-VCF_METRICS_TITV.log \
 			-hold_jid J01_CAT_REFINED_VARIANTS_${PROJECT_MS} \
@@ -1029,12 +939,7 @@ done
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N J01A01_BGZIP_INDEX_${PROJECT_MS} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/J01A01_BGZIP_INDEX_VARIANTS.log \
 			-hold_jid J01_CAT_REFINED_VARIANTS_${PROJECT_MS} \
@@ -1063,12 +968,7 @@ done
 
 				echo \
 					qsub \
-						-S /bin/bash \
-						-cwd \
-						-V \
-						-q ${QUEUE_LIST} \
-						-p ${PRIORITY} \
-						-j y \
+						${QSUB_ARGS} \
 					-N K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
 						-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS-${PREFIX}.log \
 					-hold_jid J01_CAT_REFINED_VARIANTS_${PROJECT_MS} \
@@ -1083,12 +983,7 @@ done
 			{
 				echo \
 				 qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q ${QUEUE_LIST} \
-					-p ${PRIORITY} \
-					-j y \
+					${QSUB_ARGS} \
 				-N K02A01_SELECT_SNPS_FOR_ALL_SAMPLES_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A01_SELECT_SNPS_FOR_ALL_SAMPLES-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1106,12 +1001,7 @@ done
 			{
 				echo \
 				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q ${QUEUE_LIST} \
-					-p ${PRIORITY} \
-					-j y \
+					${QSUB_ARGS} \
 				-N K02A02_SELECT_PASS_STUDY_ONLY_SNP_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A02_SELECT_PASS_STUDY_ONLY_SNP-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1130,12 +1020,7 @@ done
 			{
 				echo \
 				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q ${QUEUE_LIST} \
-					-p ${PRIORITY} \
-					-j y \
+					${QSUB_ARGS} \
 				-N K02A03_SELECT_PASS_HAPMAP_ONLY_SNP_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A03_SELECT_PASS_HAPMAP_ONLY_SNP-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1154,12 +1039,7 @@ done
 			{
 				echo \
 				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q ${QUEUE_LIST} \
-					-p ${PRIORITY} \
-					-j y \
+					${QSUB_ARGS} \
 				-N K02A04_SELECT_INDELS_FOR_ALL_SAMPLES_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A04_SELECT_INDELS_FOR_ALL_SAMPLES-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1177,12 +1057,7 @@ done
 			{
 				echo \
 				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q ${QUEUE_LIST} \
-					-p ${PRIORITY} \
-					-j y \
+					${QSUB_ARGS} \
 				-N K02A05_SELECT_PASS_STUDY_ONLY_INDEL_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A05_SELECT_PASS_STUDY_ONLY_INDEL-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1201,12 +1076,7 @@ done
 			{
 				echo \
 				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q ${QUEUE_LIST} \
-					-p ${PRIORITY} \
-					-j y \
+					${QSUB_ARGS} \
 				-N K02A06_SELECT_PASS_HAPMAP_ONLY_INDEL_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A06_SELECT_PASS_HAPMAP_ONLY_INDEL-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1225,12 +1095,7 @@ done
 			{
 				echo \
 				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q ${QUEUE_LIST} \
-					-p ${PRIORITY} \
-					-j y \
+					${QSUB_ARGS} \
 				-N K02A07_SELECT_SNP_FOR_ALL_SAMPLES_PASS_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A07_SELECT_SNP_FOR_ALL_SAMPLES_PASS-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1248,12 +1113,7 @@ done
 			{
 				echo \
 				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q ${QUEUE_LIST} \
-					-p ${PRIORITY} \
-					-j y \
+					${QSUB_ARGS} \
 				-N K02A08_SELECT_INDEL_FOR_ALL_SAMPLES_PASS_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A08_SELECT_INDEL_FOR_ALL_SAMPLES_PASS-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1312,16 +1172,11 @@ QC_JOB_NAME_PREFIX=$(openssl rand -base64 21 \
 		{
 			echo \
 			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q ${QUEUE_LIST} \
-				-p ${PRIORITY} \
-				-j y \
+				${QSUB_ARGS} \
 			-N ${QC_JOB_NAME_PREFIX}_${SAMPLE_ROW_COUNT} \
 				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/${SM_TAG}/K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_${SM_TAG}.log \
 			-hold_jid A00-FIX_BED_FILES_${UNIQUE_ID_SM_TAG}_${PROJECT_MS},J02_COMBINE_REFINED_LIFTOVER_VARIANTS_${PROJECT_MS} \
-			$SCRIPT_DIR/K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE.sh \
+			${COMMON_GRCH38_SCRIPT_DIR}/K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE.sh \
 				${BEDTOOLS_DIR} \
 				${JAVA_1_8} \
 				${GATK_DIR_4011} \
@@ -1365,12 +1220,7 @@ done
 	{
 		echo \
 		qsub \
-			-S /bin/bash \
-			-cwd \
-			-V \
-			-q ${QUEUE_LIST} \
-			-p ${PRIORITY} \
-			-j y \
+			${QSUB_ARGS} \
 		-N Y01-QC_REPORT_PREP_${PREFIX} \
 			-o ${CORE_PATH}/${PROJECT_MS}/LOGS/${PREFIX}-QC_REPORT_PREP_QC.log \
 		${HOLD_ID_PATH}J01A03-VCF_METRICS_BAIT_${PROJECT_MS},J01A04-VCF_METRICS_TARGET_${PROJECT_MS},J01A05-VCF_METRICS_TITV_${PROJECT_MS} \

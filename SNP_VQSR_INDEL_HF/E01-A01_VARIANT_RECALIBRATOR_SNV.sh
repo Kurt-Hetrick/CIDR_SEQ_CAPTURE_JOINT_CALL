@@ -69,7 +69,7 @@ START_VQSR_SNV=$(date '+%s') # capture time process starts for wall clock tracki
 	CMD=${CMD}" -resource:dbsnp,known=true,training=false,truth=false,prior=2.0 ${DBSNP_138_VCF}"
 	CMD=${CMD}" -recalFile ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.SNP.recal"
 	CMD=${CMD}" -tranchesFile ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.SNP.tranches"
-	CMD=${CMD}" -rscriptFile ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.HC.SNP.R"
+	CMD=${CMD}" -rscriptFile ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.SNP.R"
 	CMD=${CMD}" -tranche 100.0"
 	CMD=${CMD}" -tranche 99.9"
 	CMD=${CMD}" -tranche 99.8"
