@@ -47,7 +47,7 @@ START_BGZIP_INDEX=$(date '+%s')
 
 # compress vcf file with bgzip
 
-	CMD1="${TABIX_DIR}/bgzip -c ${CORE_PATH}/${PROJECT_MS}/TEMP/${PROJECT_MS}.FILTERED.GT.REFINED.vcf"
+	CMD1="${TABIX_DIR}/bgzip -c ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.FILTERED.GT.REFINED.vcf"
 	CMD1=${CMD1}" >| ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.FILTERED.GT.REFINED.vcf.gz"
 
 # index vcf file

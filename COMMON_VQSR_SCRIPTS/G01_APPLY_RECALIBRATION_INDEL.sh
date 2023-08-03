@@ -41,6 +41,7 @@
 
 	PROJECT_MS=$5
 	PREFIX=$6
+	INDEL_SENSITIVITY=$7
 
 START_APPLY_VQSR_INDEL=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
@@ -56,7 +57,7 @@ START_APPLY_VQSR_INDEL=$(date '+%s') # capture time process starts for wall cloc
 	CMD=${CMD}" -tranchesFile ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.INDEL.tranches"
 	CMD=${CMD}" -o ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.FILTERED.vcf.gz"
 	CMD=${CMD}" -mode INDEL"
-	CMD=${CMD}" --ts_filter_level 99.0"
+	CMD=${CMD}" --ts_filter_level ${INDEL_SENSITIVITY}"
 
 # write command line to file and execute the command line
 
@@ -86,6 +87,11 @@ END_APPLY_VQSR_INDEL=$(date '+%s') # capture time process stops for wall clock t
 
 	echo ${PROJECT_MS},G01,APPLY_VQSR_INDEL,${HOSTNAME},${START_APPLY_VQSR_INDEL},${END_APPLY_VQSR_INDEL} \
 	>> ${CORE_PATH}/${PROJECT_MS}/REPORTS/${PROJECT_MS}.JOINT.CALL.WALL.CLOCK.TIMES.csv
+
+# write out VQSR TRUTH SENSTIVITY SETTING TO FILE
+
+	echo "VQSR INDEL TRUTH SENSITIVITY SETTING FOR ${PROJECT_MS} AT $(date) :::: ${INDEL_SENSITIVITY}%" \
+	>> ${CORE_PATH}/${PROJECT_MS}/${PROJECT_MS}.VQSR_SETTINGS.txt
 
 # exit with the signal from the program
 

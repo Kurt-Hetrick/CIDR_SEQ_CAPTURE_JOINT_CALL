@@ -41,6 +41,7 @@
 
 	PROJECT_MS=$5
 	PREFIX=$6
+	SNP_SENSITIVITY=$7
 
 START_APPLY_VQSR_SNV=$(date '+%s') # capture time process starts for wall clock tracking purposes.
 
@@ -56,7 +57,7 @@ START_APPLY_VQSR_SNV=$(date '+%s') # capture time process starts for wall clock 
 	CMD=$CMD" -tranchesFile ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.SNP.tranches"
 	CMD=$CMD" -o ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.FILTERED.SNP.vcf.gz"
 	CMD=$CMD" -mode SNP"
-	CMD=$CMD" --ts_filter_level 99.5"
+	CMD=$CMD" --ts_filter_level ${SNP_SENSITIVITY}"
 
 # write command line to file and execute the command line
 
@@ -84,6 +85,9 @@ END_APPLY_VQSR_SNV=$(date '+%s') # capture time process stops for wall clock tra
 
 	echo ${PROJECT_MS},F01,APPLY_VQSR_SNV,${HOSTNAME},${START_APPLY_VQSR_SNV},${END_APPLY_VQSR_SNV} \
 	>> ${CORE_PATH}/${PROJECT_MS}/REPORTS/${PROJECT_MS}.JOINT.CALL.WALL.CLOCK.TIMES.csv
+
+	echo "VQSR SNP TRUTH SENSITIVITY SETTING FOR ${PROJECT_MS} AT $(date) :::: ${SNP_SENSITIVITY}%" \
+	>> ${CORE_PATH}/${PROJECT_MS}/${PROJECT_MS}.VQSR_SETTINGS.txt
 
 # exit with the signal from the program
 

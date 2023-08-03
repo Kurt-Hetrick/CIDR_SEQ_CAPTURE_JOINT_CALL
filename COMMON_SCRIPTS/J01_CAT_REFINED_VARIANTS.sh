@@ -52,7 +52,7 @@ START_CAT_VARIANTS=$(date '+%s')
 	CMD=${CMD}" org.broadinstitute.gatk.tools.CatVariants"
 	CMD=${CMD}" -R ${REF_GENOME}"
 	CMD=${CMD}" -assumeSorted"
-	CMD=${CMD}" -out ${CORE_PATH}/${PROJECT_MS}/TEMP/${PROJECT_MS}.FILTERED.GT.REFINED.vcf"
+	CMD=${CMD}" -out ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.FILTERED.GT.REFINED.vcf"
 
 	# loop to find all the vcf files and add them to the cmd line
 

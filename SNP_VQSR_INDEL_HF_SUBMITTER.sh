@@ -7,7 +7,17 @@
 	PROJECT_MS=$1 # the project where the multi-sample vcf is being written to
 	SAMPLE_SHEET=$2 # full/relative path to the sample sheet
 	PREFIX=$3 # prefix name that you want to give the multi-sample vcf
-	PRIORITY=$4 # default is -14. do not supply this argument unless you want to change from the default. range is -1 to -1023.
+	SNP_SENSITIVITY=$4 # SNP TRUTH SENTIVITY CUT-OFF FOR VQSR (OPTIONAL). DEFAULT IS 99.5
+	# VALUE MUST HAVE ONE DECIMAL POINT (e.g. 99.7)
+
+		if
+			[[ ! ${SNP_SENSITIVITY} ]]
+		then
+			SNP_SENSITIVITY="99.5"
+		fi
+
+	PRIORITY=$5 # SGE PRIORITY. default is -14. range is -1 to -1023. CLOSER TO ZERO IS HIGHER PRIORITY.
+	# OPTIONAL: IF YOU WANT TO SET THIS YOU NEED TO SET SNP SENSIVITY AS WELL. EVEN TO THE DEFAULT VALUE.
 
 		if
 			[[ ! ${PRIORITY} ]]
@@ -15,7 +25,8 @@
 			PRIORITY="-14"
 		fi
 
-	NUMBER_OF_BED_FILES=$5 # scatter count, if not supplied then the default is what is below. If you want to change this is you have to supply an input for priority as well.
+	NUMBER_OF_BED_FILES=$6 # scatter count. HOW MANY FILES YOU WANT TO BREAK UP THE BED FILE INTO FOR PARALLEL PROCESSING DISTRIBUTION.
+	# OPTIONAL: IF YOU WANT TO SET THIS YOU NEED TO SET SNP SENSITIVITY AS WELL AS SGE PRIORITY. EVEN TO THE DEFAULT VALUES.
 
 		if
 			[[ ! ${NUMBER_OF_BED_FILES} ]]
@@ -692,7 +703,8 @@ done
 				${REF_GENOME} \
 				${CORE_PATH} \
 				${PROJECT_MS} \
-				${PREFIX}
+				${PREFIX} \
+				${SNP_SENSITIVITY}
 		}
 
 	# Breakout the non-snps
@@ -1532,6 +1544,6 @@ PROJECT_WRAP_UP
 
 	HAPMAP_COUNT=`awk '{print "basename",$1,".g.vcf.gz"}' $GVCF_LIST | bash | grep -v ^[0-9] | wc -l`
 
-	printf "${SAMPLE_SHEET}\nhas finished submitting at\n`date`\nby `whoami`\nMULTI-SAMPLE VCF OUTPUT PROJECT IS:\n${PROJECT_MS}\nVCF PREFIX IS:\n${PREFIX}\nSCATTER IS $SCATTER_COUNT\n${TOTAL_SAMPLES} samples called together\n$STUDY_COUNT study samples\n$HAPMAP_COUNT HapMap samples" \
+	printf "${SAMPLE_SHEET}\nhas finished submitting at\n`date`\nby `whoami`\nMULTI-SAMPLE VCF OUTPUT PROJECT IS:\n${PROJECT_MS}\nVCF PREFIX IS:\n${PREFIX}\nSCATTER IS $SCATTER_COUNT\n${TOTAL_SAMPLES} samples called together\n$STUDY_COUNT study samples\n$HAPMAP_COUNT HapMap samples\nVQSR SNP TRUTH SENSITIVITY: ${SNP_SENSITIVITY}%%" \
 		| mail -s "$PERSON_NAME has submitted SNP_VQSR_INDEL_HF_SUBMITTER.sh" \
 			${SEND_TO}

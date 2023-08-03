@@ -7,17 +7,41 @@
 	PROJECT_MS=$1 # the project where the multi-sample vcf is being written to
 	SAMPLE_SHEET=$2 # full/relative path to the sample sheet
 	PREFIX=$3 # prefix name that you want to give the multi-sample vcf
-	PRIORITY=$4 # default is -14. do not supply this argument unless you want to change from the default. range is -1 to -1023.
+	SNP_SENSITIVITY=$4 # SNP TRUTH SENTIVITY CUT-OFF FOR VQSR (OPTIONAL). DEFAULT IS 99.5
+	# VALUE MUST HAVE ONE DECIMAL POINT (e.g. 99.7)
 
-		if [[ ! ${PRIORITY} ]]
-			then
+		if
+			[[ ! ${SNP_SENSITIVITY} ]]
+		then
+			SNP_SENSITIVITY="99.5"
+		fi
+
+	INDEL_SENSITIVITY=$5 # INDEL TRUTH SENTIVITY CUT-OFF FOR VQSR. DEFAULT IS 99.0
+	# OPTIONAL: IF YOU WANT TO SET THIS YOU NEED TO SET SNP SENSIVITY AS WELL. EVEN TO THE DEFAULT VALUE.
+	# VALUE MUST HAVE ONE DECIMAL POINT (e.g. 99.7)
+
+		if
+			[[ ! ${INDEL_SENSITIVITY} ]]
+		then
+			INDEL_SENSITIVITY="99.0"
+		fi
+
+
+	PRIORITY=$6 # SGE PRIORITY. default is -14. range is -1 to -1023. CLOSER TO ZERO IS HIGHER PRIORITY.
+	# OPTIONAL: IF YOU WANT TO SET THIS YOU NEED TO SET SNP SENSIVITY AND INDEL SENSITIVITY AS WELL. EVEN TO THE DEFAULT VALUES.
+
+		if
+			[[ ! ${PRIORITY} ]]
+		then
 			PRIORITY="-14"
 		fi
 
-	NUMBER_OF_BED_FILES=$5 # scatter count, if not supplied then the default is what is below. If you want to change this is you have to supply an input for priority as well.
+	NUMBER_OF_BED_FILES=$7 # scatter count. HOW MANY FILES YOU WANT TO BREAK UP THE BED FILE INTO FOR PARALLEL PROCESSING DISTRIBUTION.
+	# OPTIONAL: IF YOU WANT TO SET THIS YOU NEED TO SET SNP AND INDEL SENSITIVITY AS WELL AS SGE PRIORITY. EVEN TO THE DEFAULT VALUES.
 
-		if [[ ! $NUMBER_OF_BED_FILES ]]
-			then
+		if
+			[[ ! ${NUMBER_OF_BED_FILES} ]]
+		then
 			NUMBER_OF_BED_FILES=500
 		fi
 
@@ -681,7 +705,8 @@ done
 				${REF_GENOME} \
 				${CORE_PATH} \
 				${PROJECT_MS} \
-				${PREFIX}
+				${PREFIX} \
+				${SNP_SENSITIVITY}
 		}
 
 	# now apply the indel vqsr model to the full vcf file
@@ -701,7 +726,8 @@ done
 				${REF_GENOME} \
 				${CORE_PATH} \
 				${PROJECT_MS} \
-				${PREFIX}
+				${PREFIX} \
+				${INDEL_SENSITIVITY}
 		}
 
 # call cat variants and vqsr
@@ -1287,6 +1313,6 @@ PROJECT_WRAP_UP
 
 	BATCH_HAPMAP_COUNT=`cut -d "," -f 8 ${SAMPLE_SHEET} | awk 'NR>1' | sort | uniq |  grep -v ^[0-9] | wc -l`
 
-	printf "${SAMPLE_SHEET}\nhas finished submitting at\n`date`\nby `whoami`\nMULTI-SAMPLE VCF OUTPUT PROJECT IS:\n${PROJECT_MS}\nVCF PREFIX IS:\n${PREFIX}\nSCATTER IS $SCATTER_COUNT\n$TOTAL_SAMPLES samples called together\n$STUDY_COUNT study samples\n$HAPMAP_COUNT HapMap samples" \
+	printf "${SAMPLE_SHEET}\nhas finished submitting at\n`date`\nby `whoami`\nMULTI-SAMPLE VCF OUTPUT PROJECT IS:\n${PROJECT_MS}\nVCF PREFIX IS:\n${PREFIX}\nSCATTER IS $SCATTER_COUNT\n$TOTAL_SAMPLES samples called together\n$STUDY_COUNT study samples\n$HAPMAP_COUNT HapMap samples\nVQSR SNP TRUTH SENSITIVITY: ${SNP_SENSITIVITY}%%\nVQSR INDEL TRUTH SENSITIVITY: ${INDEL_SENSITIVITY}%%" \
 		| mail -s "$PERSON_NAME has submitted STD_VQSR_SUBMITTER_GRCH38.sh" \
 			$SEND_TO
