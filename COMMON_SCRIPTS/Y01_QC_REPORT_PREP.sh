@@ -73,35 +73,37 @@ echo
 		SAMTOOLS_DIR=$7
 
 		if
-			[ -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt ]
+			[ -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt* ]
 		then
-			cat ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt \
-					| ${DATAMASH_DIR}/datamash \
-						-s \
-						-g 1,2 \
-						collapse 3 \
-						unique 4 \
-						unique 5 \
-						unique 6 \
-						unique 7 \
-						unique 8 \
-						unique 9 \
-						unique 10 \
-						unique 11 \
-						unique 12 \
-						unique 13 \
-						unique 14 \
-						unique 15 \
-						unique 16 \
-						unique 17 \
-						unique 18 \
-						unique 19 \
-					| sed 's/,/;/g' \
-					| ${DATAMASH_DIR}/datamash \
-						transpose \
+			READ_GROUP_HEADER_FILE=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt* | tail -n 1)
+
+			zless ${READ_GROUP_HEADER_FILE} \
+				| ${DATAMASH_DIR}/datamash \
+					-s \
+					-g 1,2 \
+					collapse 3 \
+					unique 4 \
+					unique 5 \
+					unique 6 \
+					unique 7 \
+					unique 8 \
+					unique 9 \
+					unique 10 \
+					unique 11 \
+					unique 12 \
+					unique 13 \
+					unique 14 \
+					unique 15 \
+					unique 16 \
+					unique 17 \
+					unique 18 \
+					unique 19 \
+				| sed 's/,/;/g' \
+				| ${DATAMASH_DIR}/datamash \
+					transpose \
 			>| ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		elif
-			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt \
+			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt* \
 				&& -f ${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram ]];
 		then
 			# grab field number for SM_TAG
@@ -318,8 +320,10 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
-		awk 'BEGIN {OFS="\t"} $2=="X"&&$3=="whole" {print $6,$7} $2=="Y"&&$3=="whole" {print $6,$7}' \
-		${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/ANEUPLOIDY_CHECK/${SM_TAG}".chrom_count_report.txt" \
+		CHROM_COUNT_REPORT_FILE=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/ANEUPLOIDY_CHECK/${SM_TAG}.chrom_count_report.txt* | tail -n 1)
+
+		zless ${CHROM_COUNT_REPORT_FILE} \
+			| awk 'BEGIN {OFS="\t"} $2=="X"&&$3=="whole" {print $6,$7} $2=="Y"&&$3=="whole" {print $6,$7}' \
 			| paste - - \
 			| awk 'BEGIN {OFS="\t"} END {if ($1!~/[0-9]/) print "NaN","NaN","NaN","NaN"; else print $0}' \
 			| ${DATAMASH_DIR}/datamash transpose \
@@ -369,11 +373,12 @@ echo
 		PREFIX=$6
 
 		if
-			[ -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/CONCORDANCE_MS/${SM_TAG}_concordance.csv ];
+			[ -f ${CORE_PATH}/${PROJECT_MS}/REPORTS/CONCORDANCE_MS/${SM_TAG}_concordance.csv ];
 		then
-			awk 1 ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/CONCORDANCE_MS/${SM_TAG}_concordance.csv \
+			awk 1 ${CORE_PATH}/${PROJECT_MS}/REPORTS/CONCORDANCE_MS/${SM_TAG}_concordance.csv \
 			| awk 'BEGIN {FS=",";OFS="\t"} NR>1 \
 			{print $5,$6,$7,$2,$3,$4,$8,$9,$10,$11}' \
+			| sed 's/NONE FOUND/NONE_FOUND/g' \
 			| ${DATAMASH_DIR}/datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
@@ -422,16 +427,18 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
+		SELFSM_FILE=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//VERIFYBAMID/${SM_TAG}.selfSM* 2> /dev/null | tail -n 1)
+
 		if
-			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//VERIFYBAMID/${SM_TAG}.selfSM ]]
+			[[ -z "${SELFSM_FILE}" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
-			awk 'BEGIN {OFS="\t"} NR>1 {print $7*100,$4,$8,$9,($9-$8),$6}' \
-			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//VERIFYBAMID/${SM_TAG}.selfSM \
-			| ${DATAMASH_DIR}/datamash transpose \
+			zless ${SELFSM_FILE} \
+				| awk 'BEGIN {OFS="\t"} NR>1 {print $7*100,$4,$8,$9,($9-$8),$6}' \
+				| ${DATAMASH_DIR}/datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
@@ -474,15 +481,18 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
-		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/INSERT_SIZE/METRICS/${SM_TAG}.insert_size_metrics.txt ]]
+		INSERT_SIZE_METRICS_FILE=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/INSERT_SIZE/METRICS/${SM_TAG}.insert_size_metrics.txt* 2> /dev/null | tail -n 1)
+
+		if
+			[[ -z "${INSERT_SIZE_METRICS_FILE}" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
-			awk 'BEGIN {OFS="\t"} NR==8 {print $1,$6,$7,$3}' \
-			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/INSERT_SIZE/METRICS/${SM_TAG}.insert_size_metrics.txt \
-			| ${DATAMASH_DIR}/datamash transpose \
+			zless ${INSERT_SIZE_METRICS_FILE} \
+				| awk 'BEGIN {OFS="\t"} NR==8 {print $1,$6,$7,$3}' \
+				| ${DATAMASH_DIR}/datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
@@ -527,17 +537,19 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
+		ALIGNMENT_SUMMARY_METRICS_FILE=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}.alignment_summary_metrics.txt* 2> /dev/null | tail -n 1)
+
 		if
-			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}.alignment_summary_metrics.txt ]]
+			[[ -z "${ALIGNMENT_SUMMARY_METRICS_FILE}" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
-			awk 'BEGIN {OFS="\t"} NR==8 {if ($1=="UNPAIRED") print "0","0","0","0","0","0","0","0"; \
-				else print $7*100,$9,$11,$13,$14,$15,$18*100,$24*100}' \
-			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}.alignment_summary_metrics.txt \
-			| ${DATAMASH_DIR}/datamash transpose \
+			zless ${ALIGNMENT_SUMMARY_METRICS_FILE} \
+				| awk 'BEGIN {OFS="\t"} NR==8 {if ($1=="UNPAIRED") print "0","0","0","0","0","0","0","0"; \
+					else print $7*100,$9,$11,$13,$14,$15,$18*100,$24*100}' \
+				| ${DATAMASH_DIR}/datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
@@ -582,18 +594,19 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
+		ALIGNMENT_SUMMARY_METRICS_FILE=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}.alignment_summary_metrics.txt* 2> /dev/null | tail -n 1)
+
 		if
-			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}.alignment_summary_metrics.txt ]]
+			[[ -z "${ALIGNMENT_SUMMARY_METRICS_FILE}" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
-
-			awk 'BEGIN {OFS="\t"} NR==9 {if ($1=="") print "0","0","0","0","0","0","0","0" ; \
-				else print $7*100,$9,$11,$13,$14,$15,$18*100,$24*100}' \
-			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}.alignment_summary_metrics.txt \
-			| ${DATAMASH_DIR}/datamash transpose \
+			zless ${ALIGNMENT_SUMMARY_METRICS_FILE} \
+				| awk 'BEGIN {OFS="\t"} NR==9 {if ($1=="") print "0","0","0","0","0","0","0","0" ; \
+					else print $7*100,$9,$11,$13,$14,$15,$18*100,$24*100}' \
+				| ${DATAMASH_DIR}/datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
@@ -639,19 +652,21 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
+		ALIGNMENT_SUMMARY_METRICS_FILE=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}.alignment_summary_metrics.txt* 2> /dev/null | tail -n 1)
+
 		if
-			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}.alignment_summary_metrics.txt ]]
+			[[ -z "${ALIGNMENT_SUMMARY_METRICS_FILE}" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
-			awk 'BEGIN {OFS="\t"} \
-				NR==10 \
-				{if ($1=="") print "0","0","0","0","0","0","0","0","0","0","0","0" ; \
-				else print $2,($2*$16/1000000000),$7*100,$13,$14,$15,$18*100,$22,$23*100,$11,$16,$20*100}' \
-			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ALIGNMENT_SUMMARY/${SM_TAG}.alignment_summary_metrics.txt \
-			| ${DATAMASH_DIR}/datamash transpose \
+			zless ${ALIGNMENT_SUMMARY_METRICS_FILE} \
+				| awk 'BEGIN {OFS="\t"} \
+					NR==10 \
+					{if ($1=="") print "0","0","0","0","0","0","0","0","0","0","0","0" ; \
+					else print $2,($2*$16/1000000000),$7*100,$13,$14,$15,$18*100,$22,$23*100,$11,$16,$20*100}' \
+				| ${DATAMASH_DIR}/datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
@@ -698,28 +713,30 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
+		DUPLICATION_METRICS_FILE=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/PICARD_DUPLICATES/${SM_TAG}_MARK_DUPLICATES.txt* 2> /dev/null | tail -n 1)
+
 		if
-			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/PICARD_DUPLICATES/${SM_TAG}_MARK_DUPLICATES.txt ]]
+			[[ -z "${DUPLICATION_METRICS_FILE}" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
-			MAX_RECORD=$(grep -n "^$" ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/PICARD_DUPLICATES/${SM_TAG}_MARK_DUPLICATES.txt | awk 'BEGIN {FS=":"} NR==2 {print $1}')
+			MAX_RECORD=$(zgrep -n "^$" ${DUPLICATION_METRICS_FILE} | awk 'BEGIN {FS=":"} NR==2 {print $1}')
 
-			awk 'BEGIN {OFS="\t"} \
-				NR>7&&NR<'$MAX_RECORD' \
-				{if ($10!~/[0-9]/) print $5,$8,"NaN","NaN",$4,$7,$3,"NaN",$6,$2,"NaN" ; \
-				else if ($10~/[0-9]/&&$2=="0") print $5,$8,$9*100,$10,$4,$7,$3,($7/$3),$6,$2,"NaN" ; \
-				else print $5,$8,$9*100,$10,$4,$7,$3,($7/$3),$6,$2,($6/$2)}' \
-			${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/PICARD_DUPLICATES/${SM_TAG}_MARK_DUPLICATES.txt \
-			| ${DATAMASH_DIR}/datamash sum 1 sum 2 mean 4 sum 5 sum 6 sum 7 sum 9 sum 10 \
-			| awk 'BEGIN {OFS="\t"} \
-				{if ($3!~/[0-9]/) print $1,$2,"NaN","NaN",$4,$5,$6,"NaN",$7,$8,"NaN","NaN" ; \
-				else if ($3~/[0-9]/&&$1=="0") print $1,$2,(($7+($5*2))/($8+($6*2)))*100,$3,$4,$5,$6,($5/$6),$7,$8,"NaN",($2/$6)*100 ; \
-				else if ($3~/[0-9]/&&$1!="0"&&$8=="0") print $1,$2,(($7+($5*2))/($8+($6*2)))*100,$3,$4,$5,$6,($5/$6),$7,$8,"NaN",($2/$6)*100 ; \
-				else print $1,$2,(($7+($5*2))/($8+($6*2)))*100,$3,$4,$5,$6,($5/$6),$7,$8,($7/$8),($2/$6)*100}' \
-			| ${DATAMASH_DIR}/datamash transpose \
+			zless ${DUPLICATION_METRICS_FILE} \
+				| awk 'BEGIN {OFS="\t"} \
+					NR>7&&NR<'$MAX_RECORD' \
+					{if ($10!~/[0-9]/) print $5,$8,"NaN","NaN",$4,$7,$3,"NaN",$6,$2,"NaN" ; \
+					else if ($10~/[0-9]/&&$2=="0") print $5,$8,$9*100,$10,$4,$7,$3,($7/$3),$6,$2,"NaN" ; \
+					else print $5,$8,$9*100,$10,$4,$7,$3,($7/$3),$6,$2,($6/$2)}' \
+				| ${DATAMASH_DIR}/datamash sum 1 sum 2 mean 4 sum 5 sum 6 sum 7 sum 9 sum 10 \
+				| awk 'BEGIN {OFS="\t"} \
+					{if ($3!~/[0-9]/) print $1,$2,"NaN","NaN",$4,$5,$6,"NaN",$7,$8,"NaN","NaN" ; \
+					else if ($3~/[0-9]/&&$1=="0") print $1,$2,(($7+($5*2))/($8+($6*2)))*100,$3,$4,$5,$6,($5/$6),$7,$8,"NaN",($2/$6)*100 ; \
+					else if ($3~/[0-9]/&&$1!="0"&&$8=="0") print $1,$2,(($7+($5*2))/($8+($6*2)))*100,$3,$4,$5,$6,($5/$6),$7,$8,"NaN",($2/$6)*100 ; \
+					else print $1,$2,(($7+($5*2))/($8+($6*2)))*100,$3,$4,$5,$6,($5/$6),$7,$8,($7/$8),($2/$6)*100}' \
+				| ${DATAMASH_DIR}/datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
 	}
@@ -772,7 +789,10 @@ echo
 		# this will take when there are no reads in the file...but i don't think that it will handle when there are reads, but none fall on target
 		# the next time i that happens i'll fix this to handle it.
 
-		if [[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt ]]
+		HYBRIDIZATION_SELECTION_METRICS_FILE=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt* 2> /dev/null | tail -n 1)
+
+		if
+			[[ -z "${HYBRIDIZATION_SELECTION_METRICS_FILE}" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 				| ${DATAMASH_DIR}/datamash \
@@ -781,101 +801,69 @@ echo
 		else
 			# grab field numbers for metrics and store a variables.
 
-				BAIT_SET=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="BAIT_SET") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				BAIT_SET=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="BAIT_SET") print i}}')
 
-				BAIT_TERRITORY=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="BAIT_TERRITORY") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				BAIT_TERRITORY=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="BAIT_TERRITORY") print i}}')
 
-				PCT_SELECTED_BASES=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_SELECTED_BASES") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				PCT_SELECTED_BASES=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_SELECTED_BASES") print i}}')
 
-				ON_BAIT_VS_SELECTED=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="ON_BAIT_VS_SELECTED") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				ON_BAIT_VS_SELECTED=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="ON_BAIT_VS_SELECTED") print i}}')
 
-				PCT_USABLE_BASES_ON_BAIT=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_USABLE_BASES_ON_BAIT") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				PCT_USABLE_BASES_ON_BAIT=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_USABLE_BASES_ON_BAIT") print i}}')
 
-				HS_LIBRARY_SIZE=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="HS_LIBRARY_SIZE") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				HS_LIBRARY_SIZE=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="HS_LIBRARY_SIZE") print i}}')
 
-				TARGET_TERRITORY=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="TARGET_TERRITORY") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				TARGET_TERRITORY=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="TARGET_TERRITORY") print i}}')
 
-				GENOME_SIZE=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="GENOME_SIZE") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				GENOME_SIZE=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="GENOME_SIZE") print i}}')
 
-				PF_UQ_BASES_ALIGNED=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PF_UQ_BASES_ALIGNED") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				PF_UQ_BASES_ALIGNED=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PF_UQ_BASES_ALIGNED") print i}}')
 
-				PCT_PF_UQ_READS_ALIGNED=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_PF_UQ_READS_ALIGNED") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				PCT_PF_UQ_READS_ALIGNED=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_PF_UQ_READS_ALIGNED") print i}}')
 
-				MEAN_TARGET_COVERAGE=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="MEAN_TARGET_COVERAGE") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				MEAN_TARGET_COVERAGE=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="MEAN_TARGET_COVERAGE") print i}}')
 
-				MEDIAN_TARGET_COVERAGE=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="MEDIAN_TARGET_COVERAGE") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				MEDIAN_TARGET_COVERAGE=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="MEDIAN_TARGET_COVERAGE") print i}}')
 
-				MAX_TARGET_COVERAGE=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="MAX_TARGET_COVERAGE") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				MAX_TARGET_COVERAGE=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="MAX_TARGET_COVERAGE") print i}}')
 
-				ZERO_CVG_TARGETS_PCT=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="ZERO_CVG_TARGETS_PCT") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				ZERO_CVG_TARGETS_PCT=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="ZERO_CVG_TARGETS_PCT") print i}}')
 
-				PCT_EXC_ADAPTER=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_EXC_ADAPTER") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				PCT_EXC_ADAPTER=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_EXC_ADAPTER") print i}}')
 
-				PCT_EXC_MAPQ=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_EXC_MAPQ") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				PCT_EXC_MAPQ=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_EXC_MAPQ") print i}}')
 
-				PCT_EXC_BASEQ=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_EXC_BASEQ") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				PCT_EXC_BASEQ=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_EXC_BASEQ") print i}}')
 
-				PCT_EXC_OVERLAP=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_EXC_OVERLAP") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				PCT_EXC_OVERLAP=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_EXC_OVERLAP") print i}}')
 
-				PCT_EXC_OFF_TARGET=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_EXC_OFF_TARGET") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				PCT_EXC_OFF_TARGET=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_EXC_OFF_TARGET") print i}}')
 
-				FOLD_80_BASE_PENALTY=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="FOLD_80_BASE_PENALTY") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				FOLD_80_BASE_PENALTY=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="FOLD_80_BASE_PENALTY") print i}}')
 
-				PCT_TARGET_BASES_1X=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_1X") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				PCT_TARGET_BASES_1X=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_1X") print i}}')
 
-				PCT_TARGET_BASES_2X=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_2X") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				PCT_TARGET_BASES_2X=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_2X") print i}}')
 
-				PCT_TARGET_BASES_10X=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_10X") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				PCT_TARGET_BASES_10X=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_10X") print i}}')
 
-				PCT_TARGET_BASES_20X=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_20X") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				PCT_TARGET_BASES_20X=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_20X") print i}}')
 
-				PCT_TARGET_BASES_30X=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_30X") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				PCT_TARGET_BASES_30X=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_30X") print i}}')
 
-				PCT_TARGET_BASES_40X=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_40X") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				PCT_TARGET_BASES_40X=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_40X") print i}}')
 
-				PCT_TARGET_BASES_50X=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_50X") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				PCT_TARGET_BASES_50X=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_50X") print i}}')
 
-				PCT_TARGET_BASES_100X=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_100X") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				PCT_TARGET_BASES_100X=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="PCT_TARGET_BASES_100X") print i}}')
 
-				AT_DROPOUT=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="AT_DROPOUT") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				AT_DROPOUT=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="AT_DROPOUT") print i}}')
 
-				GC_DROPOUT=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="GC_DROPOUT") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				GC_DROPOUT=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="GC_DROPOUT") print i}}')
 
-				HET_SNP_SENSITIVITY=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="HET_SNP_SENSITIVITY") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				HET_SNP_SENSITIVITY=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="HET_SNP_SENSITIVITY") print i}}')
 
-				HET_SNP_Q=$(awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="HET_SNP_Q") print i}}' \
-					${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt)
+				HET_SNP_Q=$(zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} | awk 'NR==7 {for (i=1; i<=NF; ++i) {if ($i=="HET_SNP_Q") print i}}')
 
 			# this was supposed to be
 			## if there are no reads, then print x
@@ -883,7 +871,9 @@ echo
 			## else the data is fine and do as you intended.
 			## however i no longer have anything to test this on...
 
-				awk \
+
+				zless ${HYBRIDIZATION_SELECTION_METRICS_FILE} \
+				| awk \
 					-v BAIT_SET="$BAIT_SET" \
 					-v BAIT_TERRITORY="$BAIT_TERRITORY" \
 					-v PCT_SELECTED_BASES="$PCT_SELECTED_BASES" \
@@ -948,7 +938,6 @@ echo
 						$PCT_TARGET_BASES_20X*100,$PCT_TARGET_BASES_30X*100,$PCT_TARGET_BASES_40X*100,\
 						$PCT_TARGET_BASES_50X*100,$PCT_TARGET_BASES_100X*100,$HS_LIBRARY_SIZE,$AT_DROPOUT,\
 						$GC_DROPOUT,$HET_SNP_SENSITIVITY,$HET_SNP_Q,$BAIT_SET,$PCT_USABLE_BASES_ON_BAIT*100}' \
-				${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/HYB_SELECTION/${SM_TAG}_hybridization_selection_metrics.txt \
 					| ${DATAMASH_DIR}/datamash \
 						transpose \
 				>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
@@ -993,14 +982,16 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
+		BAIT_BIAS_SUMMARY_METRICS_FILE=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//BAIT_BIAS/SUMMARY/${SM_TAG}.bait_bias_summary_metrics.txt* 2> /dev/null | tail -n 1)
+
 		if
-			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//BAIT_BIAS/SUMMARY/${SM_TAG}.bait_bias_summary_metrics.txt ]]
+			[[ -z "${BAIT_BIAS_SUMMARY_METRICS_FILE}" ]]
 		then
 			echo -e NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
-			grep -v "^#" ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//BAIT_BIAS/SUMMARY/${SM_TAG}.bait_bias_summary_metrics.txt \
+			zgrep -v "^#" ${BAIT_BIAS_SUMMARY_METRICS_FILE} \
 				| sed '/^$/d' \
 				| awk 'BEGIN {OFS="\t"} $12=="Cref"||$12=="Gref" {print $5}' \
 				| paste - - \
@@ -1050,14 +1041,16 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
+		PRE_ADAPTER_SUMMARY_METRICS_FILE=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//PRE_ADAPTER/SUMMARY/${SM_TAG}.pre_adapter_summary_metrics.txt* 2> /dev/null | tail -n 1)
+
 		if
-			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//PRE_ADAPTER/SUMMARY/${SM_TAG}.pre_adapter_summary_metrics.txt ]]
+			[[ -z "${PRE_ADAPTER_SUMMARY_METRICS_FILE}" ]]
 		then
 			echo -e NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
-			grep -v "^#" ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//PRE_ADAPTER/SUMMARY/${SM_TAG}.pre_adapter_summary_metrics.txt \
+			zgrep -v "^#" ${PRE_ADAPTER_SUMMARY_METRICS_FILE} \
 				| sed '/^$/d' \
 				| awk 'BEGIN {OFS="\t"} $12=="Deamination"||$12=="OxoG" {print $5}' \
 				| paste - - \
@@ -1107,24 +1100,26 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
-		BASE_DISTIBUTION_BY_CYCLE_ROW_COUNT=$(wc -l ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}.base_distribution_by_cycle_metrics.txt | awk '{print $1}')
+		BASE_DISTRIBUTION_BY_CYCLE_FILE=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}.base_distribution_by_cycle_metrics.txt* 2> /dev/null | tail -n 1)
+
+		BASE_DISTRIBUTION_BY_CYCLE_ROW_COUNT=$(zless ${BASE_DISTRIBUTION_BY_CYCLE_FILE} | wc -l | awk '{print $1}')
 
 		if
-			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}.base_distribution_by_cycle_metrics.txt ]]
+			[[ -z "${BASE_DISTRIBUTION_BY_CYCLE_FILE}" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
-
 		elif
-			[[ -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}.base_distribution_by_cycle_metrics.txt && ${BASE_DISTIBUTION_BY_CYCLE_ROW_COUNT} -lt 8 ]]
+			[[ ! -z "${BASE_DISTRIBUTION_BY_CYCLE_FILE}" && ${BASE_DISTRIBUTION_BY_CYCLE_ROW_COUNT} -lt 8 ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 
 		else
-			sed '/^$/d' ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//BASE_DISTRIBUTION_BY_CYCLE/METRICS/${SM_TAG}.base_distribution_by_cycle_metrics.txt \
+			zless ${BASE_DISTRIBUTION_BY_CYCLE_FILE} \
+				| sed '/^$/d' \
 				| awk 'NR>6' \
 				| ${DATAMASH_DIR}/datamash \
 					mean 3 \
@@ -1176,15 +1171,17 @@ echo
 		PROJECT_MS=$5
 		PREFIX=$6
 
+		BASE_SUBSTITUTION_RATE_FILE=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ERROR_SUMMARY/${SM_TAG}.error_summary_metrics.txt* 2> /dev/null | tail -n 1)
+
 		if
-			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ERROR_SUMMARY/${SM_TAG}.error_summary_metrics.txt ]]
+			[[ -z "${BASE_SUBSTITUTION_RATE_FILE}" ]]
 		then
 			echo -e NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN'\t'NaN \
 			| ${DATAMASH_DIR}/datamash transpose \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		else
-
-			sed '/^$/d' ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS//ERROR_SUMMARY/${SM_TAG}.error_summary_metrics.txt \
+			zless ${BASE_SUBSTITUTION_RATE_FILE} \
+				| sed '/^$/d' \
 				| awk 'NR>6 {print $6*100}' \
 			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		fi
