@@ -72,11 +72,11 @@ echo
 		PREFIX=$6
 		SAMTOOLS_DIR=$7
 
-		if
-			[ -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt* ]
-		then
-			READ_GROUP_HEADER_FILE=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt* | tail -n 1)
+		READ_GROUP_HEADER_FILE=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt* 2> /dev/null | tail -n 1)
 
+		if
+			[[ ! -z "${READ_GROUP_HEADER_FILE}" ]]
+		then
 			zless ${READ_GROUP_HEADER_FILE} \
 				| ${DATAMASH_DIR}/datamash \
 					-s \
@@ -103,7 +103,7 @@ echo
 					transpose \
 			>| ${CORE_PATH}/${PROJECT_MS}/TEMP/QC_REPORT_PREP_${PREFIX}/${SM_TAG}.QC_REPORT_TEMP.txt
 		elif
-			[[ ! -f ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/RG_HEADER/${SM_TAG}.RG_HEADER.txt* \
+			[[ -z "${READ_GROUP_HEADER_FILE}" \
 				&& -f ${CORE_PATH}/${PROJECT_SAMPLE}/CRAM/${SM_TAG}.cram ]];
 		then
 			# grab field number for SM_TAG
