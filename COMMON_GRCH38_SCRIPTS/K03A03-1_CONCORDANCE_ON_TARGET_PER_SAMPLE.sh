@@ -44,41 +44,44 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 
 # look for a final report and store it as a variable. if there are multiple ones, then take the newest one
 
-	FINAL_REPORT_FILE_TEST=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/Pretesting/Final_Genotyping_Reports/*${SM_TAG}* \
+	FINAL_REPORT_FILE_TEST=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/Pretesting/Final_Genotyping_Reports/*${SM_TAG}* 2> /dev/null \
 		| tail -n 1)
 
 # if final report exists containing the full sm-tag, then cidrseqsuite magic
 
-	if [[ ! -z "${FINAL_REPORT_FILE_TEST}" ]]
+	if
+		[[ ! -z "${FINAL_REPORT_FILE_TEST}" ]]
+	then
+		FINAL_REPORT=${FINAL_REPORT_FILE_TEST}
+
+		# if it does not exist, and if the $SM_TAG does not begin with an integer then split $SM_TAG On a @ or _ or -
+		# look for a final report that contains that that first element of the $SM_TAG
+		# bonus feature. if this first tests true but the file still does not exist then cidrseqsuite magic files b/c no file exists
+
+	elif
+		[[ ${SM_TAG} != [0-9]* ]]
+	then
+		# note that underscore has to be before dash in bash regular expression
+		HAPMAP=${SM_TAG%%[@_-]*}
+
+		FINAL_REPORT=$(ls ${CORE_PATH}/${PROJECT_SAMPLE}/Pretesting/Final_Genotyping_Reports/*${HAPMAP}* \
+			| head -n 1)
+
+		# if there is no report for a hapmap sample then exit program with code 1
+
+		if
+			[[ -z "${FINAL_REPORT}" ]]
 		then
-			FINAL_REPORT=${FINAL_REPORT_FILE_TEST}
 
-	# if it does not exist, and if the $SM_TAG does not begin with an integer then split $SM_TAG On a @ or _ or -
-	# look for a final report that contains that that first element of the $SM_TAG
-	# bonus feature. if this first tests true but the file still does not exist then cidrseqsuite magic files b/c no file exists
+			echo
+			echo At this time, you are looking for a final report that does not exist or fails to meet the current logic for finding a final report.
+			echo Please talk to Kurt, because he loves to talk.
+			echo
 
-	elif [[ ${SM_TAG} != [0-9]* ]]
-		then
-			# note that underscore has to be before dash in bash regular expression
-			HAPMAP=${SM_TAG%%[@_-]*}
+			FINAL_REPORT="FILE_DOES_NOT_EXIST"
+			exit 1
 
-			FINAL_REPORT=$(ls ${CORE_PATH}/${PROJECT_SAMPLE}/Pretesting/Final_Genotyping_Reports/*${HAPMAP}* \
-				| head -n 1)
-
-			# if there is no report for a hapmap sample then exit program with code 1
-
-			if [[ -z "${FINAL_REPORT}" ]]
-			then
-
-				echo
-				echo At this time, you are looking for a final report that does not exist or fails to meet the current logic for finding a final report.
-				echo Please talk to Kurt, because he loves to talk.
-				echo
-
-				FINAL_REPORT="FILE_DOES_NOT_EXIST"
-				exit 1
-
-			fi
+		fi
 
 	else
 
@@ -98,7 +101,7 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 # find what row the metadata header ends on.
 # then add 1 to find where where the column/field headers start on.
 
-	METADATA_HEADER_END_ROW=$(egrep -m 1 -n "^\[Data\]" ${FINAL_REPORT} \
+	METADATA_HEADER_END_ROW=$(zegrep -m 1 -n "^\[Data\]" ${FINAL_REPORT} \
 		| cut -d ":" -f 1)
 
 	FIELD_HEADER_ROW=$(echo ${METADATA_HEADER_END_ROW} \
@@ -109,7 +112,8 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 # SNP NAME isn't technically necessary, but could be nice to have for investigative purposes.
 # SNP field is to remove insertion/deletions...can't remember what the copy number designation is.
 
-	CHR_FIELD_NUMBER=(`sed 's/\r//g' ${FINAL_REPORT} \
+	CHR_FIELD_NUMBER=(`zless ${FINAL_REPORT} \
+		| sed 's/\r//g' \
 		| awk 'NR=="'$FIELD_HEADER_ROW'"' \
 		| sed 's/,/\n/g' \
 		| cat -n \
@@ -118,7 +122,8 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 			$2=="Chr" \
 			{print $1}'`)
 
-	POSITION_FIELD_NUMBER=(`sed 's/\r//g' ${FINAL_REPORT} \
+	POSITION_FIELD_NUMBER=(`zless ${FINAL_REPORT} \
+		| sed 's/\r//g' \
 		| awk 'NR=="'$FIELD_HEADER_ROW'"' \
 		| sed 's/,/\n/g' \
 		| cat -n \
@@ -127,7 +132,8 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 			$2=="Position" \
 			{print $1}'`)
 
-	SNP_NAME_FIELD_NUMBER=(`sed 's/\r//g' ${FINAL_REPORT} \
+	SNP_NAME_FIELD_NUMBER=(`zless \
+		| sed 's/\r//g' \
 		| awk 'NR=="'$FIELD_HEADER_ROW'"' \
 		| sed 's/,/\n/g' \
 		| cat -n \
@@ -136,7 +142,8 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 			$2=="SNP Name" \
 			{print $1}'`)
 
-	SNP_FIELD_NUMBER=(`sed 's/\r//g' ${FINAL_REPORT} \
+	SNP_FIELD_NUMBER=(`zless ${FINAL_REPORT} \
+		| sed 's/\r//g' \
 		| awk 'NR=="'$FIELD_HEADER_ROW'"' \
 		| sed 's/,/\n/g' \
 		| cat -n \
@@ -148,7 +155,8 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 # make a bed file from final report removing indel and only using karyotype chromosomes
 # intersect with the (fixed) target bed file.
 
-	sed 's/\r//g' ${FINAL_REPORT} \
+	zless ${FINAL_REPORT} \
+		| sed 's/\r//g' \
 		| awk -v FIELD_HEADER_ROW="$FIELD_HEADER_ROW" \
 			'NR>FIELD_HEADER_ROW' \
 		| awk \
@@ -198,29 +206,56 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 		# if exit does not equal 0 then exit with whatever the exit signal is at the end.
 		# also write to file that this job failed
 
-			if [ "${SCRIPT_STATUS}" -ne 0 ]
-				then
-					echo ${SM_TAG} ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
-					>> ${CORE_PATH}/${PROJECT_MS}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt
-					exit ${SCRIPT_STATUS}
+			if
+				[ "${SCRIPT_STATUS}" -ne 0 ]
+			then
+				echo ${SM_TAG} ${HOSTNAME} ${JOB_NAME} ${USER} ${SCRIPT_STATUS} ${SGE_STDERR_PATH} \
+				>> ${CORE_PATH}/${PROJECT_MS}/TEMP/${SAMPLE_SHEET_NAME}_${SUBMIT_STAMP}_ERRORS.txt
+				exit ${SCRIPT_STATUS}
 			fi
 
 # -single_sample_concordance
 # Performs concordance between one vcf file and one final report. The vcf must be single sample.
 
-	CMD="${JAVA_1_8}/java -jar"
-		CMD=${CMD}" ${CIDRSEQSUITE_7_5_0_DIR}/CIDRSeqSuite.jar"
-		CMD=${CMD}" -single_sample_concordance"
-		# [1] path_to_vcf_file
-		CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}_MS_FINAL_REPORT_ON_TARGET.hg19.vcf"
-		# [2] path_to_final_report_file
-		CMD=${CMD}" ${FINAL_REPORT}"
-		# [3] path_to_bed_file
-		CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TARGET_BED_NAME}.lift.hg19.bed"
-		# [4] path_to_liftover_file
-		CMD=${CMD}" ${VERACODE_CSV}"
-	# [5] path_to_output_directory
-	CMD=${CMD}" ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/CONCORDANCE_MS/"
+	# if final report is gzipped, then decompress to the ms calling project temp. else just proceed normally.
+		if
+			[[ ${FINAL_REPORT} == *.gz ]]
+		then
+			FINAL_REPORT_NAME=$(basename ${FINAL_REPORT} .gz)
+
+			zcat ${FINAL_REPORT} >| ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${FINAL_REPORT_NAME}
+
+			FINAL_REPORT="${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${FINAL_REPORT_NAME}"
+
+			CMD="${JAVA_1_8}/java -jar"
+				CMD=${CMD}" ${CIDRSEQSUITE_7_5_0_DIR}/CIDRSeqSuite.jar"
+				CMD=${CMD}" -single_sample_concordance"
+				# [1] path_to_vcf_file
+				CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}_MS_FINAL_REPORT_ON_TARGET.hg19.vcf"
+				# [2] path_to_final_report_file
+				CMD=${CMD}" ${FINAL_REPORT}"
+				# [3] path_to_bed_file
+				CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TARGET_BED_NAME}.lift.hg19.bed"
+				# [4] path_to_liftover_file
+				CMD=${CMD}" ${VERACODE_CSV}"
+			# [5] path_to_output_directory
+			CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/REPORTS/CONCORDANCE_MS/"
+
+		else
+			CMD="${JAVA_1_8}/java -jar"
+				CMD=${CMD}" ${CIDRSEQSUITE_7_5_0_DIR}/CIDRSeqSuite.jar"
+				CMD=${CMD}" -single_sample_concordance"
+				# [1] path_to_vcf_file
+				CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}_MS_FINAL_REPORT_ON_TARGET.hg19.vcf"
+				# [2] path_to_final_report_file
+				CMD=${CMD}" ${FINAL_REPORT}"
+				# [3] path_to_bed_file
+				CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TARGET_BED_NAME}.lift.hg19.bed"
+				# [4] path_to_liftover_file
+				CMD=${CMD}" ${VERACODE_CSV}"
+			# [5] path_to_output_directory
+			CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/REPORTS/CONCORDANCE_MS/"
+		fi
 
 # write command line to file and execute the command line
 
