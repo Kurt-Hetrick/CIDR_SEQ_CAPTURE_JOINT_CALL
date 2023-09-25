@@ -72,7 +72,7 @@ END_BGZIP_INDEX=$(date '+%s')
 
 # perform md5 validation check of pre and post gzipped vcf file
 
-	VCF_FILE_MD5=$(md5sum ${CORE_PATH}/${PROJECT_MS}/TEMP/${PROJECT_MS}.FILTERED.GT.REFINED.vcf | awk '{print $1}')
+	VCF_FILE_MD5=$(md5sum ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.FILTERED.GT.REFINED.vcf | awk '{print $1}')
 
 	GZIP_VCF_FILE_MD5=$(zcat ${CORE_PATH}/${PROJECT_MS}/MULTI_SAMPLE/${PREFIX}.FILTERED.GT.REFINED.vcf.gz | md5sum | awk '{print $1}')
 
