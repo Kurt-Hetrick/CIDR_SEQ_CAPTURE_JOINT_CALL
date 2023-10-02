@@ -44,7 +44,7 @@ START_CONCORDANCE=$(date '+%s') # capture time process starts for wall clock tra
 
 # look for a final report and store it as a variable. if there are multiple ones, then take the newest one
 
-	FINAL_REPORT_FILE_TEST=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/Pretesting/Final_Genotyping_Reports/*${SM_TAG}* \
+	FINAL_REPORT_FILE_TEST=$(ls -tr ${CORE_PATH}/${PROJECT_SAMPLE}/Pretesting/Final_Genotyping_Reports/*${SM_TAG}* 2> /dev/null \
 		| tail -n 1)
 
 # if final report exists containing the full sm-tag, then cidrseqsuite magic
@@ -101,7 +101,7 @@ START_CONCORDANCE=$(date '+%s') # capture time process starts for wall clock tra
 # find what row the metadata header ends on.
 # then add 1 to find where where the column/field headers start on.
 
-	METADATA_HEADER_END_ROW=$(egrep -m 1 -n "^\[Data\]" ${FINAL_REPORT} \
+	METADATA_HEADER_END_ROW=$(zegrep -m 1 -n "^\[Data\]" ${FINAL_REPORT} \
 		| cut -d ":" -f 1)
 
 	FIELD_HEADER_ROW=$(echo ${METADATA_HEADER_END_ROW} \
@@ -112,7 +112,8 @@ START_CONCORDANCE=$(date '+%s') # capture time process starts for wall clock tra
 # SNP NAME isn't technically necessary, but could be nice to have for investigative purposes.
 # SNP field is to remove insertion/deletions...can't remember what the copy number designation is.
 
-	CHR_FIELD_NUMBER=$(sed 's/\r//g' ${FINAL_REPORT} \
+	CHR_FIELD_NUMBER=$(zless ${FINAL_REPORT} \
+		| sed 's/\r//g' \
 		| awk 'NR=="'$FIELD_HEADER_ROW'"' \
 		| sed 's/,/\n/g' \
 		| cat -n \
@@ -121,7 +122,8 @@ START_CONCORDANCE=$(date '+%s') # capture time process starts for wall clock tra
 			$2=="Chr" \
 			{print $1}')
 
-	POSITION_FIELD_NUMBER=$(sed 's/\r//g' ${FINAL_REPORT} \
+	POSITION_FIELD_NUMBER=$(zless ${FINAL_REPORT} \
+		| sed 's/\r//g' \
 		| awk 'NR=="'$FIELD_HEADER_ROW'"' \
 		| sed 's/,/\n/g' \
 		| cat -n \
@@ -130,7 +132,8 @@ START_CONCORDANCE=$(date '+%s') # capture time process starts for wall clock tra
 			$2=="Position" \
 			{print $1}')
 
-	SNP_NAME_FIELD_NUMBER=$(sed 's/\r//g' ${FINAL_REPORT} \
+	SNP_NAME_FIELD_NUMBER=$(zless ${FINAL_REPORT} \
+		| sed 's/\r//g' \
 		| awk 'NR=="'$FIELD_HEADER_ROW'"' \
 		| sed 's/,/\n/g' \
 		| cat -n \
@@ -139,7 +142,8 @@ START_CONCORDANCE=$(date '+%s') # capture time process starts for wall clock tra
 			$2=="SNP Name" \
 			{print $1}')
 
-	SNP_FIELD_NUMBER=$(sed 's/\r//g' ${FINAL_REPORT} \
+	SNP_FIELD_NUMBER=$(zless ${FINAL_REPORT} \
+		| sed 's/\r//g' \
 		| awk 'NR=="'$FIELD_HEADER_ROW'"' \
 		| sed 's/,/\n/g' \
 		| cat -n \
@@ -151,7 +155,8 @@ START_CONCORDANCE=$(date '+%s') # capture time process starts for wall clock tra
 # make a bed file from final report removing indel and only using karyotype chromosomes
 # intersect with the (fixed) target bed file.
 
-	sed 's/\r//g' ${FINAL_REPORT} \
+	zless ${FINAL_REPORT} \
+		| sed 's/\r//g' \
 		| awk -v FIELD_HEADER_ROW="$FIELD_HEADER_ROW" \
 			'NR>FIELD_HEADER_ROW' \
 		| awk \
@@ -211,19 +216,44 @@ START_CONCORDANCE=$(date '+%s') # capture time process starts for wall clock tra
 # -single_sample_concordance
 # Performs concordance between one vcf file and one final report. The vcf must be single sample.
 
-	CMD="${JAVA_1_8}/java -jar"
-		CMD=${CMD}" ${CIDRSEQSUITE_7_5_0_DIR}/CIDRSeqSuite.jar"
-		CMD=${CMD}" -single_sample_concordance"
-		# [1] path_to_vcf_file
-		CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}_MS_FINAL_REPORT_ON_TARGET.vcf"
-		# [2] path_to_final_report_file
-		CMD=${CMD}" ${FINAL_REPORT}"
-		# [3] path_to_bed_file
-		CMD=${CMD}" ${TARGET_BED}"
-		# [4] path_to_liftover_file
-		CMD=${CMD}" ${VERACODE_CSV}"
-	# [5] path_to_output_directory
-	CMD=${CMD}" ${CORE_PATH}/${PROJECT_SAMPLE}/REPORTS/CONCORDANCE_MS/"
+	# if final report is gzipped, then decompress to the ms calling project temp. else just proceed normally.
+		if
+			[[ ${FINAL_REPORT} == *.gz ]]
+		then
+			FINAL_REPORT_NAME=$(basename ${FINAL_REPORT} .gz)
+
+			zcat ${FINAL_REPORT} >| ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${FINAL_REPORT_NAME}
+
+			FINAL_REPORT="${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${FINAL_REPORT_NAME}"
+
+			CMD="${JAVA_1_8}/java -jar"
+				CMD=${CMD}" ${CIDRSEQSUITE_7_5_0_DIR}/CIDRSeqSuite.jar"
+				CMD=${CMD}" -single_sample_concordance"
+				# [1] path_to_vcf_file
+				CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}_MS_FINAL_REPORT_ON_TARGET.vcf"
+				# [2] path_to_final_report_file
+				CMD=${CMD}" ${FINAL_REPORT}"
+				# [3] path_to_bed_file
+				CMD=${CMD}" ${TARGET_BED}"
+				# [4] path_to_liftover_file
+				CMD=${CMD}" ${VERACODE_CSV}"
+			# [5] path_to_output_directory
+			CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/REPORTS/CONCORDANCE_MS/"
+		else
+			CMD="${JAVA_1_8}/java -jar"
+				CMD=${CMD}" ${CIDRSEQSUITE_7_5_0_DIR}/CIDRSeqSuite.jar"
+				CMD=${CMD}" -single_sample_concordance"
+				# [1] path_to_vcf_file
+				CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}_MS_FINAL_REPORT_ON_TARGET.vcf"
+				# [2] path_to_final_report_file
+				CMD=${CMD}" ${FINAL_REPORT}"
+				# [3] path_to_bed_file
+				CMD=${CMD}" ${TARGET_BED}"
+				# [4] path_to_liftover_file
+				CMD=${CMD}" ${VERACODE_CSV}"
+			# [5] path_to_output_directory
+			CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/REPORTS/CONCORDANCE_MS/"
+		fi
 
 # write command line to file and execute the command line
 
