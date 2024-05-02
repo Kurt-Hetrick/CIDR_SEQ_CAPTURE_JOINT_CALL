@@ -35,6 +35,9 @@
 	TITV_BED=$6
 		TITV_BED_NAME=$(basename ${TITV_BED} .bed)
 	REF_DICT=$7
+	B37_TO_HG19_CHAIN=$8
+	HG19_TO_GRCH38_CHAIN=$9
+
 
 # FIX BED FILES (FOR GRCH37)
 
@@ -139,3 +142,42 @@
 				{print $1,($2+1),$3,"+",$1"_"($2+1)"_"$3}' \
 			${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TITV_BED_NAME}.bed) \
 		>| ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TITV_BED_NAME}-picard.bed
+
+# LIFTOVER GRCH37 BED FILE TO HG19 AND THEN GRCH38 TO DO CONCORDANCE TO ARRAY GENOTYPES IF THEY ARE ON GRCH38
+
+	# LIFTOVER TARGET BED FILE TO HG19
+
+		CMD="singularity exec ${ALIGNMENT_CONTAINER} liftOver"
+			CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TARGET_BED_NAME}.bed"
+			CMD=${CMD}" ${B37_TO_HG19_CHAIN}"
+		CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TARGET_BED_NAME}-LIFT_HG19.bed"
+		CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TARGET_BED_NAME}-LIFT_HG19_REJECTED.bed"
+
+		# write command line to file and execute the command line
+
+			echo ${CMD} >> ${CORE_PATH}/${PROJECT_MS}/COMMAND_LINES/${SM_TAG}_command_lines.txt
+			echo >> ${CORE_PATH}/${PROJECT_MS}/COMMAND_LINES/${SM_TAG}_command_lines.txt
+			echo ${CMD} | bash
+
+	# LIFTOVER HG19 BED FILE TO GRCH38
+
+		CMD="singularity exec ${ALIGNMENT_CONTAINER} liftOver"
+			CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TARGET_BED_NAME}-LIFT_HG19.bed"
+			CMD=${CMD}" ${HG19_TO_GRCH38_CHAIN}"
+		CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TARGET_BED_NAME}-LIFT_GRCH38.bed"
+		CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TARGET_BED_NAME}-LIFT_GRCH38_REJECTED.bed"
+
+		# write command line to file and execute the command line
+
+			echo ${CMD} >> ${CORE_PATH}/${PROJECT_MS}/COMMAND_LINES/${SM_TAG}_command_lines.txt
+			echo >> ${CORE_PATH}/${PROJECT_MS}/COMMAND_LINES/${SM_TAG}_command_lines.txt
+			echo ${CMD} | bash
+
+	# remove any loci that are not part of the primary assembly
+	# this is for concordance when the gt array reference genome is grch38 b/c cidrseqsuite will crash
+
+		grep -v "^@" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TARGET_BED_NAME}-LIFT_GRCH38.bed \
+			| awk 'BEGIN {OFS="\t"} \
+				$1!~"_" \
+				{print $0}' \
+		>| ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TARGET_BED_NAME}-LIFT_GRCH38_PRIMARY.bed
