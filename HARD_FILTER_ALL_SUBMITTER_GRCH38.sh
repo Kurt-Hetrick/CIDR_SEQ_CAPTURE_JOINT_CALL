@@ -7,14 +7,20 @@
 	PROJECT_MS=$1 # the project where the multi-sample vcf is being written to
 	SAMPLE_SHEET=$2 # full/relative path to the sample sheet
 	PREFIX=$3 # prefix name that you want to give the multi-sample vcf
-	PRIORITY=$4 # default is -13. do not supply this argument unless you want to change from the default. range is -1 to -1023.
+	ARRAY_REF=$4 # OPTIONAL: if there is argument present the array reference genome is grch38. otherwise the default is grch37.
+
+		if [[ ! ${ARRAY_REF} ]]
+			then
+			ARRAY_REF="grch37"
+		fi
+	PRIORITY=$5 # default is -13. do not supply this argument unless you want to change from the default. range is -1 to -1023.
 
 		if [[ ! $PRIORITY ]]
 			then
 			PRIORITY="-13"
 		fi
 
-	NUMBER_OF_BED_FILES=$5 # scatter count, if not supplied then the default is what is below. If you want to change this is you have to supply an input for priority as well.
+	NUMBER_OF_BED_FILES=$6 # scatter count, if not supplied then the default is what is below. If you want to change this is you have to supply an input for priority as well.
 
 		if [[ ! $NUMBER_OF_BED_FILES ]]
 			then
@@ -1306,9 +1312,14 @@ QC_JOB_NAME_PREFIX=$(openssl rand -base64 21 \
 	| tr -dc '[:alpha:]' \
 	| awk '{print substr($1,1,2)}')
 
+
 	# for each sample use the passing on target snvs to calculate concordance and het sensitivity to array genotypes.
 	# reconfigure using the new concordance tool.
-		CONCORDANCE_ON_TARGET_PER_SAMPLE ()
+	# CONCORDANCE_ON_TARGET_PER_SAMPLE_ARRAY_37 is for when the array GT ref genome is grch37
+	# CONCORDANCE_ON_TARGET_PER_SAMPLE_ARRAY_38 is for when the array GT ref genome is grch38
+		# these are switched based on the option for ARRAY_REF at submission time
+
+		CONCORDANCE_ON_TARGET_PER_SAMPLE_ARRAY_37 ()
 		{
 			echo \
 			qsub \
@@ -1331,18 +1342,58 @@ QC_JOB_NAME_PREFIX=$(openssl rand -base64 21 \
 				${VERACODE_CSV}
 		}
 
-for SAMPLE in $(awk 1 ${SAMPLE_SHEET} \
-	| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d; /^,/d' \
-	| awk 'BEGIN {FS=","} \
-		NR>1 \
-		{print $8}' \
-	| sort \
-	| uniq);
-do
-	CREATE_SAMPLE_INFO_ARRAY
-	CONCORDANCE_ON_TARGET_PER_SAMPLE
-	echo sleep 0.1s
-done
+		CONCORDANCE_ON_TARGET_PER_SAMPLE_ARRAY_38 ()
+		{
+			echo \
+			qsub \
+				${QSUB_ARGS} \
+			-N ${QC_JOB_NAME_PREFIX}_${SAMPLE_ROW_COUNT} \
+				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/${SM_TAG}/K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_${SM_TAG}.log \
+			-hold_jid A00-FIX_BED_FILES_${UNIQUE_ID_SM_TAG}_${PROJECT_MS},J02_COMBINE_REFINED_LIFTOVER_VARIANTS_${PROJECT_MS} \
+			${COMMON_SCRIPT_DIR}/K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE.sh \
+				${BEDTOOLS_DIR} \
+				${JAVA_1_8} \
+				${GATK_DIR_4011} \
+				${CIDRSEQSUITE_7_5_0_DIR} \
+				${CORE_PATH} \
+				${PROJECT_SAMPLE} \
+				${SM_TAG} \
+				${PROJECT_MS} \
+				${TARGET_BED} \
+				${REF_GENOME} \
+				${PREFIX} \
+				${VERACODE_CSV}
+		}
+
+	if
+		[[ ${ARRAY_REF} == "grch37" ]]
+	then
+		for SAMPLE in $(awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d; /^,/d' \
+			| awk 'BEGIN {FS=","} \
+				NR>1 \
+				{print $8}' \
+			| sort \
+			| uniq);
+		do
+			CREATE_SAMPLE_INFO_ARRAY
+			CONCORDANCE_ON_TARGET_PER_SAMPLE_ARRAY_37
+			echo sleep 0.1s
+		done
+	else
+		for SAMPLE in $(awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d; /^,/d' \
+			| awk 'BEGIN {FS=","} \
+				NR>1 \
+				{print $8}' \
+			| sort \
+			| uniq);
+		do
+			CREATE_SAMPLE_INFO_ARRAY
+			CONCORDANCE_ON_TARGET_PER_SAMPLE_ARRAY_38
+			echo sleep 0.1s
+		done
+	fi
 
 # build hold id for qc report prep per sample, per project
 
