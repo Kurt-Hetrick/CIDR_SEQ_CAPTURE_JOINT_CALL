@@ -1,8 +1,14 @@
-# ---qsub parameter settings---
-# --these can be overrode at qsub invocation--
+#########################################
+##### ---qsub parameter settings--- #####
+###########################################################
+### --THESE ARE OVERWRITTEN IN THE PIPELINE DURING QSUB ###
+###########################################################
 
 # tell sge to execute in bash
 #$ -S /bin/bash
+
+# tell sge to submit any of these queue when available
+#$ -q prod.q,rnd.q
 
 # tell sge that you are in the users current working directory
 #$ -cwd
@@ -11,10 +17,14 @@
 #$ -V
 
 # tell sge to submit at this priority setting
-#$ -p -10
+#$ -p -1000
 
 # tell sge to output both stderr and stdout to the same file
 #$ -j y
+
+#######################################
+##### END QSUB PARAMETER SETTINGS #####
+#######################################
 
 # export all variables, useful to find out what compute node the program was executed on
 
@@ -24,32 +34,33 @@
 
 	echo
 
-# INPUT VARIABLES
+# INPUT PARAMETERS
 
 	JAVA_1_8=$1
-	PICARD_DIR=$2
-	
-	CORE_PATH=$3
-	PROJECT_MS=$4
-	PREFIX=$5
-	GRCH38_REF=$6
-	HG19_TO_GRCH38_CHAIN=$7
-	BED_FILE_NAME=$8
+	GATK_DIR=$2
+	REF_GENOME=$3
+	CORE_PATH=$4
+	PROJECT_MS=$5
+	PREFIX=$6
 
-# liftover from hg19 to GRCh38
-
-START_LIFTOVER_MS_HG38=$(date '+%s') # capture time process starts for wall clock tracking purposes.
+START_CAT_VARIANTS=$(date '+%s')
 
 # construct cmd line
 
-	CMD="${JAVA_1_8}/java -jar"
-	CMD=${CMD}" ${PICARD_DIR}/picard.jar"
-	CMD=${CMD}" LiftoverVcf"
-	CMD=${CMD}" INPUT=${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.FILTERED.HG19.LIFTOVER.vcf.gz"
-	CMD=${CMD}" OUTPUT=${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.FILTERED.GRCh38.LIFTOVER.vcf.gz"
-	CMD=${CMD}" REJECT=${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.${BED_FILE_NAME}.FILTERED.GRCh38.LIFTOVER.REJECTED.vcf.gz"
-	CMD=${CMD}" REFERENCE_SEQUENCE=${GRCH38_REF}"
-	CMD=${CMD}" CHAIN=${HG19_TO_GRCH38_CHAIN}"
+	CMD="${JAVA_1_8}/java"
+	CMD=${CMD}" -cp ${GATK_DIR}/GenomeAnalysisTK.jar"
+	CMD=${CMD}" org.broadinstitute.gatk.tools.CatVariants"
+	CMD=${CMD}" -R ${REF_GENOME}"
+	CMD=${CMD}" -assumeSorted"
+	CMD=${CMD}" -out ${CORE_PATH}/${PROJECT_MS}/TEMP/${PREFIX}.FILTERED.GT.REFINED.vcf"
+
+	# loop to find all the vcf files and add them to the cmd line
+
+		for VCF in \
+			$(ls ${CORE_PATH}/${PROJECT_MS}/TEMP/BF*.r.vcf.gz)
+		do
+			CMD=${CMD}" --variant ${VCF}"
+		done
 
 # write command line to file and execute the command line
 
@@ -73,12 +84,12 @@ START_LIFTOVER_MS_HG38=$(date '+%s') # capture time process starts for wall cloc
 			# 	exit ${SCRIPT_STATUS}
 			# fi
 
-END_LIFTOVER_MS_HG38=$(date '+%s') # capture time process stops for wall clock tracking purposes.
+END_CAT_VARIANTS=$(date '+%s') # capture time process stops for wall clock tracking purposes.
 
 # write wall clock times to file
 
-	echo $SM_TAG_${PROJECT_MS},I.01,LIFTOVER_INITIAL_VCF_HG38,${HOSTNAME},${START_LIFTOVER_MS_HG38},${END_LIFTOVER_MS_HG38} \
-	>> ${CORE_PATH}/${PROJECT_MS}/REPORTS/${PROJECT_MS}.WALL.CLOCK.TIMES.csv
+	echo ${PROJECT_MS},J01,CAT_REFINED_VARIANTS,${HOSTNAME},${START_CAT_VARIANTS},${END_CAT_VARIANTS} \
+	>> ${CORE_PATH}/${PROJECT_MS}/REPORTS/${PROJECT_MS}".JOINT.CALL.WALL.CLOCK.TIMES.csv"
 
 # exit with the signal from the program
 
