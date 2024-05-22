@@ -25,19 +25,19 @@
 # INPUT VARIABLES
 
 	CORE_PATH=$1
+	ALIGNMENT_CONTAINER=$2
 
-	PROJECT_MS=$2
-	SM_TAG=$3
-	BAIT_BED=$4
+	PROJECT_MS=$3
+	SM_TAG=$4
+	BAIT_BED=$5
 		BAIT_BED_NAME=$(basename ${BAIT_BED} .bed)
-	TARGET_BED=$5
+	TARGET_BED=$6
 		TARGET_BED_NAME=$(basename ${TARGET_BED} .bed)
-	TITV_BED=$6
+	TITV_BED=$7
 		TITV_BED_NAME=$(basename ${TITV_BED} .bed)
-	REF_DICT=$7
-	B37_TO_HG19_CHAIN=$8
-	HG19_TO_GRCH38_CHAIN=$9
-
+	REF_DICT=$8
+	B37_TO_HG19_CHAIN=$9
+	HG19_TO_GRCH38_CHAIN=${10}
 
 # FIX BED FILES (FOR GRCH37)
 
@@ -76,40 +76,40 @@
 
 # # MAKE PICARD INTERVAL FILE (1-based start) for the positions found in the genotyping array vcf if present.
 
-# 	# look for genotyping array vcf and store it as a variable.
+	# 	# look for genotyping array vcf and store it as a variable.
 
-# 		GENOTYPING_ARRAY_VCF_TEST=$(ls -tr ${CORE_PATH}/${PROJECT_MS}/Pretesting/Final_Genotyping_VCFs/${SM_TAG}* \
-# 			| tail -n 1 )
+	# 		GENOTYPING_ARRAY_VCF_TEST=$(ls -tr ${CORE_PATH}/${PROJECT_MS}/Pretesting/Final_Genotyping_VCFs/${SM_TAG}* \
+	# 			| tail -n 1 )
 
-# # if final report exists containing the full sm-tag, then you're ready to do some formatting.
+	# # if final report exists containing the full sm-tag, then you're ready to do some formatting.
 
-# if [[ ! -z "${GENOTYPING_ARRAY_VCF_TEST}" ]];then
+	# if [[ ! -z "${GENOTYPING_ARRAY_VCF_TEST}" ]];then
 	
-# 		GENOTYPING_ARRAY_VCF=${GENOTYPING_ARRAY_VCF_TEST}
+	# 		GENOTYPING_ARRAY_VCF=${GENOTYPING_ARRAY_VCF_TEST}
 
-# # if it does not exist, and if the $SM_TAG does not begin with an integer then split $SM_TAG On a @ or -\
-# # look for a final report that contains that that first element of the $SM_TAG
-# # bonus feature. if this first tests true but the file still does not exist then cidrseqsuite magic files b/c no file exists
+	# # if it does not exist, and if the $SM_TAG does not begin with an integer then split $SM_TAG On a @ or -\
+	# # look for a final report that contains that that first element of the $SM_TAG
+	# # bonus feature. if this first tests true but the file still does not exist then cidrseqsuite magic files b/c no file exists
 
-# 	elif [[ ${SM_TAG} != [0-9]* ]]; then
+	# 	elif [[ ${SM_TAG} != [0-9]* ]]; then
+
+	# 		HAPMAP=${SM_TAG%[@-_]*}
 		
-# 		HAPMAP=${SM_TAG%[@-_]*}
-	
-# 		GENOTYPING_ARRAY_VCF=$(ls ${CORE_PATH}/${PROJECT_MS}/Pretesting/Final_Genotyping_VCFs/${HAPMAP}* \
-# 			| head -n 1)
+	# 		GENOTYPING_ARRAY_VCF=$(ls ${CORE_PATH}/${PROJECT_MS}/Pretesting/Final_Genotyping_VCFs/${HAPMAP}* \
+	# 			| head -n 1)
 
-# else
+	# else
 
-# # both conditions fails then echo the below message and give a dummy value for the $FINAL_REPORT
+	# # both conditions fails then echo the below message and give a dummy value for the $FINAL_REPORT
 
-# 	echo
-# 	echo At this time, you are looking for a genotyping array vcf that does not exist or fails to meet the current logic for finding it.
-# 	echo Please talk to Kurt, because he loves to talk.
-# 	echo
+	# 	echo
+	# 	echo At this time, you are looking for a genotyping array vcf that does not exist or fails to meet the current logic for finding it.
+	# 	echo Please talk to Kurt, because he loves to talk.
+	# 	echo
 
-# 	FINAL_REPORT="FILE_DOES_NOT_EXIST"
+	# 	FINAL_REPORT="FILE_DOES_NOT_EXIST"
 
-# fi
+	# fi
 
 # MAKE PICARD INTERVAL FILES (1-based start) for bed files in the sample sheet
 	# GRAB THE SEQUENCING DICTIONARY FORM THE ".dict" file in the directory where the reference genome is located

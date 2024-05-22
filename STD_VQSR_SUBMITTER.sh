@@ -7,7 +7,15 @@
 	PROJECT_MS=$1 # the project where the multi-sample vcf is being written to
 	SAMPLE_SHEET=$2 # full/relative path to the sample sheet
 	PREFIX=$3 # prefix name that you want to give the multi-sample vcf
-	SNP_SENSITIVITY=$4 # SNP TRUTH SENTIVITY CUT-OFF FOR VQSR (OPTIONAL). DEFAULT IS 99.5
+	ARRAY_REF=$4 # OPTIONAL: if there is argument present the array reference genome is grch38. otherwise the default is grch37.
+
+		if
+			[[ ! ${ARRAY_REF} ]]
+		then
+			ARRAY_REF="grch37"
+		fi
+
+	SNP_SENSITIVITY=$5 # SNP TRUTH SENTIVITY CUT-OFF FOR VQSR (OPTIONAL). DEFAULT IS 99.5
 	# VALUE MUST HAVE ONE DECIMAL POINT (e.g. 99.7)
 
 		if
@@ -16,7 +24,7 @@
 			SNP_SENSITIVITY="99.5"
 		fi
 
-	INDEL_SENSITIVITY=$5 # INDEL TRUTH SENTIVITY CUT-OFF FOR VQSR. DEFAULT IS 99.0
+	INDEL_SENSITIVITY=$6 # INDEL TRUTH SENTIVITY CUT-OFF FOR VQSR. DEFAULT IS 99.0
 	# OPTIONAL: IF YOU WANT TO SET THIS YOU NEED TO SET SNP SENSIVITY AS WELL. EVEN TO THE DEFAULT VALUE.
 	# VALUE MUST HAVE ONE DECIMAL POINT (e.g. 99.7)
 
@@ -27,7 +35,7 @@
 		fi
 
 
-	PRIORITY=$6 # SGE PRIORITY. default is -14. range is -1 to -1023. CLOSER TO ZERO IS HIGHER PRIORITY.
+	PRIORITY=$7 # SGE PRIORITY. default is -14. range is -1 to -1023. CLOSER TO ZERO IS HIGHER PRIORITY.
 	# OPTIONAL: IF YOU WANT TO SET THIS YOU NEED TO SET SNP SENSIVITY AND INDEL SENSITIVITY AS WELL. EVEN TO THE DEFAULT VALUES.
 
 		if
@@ -36,7 +44,7 @@
 			PRIORITY="-14"
 		fi
 
-	NUMBER_OF_BED_FILES=$7 # scatter count. HOW MANY FILES YOU WANT TO BREAK UP THE BED FILE INTO FOR PARALLEL PROCESSING DISTRIBUTION.
+	NUMBER_OF_BED_FILES=$8 # scatter count. HOW MANY FILES YOU WANT TO BREAK UP THE BED FILE INTO FOR PARALLEL PROCESSING DISTRIBUTION.
 	# OPTIONAL: IF YOU WANT TO SET THIS YOU NEED TO SET SNP AND INDEL SENSITIVITY AS WELL AS SGE PRIORITY. EVEN TO THE DEFAULT VALUES.
 
 		if
@@ -161,6 +169,7 @@
 	PICARD_DIR="/mnt/linuxtools/PICARD/picard-2.20.6"
 	PARALLEL_DIR="/cm/shared/apps/parallel/20161222/bin"
 	PICARD_LIFTOVER_CONTAINER="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CONTAINERS/picard-2.26.10.0.simg"
+	ALIGNMENT_CONTAINER="/mnt/research/tools/LINUX/00_GIT_REPO_KURT/CONTAINERS/ddl_ce_control_align-0.0.5.simg"
 
 ##################
 # PIPELINE FILES #
@@ -409,7 +418,7 @@
 		CREATE_SAMPLE_INFO_ARRAY ()
 		{
 			SAMPLE_INFO_ARRAY=(`sed 's/\r//g' ${SAMPLE_SHEET} \
-				| awk 'BEGIN{FS=","} NR>1 {print $1,$8,$17,$15,$18,$12}' \
+				| awk 'BEGIN{FS=","} NR>1 {print $1,$8,$16,$17,$15,$18,$12}' \
 				| sed 's/,/\t/g' \
 				| sort -k 2,2 \
 				| uniq \
@@ -417,11 +426,12 @@
 
 			PROJECT_SAMPLE=${SAMPLE_INFO_ARRAY[0]}
 			SM_TAG=${SAMPLE_INFO_ARRAY[1]}
-			TARGET_BED=${SAMPLE_INFO_ARRAY[2]}
-			TITV_BED=${SAMPLE_INFO_ARRAY[3]}
-			DBSNP=${SAMPLE_INFO_ARRAY[4]} #Not used unless we implement HC_BAM
-			SAMPLE_REF_GENOME=${SAMPLE_INFO_ARRAY[5]}
-			SAMPLE_ROW_COUNT=${SAMPLE_INFO_ARRAY[6]}
+			BAIT_BED=${SAMPLE_INFO_ARRAY[2]}
+			TARGET_BED=${SAMPLE_INFO_ARRAY[3]}
+			TITV_BED=${SAMPLE_INFO_ARRAY[4]}
+			DBSNP=${SAMPLE_INFO_ARRAY[5]} #Not used unless we implement HC_BAM
+			SAMPLE_REF_GENOME=${SAMPLE_INFO_ARRAY[6]}
+			SAMPLE_ROW_COUNT=${SAMPLE_INFO_ARRAY[7]}
 
 			UNIQUE_ID_SM_TAG=$(echo ${SM_TAG} | sed 's/@/_/g') # If there is an @ in the qsub or holdId name it breaks
 			BARCODE_2D=$(echo ${SM_TAG} | awk '{split($1,SM_TAG,/[@-]/); print SM_TAG[2]}') # SM_TAG = RIS_ID[@-]BARCODE_2D
@@ -453,12 +463,15 @@
 			-o ${CORE_PATH}/${PROJECT_SAMPLE}/LOGS/${SM_TAG}/${SM_TAG}-FIX_BED_FILES.log \
 		${COMMON_GRCH37_SCRIPT_DIR}/A00-FIX_BED_FILES.sh \
 			${CORE_PATH} \
+			${ALIGNMENT_CONTAINER} \
 			${PROJECT_MS} \
 			${SM_TAG} \
 			${BAIT_BED} \
 			${TARGET_BED} \
 			${TITV_BED} \
-			${REF_DICT}
+			${REF_DICT} \
+			${B37_TO_HG19_CHAIN} \
+			${HG19_TO_GRCH38_CHAIN}
 	}
 
 for SAMPLE in \
@@ -1362,7 +1375,11 @@ QC_JOB_NAME_PREFIX=$(openssl rand -base64 21 \
 
 	# for each sample use the passing on target snvs to calculate concordance and het sensitivity to array genotypes.
 	# reconfigure using the new concordance tool.
-		CONCORDANCE_ON_TARGET_PER_SAMPLE ()
+	# CONCORDANCE_ON_TARGET_PER_SAMPLE_ARRAY_37 is for when the array GT ref genome is grch37
+	# CONCORDANCE_ON_TARGET_PER_SAMPLE_ARRAY_38 is for when the array GT ref genome is grch38
+		# these are switched based on the option for ARRAY_REF at submission time
+
+		CONCORDANCE_ON_TARGET_PER_SAMPLE_ARRAY_37 ()
 		{
 			echo \
 			qsub \
@@ -1385,18 +1402,58 @@ QC_JOB_NAME_PREFIX=$(openssl rand -base64 21 \
 				${VERACODE_CSV}
 		}
 
-for SAMPLE in $(awk 1 ${SAMPLE_SHEET} \
-	| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d; /^,/d' \
-	| awk 'BEGIN {FS=","} \
-		NR>1 \
-		{print $8}' \
-	| sort \
-	| uniq);
-do
-	CREATE_SAMPLE_INFO_ARRAY
-	CONCORDANCE_ON_TARGET_PER_SAMPLE
-	echo sleep 0.1s
-done
+		CONCORDANCE_ON_TARGET_PER_SAMPLE_ARRAY_38 ()
+		{
+			echo \
+			qsub \
+				${QSUB_ARGS} \
+			-N ${QC_JOB_NAME_PREFIX}_${SAMPLE_ROW_COUNT} \
+				-o ${CORE_PATH}/${PROJECT_MS}/LOGS/${SM_TAG}/K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE_${SM_TAG}.log \
+			-hold_jid A00-FIX_BED_FILES_${UNIQUE_ID_SM_TAG}_${PROJECT_MS},J02_COMBINE_REFINED_LIFTOVER_GRCH38_VARIANTS_${PROJECT_MS} \
+			${COMMON_GRCH37_SCRIPT_DIR}/K03A03-1_CONCORDANCE_ON_TARGET_PER_SAMPLE.sh \
+				${BEDTOOLS_DIR} \
+				${JAVA_1_8} \
+				${GATK_DIR_4011} \
+				${CIDRSEQSUITE_7_5_0_DIR} \
+				${CORE_PATH} \
+				${PROJECT_SAMPLE} \
+				${SM_TAG} \
+				${PROJECT_MS} \
+				${TARGET_BED} \
+				${GRCH38_REF} \
+				${PREFIX} \
+				${VERACODE_CSV}
+		}
+
+	if
+		[[ ${ARRAY_REF} == "grch37" ]]
+	then
+		for SAMPLE in $(awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d; /^,/d' \
+			| awk 'BEGIN {FS=","} \
+				NR>1 \
+				{print $8}' \
+			| sort \
+			| uniq);
+		do
+			CREATE_SAMPLE_INFO_ARRAY
+			CONCORDANCE_ON_TARGET_PER_SAMPLE_ARRAY_37
+			echo sleep 0.1s
+		done
+	else
+		for SAMPLE in $(awk 1 ${SAMPLE_SHEET} \
+			| sed 's/\r//g; /^$/d; /^[[:space:]]*$/d; /^,/d' \
+			| awk 'BEGIN {FS=","} \
+				NR>1 \
+				{print $8}' \
+			| sort \
+			| uniq);
+		do
+			CREATE_SAMPLE_INFO_ARRAY
+			CONCORDANCE_ON_TARGET_PER_SAMPLE_ARRAY_38
+			echo sleep 0.1s
+		done
+	fi
 
 # build hold id for qc report prep per sample, per project
 
