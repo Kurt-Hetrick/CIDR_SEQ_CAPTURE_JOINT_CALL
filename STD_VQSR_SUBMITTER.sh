@@ -422,7 +422,7 @@
 				| sed 's/,/\t/g' \
 				| sort -k 2,2 \
 				| uniq \
-				| awk '$2=="'${SAMPLE}'" {print $1,$2,$3,$4,$5,$6,NR}'`)
+				| awk '$2=="'${SAMPLE}'" {print $1,$2,$3,$4,$5,$6,$7,NR}'`)
 
 			PROJECT_SAMPLE=${SAMPLE_INFO_ARRAY[0]}
 			SM_TAG=${SAMPLE_INFO_ARRAY[1]}
