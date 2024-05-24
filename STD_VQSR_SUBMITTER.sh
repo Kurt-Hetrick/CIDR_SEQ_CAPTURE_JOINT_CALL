@@ -1124,12 +1124,7 @@ done
 
 				echo \
 					qsub \
-						-S /bin/bash \
-						-cwd \
-						-V \
-						-q ${QUEUE_LIST} \
-						-p ${PRIORITY} \
-						-j y \
+						${QSUB_ARGS} \
 					-N K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
 						-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS-${PREFIX}.log \
 					-hold_jid J01_CAT_REFINED_VARIANTS_${PROJECT_MS} \
@@ -1144,12 +1139,7 @@ done
 			{
 				echo \
 				 qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q ${QUEUE_LIST} \
-					-p ${PRIORITY} \
-					-j y \
+					${QSUB_ARGS} \
 				-N K02A01_SELECT_SNPS_FOR_ALL_SAMPLES_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A01_SELECT_SNPS_FOR_ALL_SAMPLES-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1167,12 +1157,7 @@ done
 			{
 				echo \
 				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q ${QUEUE_LIST} \
-					-p ${PRIORITY} \
-					-j y \
+					${QSUB_ARGS} \
 				-N K02A02_SELECT_PASS_STUDY_ONLY_SNP_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A02_SELECT_PASS_STUDY_ONLY_SNP-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1191,12 +1176,7 @@ done
 			{
 				echo \
 				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q ${QUEUE_LIST} \
-					-p ${PRIORITY} \
-					-j y \
+					${QSUB_ARGS} \
 				-N K02A03_SELECT_PASS_HAPMAP_ONLY_SNP_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A03_SELECT_PASS_HAPMAP_ONLY_SNP-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1215,12 +1195,7 @@ done
 			{
 				echo \
 				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q ${QUEUE_LIST} \
-					-p ${PRIORITY} \
-					-j y \
+					${QSUB_ARGS} \
 				-N K02A04_SELECT_INDELS_FOR_ALL_SAMPLES_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A04_SELECT_INDELS_FOR_ALL_SAMPLES-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1238,12 +1213,7 @@ done
 			{
 				echo \
 				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q ${QUEUE_LIST} \
-					-p ${PRIORITY} \
-					-j y \
+					${QSUB_ARGS} \
 				-N K02A05_SELECT_PASS_STUDY_ONLY_INDEL_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A05_SELECT_PASS_STUDY_ONLY_INDEL-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1262,12 +1232,7 @@ done
 			{
 				echo \
 				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q ${QUEUE_LIST} \
-					-p ${PRIORITY} \
-					-j y \
+					${QSUB_ARGS} \
 				-N K02A06_SELECT_PASS_HAPMAP_ONLY_INDEL_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A06_SELECT_PASS_HAPMAP_ONLY_INDEL-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1286,12 +1251,7 @@ done
 			{
 				echo \
 				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q ${QUEUE_LIST} \
-					-p ${PRIORITY} \
-					-j y \
+					${QSUB_ARGS} \
 				-N K02A07_SELECT_SNP_FOR_ALL_SAMPLES_PASS_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A07_SELECT_SNP_FOR_ALL_SAMPLES_PASS-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
@@ -1309,12 +1269,7 @@ done
 			{
 				echo \
 				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q ${QUEUE_LIST} \
-					-p ${PRIORITY} \
-					-j y \
+					${QSUB_ARGS} \
 				-N K02A08_SELECT_INDEL_FOR_ALL_SAMPLES_PASS_${PROJECT_MS} \
 					-o ${CORE_PATH}/${PROJECT_MS}/LOGS/K02A08_SELECT_INDEL_FOR_ALL_SAMPLES_PASS-${PREFIX}.log \
 				-hold_jid K02_GENERATE_STUDY_HAPMAP_SAMPLE_LISTS_${PROJECT_MS} \
