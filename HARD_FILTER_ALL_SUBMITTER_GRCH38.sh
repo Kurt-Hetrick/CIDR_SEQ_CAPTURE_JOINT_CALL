@@ -11,7 +11,7 @@
 
 		if [[ ! ${ARRAY_REF} ]]
 			then
-			ARRAY_REF="grch37"
+			ARRAY_REF="grch38"
 		fi
 	PRIORITY=$5 # default is -13. do not supply this argument unless you want to change from the default. range is -1 to -1023.
 

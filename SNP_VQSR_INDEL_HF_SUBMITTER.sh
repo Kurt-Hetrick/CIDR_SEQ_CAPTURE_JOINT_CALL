@@ -12,7 +12,7 @@
 		if
 			[[ ! ${ARRAY_REF} ]]
 		then
-			ARRAY_REF="grch37"
+			ARRAY_REF="grch38"
 		fi
 
 	SNP_SENSITIVITY=$5 # SNP TRUTH SENTIVITY CUT-OFF FOR VQSR (OPTIONAL). DEFAULT IS 99.5
