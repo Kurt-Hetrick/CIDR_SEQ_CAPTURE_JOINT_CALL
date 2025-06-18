@@ -223,7 +223,16 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 		then
 			FINAL_REPORT_NAME=$(basename ${FINAL_REPORT} .gz)
 
-			zcat ${FINAL_REPORT} >| ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${FINAL_REPORT_NAME}
+	# remove any record where the chromosome contains an underscore (typically alternate haplotypes, b/c cidrseqsuite can't handle them)
+
+			zcat ${FINAL_REPORT} \
+				| head -n ${FINAL_REPORT_HEADER_ROW} \
+			>| ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${FINAL_REPORT_NAME}
+
+			zcat ${FINAL_REPORT} \
+				| awk 'NR>'${FINAL_REPORT_HEADER_ROW}'' ${FINAL_REPORT} \
+				| awk 'BEGIN {FS=",";OFS=","} $2!~"_" {print $0}' \
+			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${FINAL_REPORT_NAME}
 
 			FINAL_REPORT="${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${FINAL_REPORT_NAME}"
 
@@ -242,6 +251,20 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 			CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/REPORTS/CONCORDANCE_MS/"
 
 		else
+
+			# remove any record where the chromosome contains an underscore (typically alternate haplotypes, b/c cidrseqsuite can't handle them)
+
+				zcat ${FINAL_REPORT} \
+					| head -n ${FINAL_REPORT_HEADER_ROW} \
+				>| ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${FINAL_REPORT_NAME}
+
+				zcat ${FINAL_REPORT} \
+					| awk 'NR>'${FINAL_REPORT_HEADER_ROW}'' ${FINAL_REPORT} \
+					| awk 'BEGIN {FS=",";OFS=","} $2!~"_" {print $0}' \
+				>> ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${FINAL_REPORT_NAME}
+
+			FINAL_REPORT="${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${FINAL_REPORT_NAME}"
+
 			CMD="${JAVA_1_8}/java -jar"
 				CMD=${CMD}" ${CIDRSEQSUITE_7_5_0_DIR}/CIDRSeqSuite.jar"
 				CMD=${CMD}" -single_sample_concordance"
