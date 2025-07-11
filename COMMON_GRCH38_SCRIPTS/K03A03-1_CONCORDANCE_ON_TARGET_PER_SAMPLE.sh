@@ -217,53 +217,24 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 # -single_sample_concordance
 # Performs concordance between one vcf file and one final report. The vcf must be single sample.
 
-	# if final report is gzipped, then decompress to the ms calling project temp. else just proceed normally.
-		if
-			[[ ${FINAL_REPORT} == *.gz ]]
-		then
-			FINAL_REPORT_NAME=$(basename ${FINAL_REPORT} .gz)
-
 	# remove any record where the chromosome contains an underscore (typically alternate haplotypes, b/c cidrseqsuite can't handle them)
 
-			zcat ${FINAL_REPORT} \
-				| head -n ${FINAL_REPORT_HEADER_ROW} \
-			>| ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${FINAL_REPORT_NAME}
+		zless ${FINAL_REPORT} \
+			| sed 's/\r//g' \
+			| awk -v FIELD_HEADER_ROW="$FIELD_HEADER_ROW" \
+				'NR<=FIELD_HEADER_ROW' \
+		>| ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}_FINAL_REPORT.csv
 
-			zcat ${FINAL_REPORT} \
-				| awk 'NR>'${FINAL_REPORT_HEADER_ROW}'' ${FINAL_REPORT} \
-				| awk 'BEGIN {FS=",";OFS=","} $2!~"_" {print $0}' \
-			>> ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${FINAL_REPORT_NAME}
-
-			FINAL_REPORT="${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${FINAL_REPORT_NAME}"
-
-			CMD="${JAVA_1_8}/java -jar"
-				CMD=${CMD}" ${CIDRSEQSUITE_7_5_0_DIR}/CIDRSeqSuite.jar"
-				CMD=${CMD}" -single_sample_concordance"
-				# [1] path_to_vcf_file
-				CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}_MS_FINAL_REPORT_ON_TARGET.hg19.vcf"
-				# [2] path_to_final_report_file
-				CMD=${CMD}" ${FINAL_REPORT}"
-				# [3] path_to_bed_file
-				CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TARGET_BED_NAME}.lift.hg19.bed"
-				# [4] path_to_liftover_file
-				CMD=${CMD}" ${VERACODE_CSV}"
-			# [5] path_to_output_directory
-			CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/REPORTS/CONCORDANCE_MS/"
-
-		else
-
-			# remove any record where the chromosome contains an underscore (typically alternate haplotypes, b/c cidrseqsuite can't handle them)
-
-				zcat ${FINAL_REPORT} \
-					| head -n ${FINAL_REPORT_HEADER_ROW} \
-				>| ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${FINAL_REPORT_NAME}
-
-				zcat ${FINAL_REPORT} \
-					| awk 'NR>'${FINAL_REPORT_HEADER_ROW}'' ${FINAL_REPORT} \
-					| awk 'BEGIN {FS=",";OFS=","} $2!~"_" {print $0}' \
-				>> ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${FINAL_REPORT_NAME}
-
-			FINAL_REPORT="${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${FINAL_REPORT_NAME}"
+		zless ${FINAL_REPORT} \
+			| sed 's/\r//g' \
+			| awk -v FIELD_HEADER_ROW="$FIELD_HEADER_ROW" \
+				'NR>FIELD_HEADER_ROW' \
+			| awk \
+				-v CHR_FIELD_NUMBER="$CHR_FIELD_NUMBER" \
+				'BEGIN {FS=",";OFS=","} \
+						$CHR_FIELD_NUMBER!~"_" \
+						{print $0}' \
+		>> ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}_FINAL_REPORT.csv
 
 			CMD="${JAVA_1_8}/java -jar"
 				CMD=${CMD}" ${CIDRSEQSUITE_7_5_0_DIR}/CIDRSeqSuite.jar"
@@ -271,14 +242,13 @@ START_CONCORDANCE=`date '+%s'` # capture time process starts for wall clock trac
 				# [1] path_to_vcf_file
 				CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}_MS_FINAL_REPORT_ON_TARGET.hg19.vcf"
 				# [2] path_to_final_report_file
-				CMD=${CMD}" ${FINAL_REPORT}"
+				CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}_FINAL_REPORT.csv"
 				# [3] path_to_bed_file
 				CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/TEMP/${SM_TAG}/${SM_TAG}-${TARGET_BED_NAME}.lift.hg19.bed"
 				# [4] path_to_liftover_file
 				CMD=${CMD}" ${VERACODE_CSV}"
 			# [5] path_to_output_directory
 			CMD=${CMD}" ${CORE_PATH}/${PROJECT_MS}/REPORTS/CONCORDANCE_MS/"
-		fi
 
 # write command line to file and execute the command line
 
