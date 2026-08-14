@@ -1,0 +1,71 @@
+note: input cram files should be on grch38
+NOTE: need a newer version of singularity (currently on bigmem.q)
+
+https://github.com/ArkingLab/MitoHPC
+
+# launch a qlogin session on sge
+
+# 1: set the singularity path variable. for pointing to the singularity container
+
+SINGULARITY_PATH=/mnt/research/tools/LINUX/MITOHPC/MitoHPC
+
+# 2: launch the mitohpc in interactive shell mode
+
+singularity shell -B /mnt:/mnt --env HP_SDIR="/MitoHPC/scripts/" $SINGULARITY_PATH/mitohpc.simg --pwd 
+
+# 3: 
+
+cd to directory where the subdirectory containing the CRAM files are located at.
+
+# 4: copy the init.sh from the container to the working directory (what you just cd'd into)
+
+copy /MitoHPC/scripts/init.sh to current working directory
+
+# 5:
+
+change input directory in the init.sh script to wherever you have the cram files located at (change $PWD in line 121 in init.sh)
+
+export HP_ADIR=$PWD/CRAM/	# bams or crams input file directory
+
+technically i believe you should be able to leave it as is if following the directions above, but in case you are in a differet directory for whatever reason.
+
+# 6: launch init.sh as below which will create some new files.
+
+. ./init.sh
+
+# 7: run the below to create the execution script
+
+$HP_SDIR/run.sh > run.all.sh
+
+==========================
+# 8: if running sequentially do
+
+bash ./run.all.sh
+
+# if running in parallel do
+
+## i'm not sure if this would actually work since it would skip exporting variables...haven't tested
+
+## grep filter.sh ./run.all.sh | parallel ; getSummary.sh
+
+=================================================
+
+# 9: i currently have the summary creation process downloaded to the below location
+
+# /mnt/research/tools/LINUX/MITOHPC/MitoHPC_Process
+
+# 10: copy mito_genome_annotation.txt from MitoHPC_Process into the out folder that was generated from run.all.sh
+
+# 11: copy MitoHPC_process_knh.R from the MitoHPC_Process into the out folder (this is a version of their script that I had to fix to get it to run)
+
+# 12: generate the below file.
+
+cat mutect2.05.suspicious.tab | grep haplocheck > sus.txt
+
+# in a different shell or after exiting the the singularity shell. load a specific version of R that contains required libraries. e.g. below.
+
+module load R/4.0.0
+
+# then run the script that I fixed
+
+Rscript MitoHPC_process_knh.R
